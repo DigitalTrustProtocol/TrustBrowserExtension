@@ -99,9 +99,10 @@ class TagBar  {
 
         if(this.container.childElementCount === 0) {
             this.$identicon = this.createIdenticon(this.subject, "Analyse "+this.subject.author);
-            this.$trustLink = this.createButton('link', "Trust "+this.subject.author, "T", subject, true, 0);
-            this.$distrustLink = this.createButton('link', "Distrust "+this.subject.author, "D", subject, false, 0);
-            this.$neutralLink = this.createButton('link', "Neutral "+this.subject.author, "N", subject, true, 1);
+            //this.$trustLink = this.createButtonTw("Trust","trustIconPassive", 'link', 0);
+            this.$trustLink = this.createButton('link', "Trust "+this.subject.author, "T", subject, true, 0, "trustIconPassive");
+            this.$distrustLink = this.createButton('link', "Distrust "+this.subject.author, "D", subject, false, 0, "distrustIconPassive");
+            this.$neutralLink = this.createButton('link', "Neutral "+this.subject.author, "N", subject, true, 1, "untrustIconPassive");
             //this.$trusticon = this.createIcoin("check16.png");
             //this.$trusticon.click(function() {
             //    $(this).closest('div.entry').children('form, ul').toggle();
@@ -120,13 +121,16 @@ class TagBar  {
         $htmlElement.data(TagBar.TAGBAR_NAME, true);
     }
     
-    createButton(type, title, text, subject, value, expire) {
+    createButton(type, title, text, subject, value, expire, iconClass) {
         //const self = this;
 
         let $element = null;
         switch (type) {
-            case 'text' : $element = $("<b title='"+title+"'>["+text+"]</b>"); break;
-            case 'link' : $element = $("<a title='"+title+"' href='javascript:void 0'>["+text+"]</a>");
+            case 'text' : $element = $("<b title='"+title+"'>["+text+"] <span class='glyphicon glyphicons-ok' aria-hidden='true'></span></b>"); break;
+            //case 'link' : $element = $("<a title='"+title+"' href='javascript:void 0'>["+text+"]</a>");
+            case 'link' : $element = $(`<div class="IconContainer position-trust-icons js-tooltip" data-original-title="">
+            <span class="Icon Icon--medium"><a class="trustIcon ${type} js-tooltip ${iconClass}" href="javascript:void 0" data-original-title="${text}" title="${title}"></a></span>
+        </div>`);
         }
         if (type !== 'text') {
             $element.click((event) =>{
@@ -145,7 +149,6 @@ class TagBar  {
         //const self = this;
         let trustpackage = this.subjectService.BuildBinaryTrust(subject, value, null, expire);
         this.packageBuilder.SignPackage(trustpackage);
-        console.log(`trust pkg ${JSON.stringify(trustpackage)}`)
         $['notify']("Updating trust", 'information');
         this.trustchainService.PostTrust(trustpackage).done((trustResult) =>{
             console.log(`trust post result ${JSON.stringify(trustResult)}`)
@@ -164,7 +167,7 @@ class TagBar  {
 
     createIdenticon (subject, title) {
         var data = new Identicon(subject.address.toString('HEX'), {margin:0.1, size:16, format: 'svg'}).toString();
-        var $alink = $('<a title="'+title+'" href="javascript:void 0"><img src="data:image/svg+xml;base64,' + data + '"></a>');
+        var $alink = $('<a title="'+title+'" href="javascript:void 0" class="position-trust-icons"><img src="data:image/svg+xml;base64,' + data + '"></a>');
         $alink.data("subject", subject);
         $alink.click(function() {
             var opt = {

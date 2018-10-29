@@ -30,7 +30,8 @@
     {
       "matches": [ "*://*.reddit.com/*" ],
       "css": [
-        "lib/bootstrap/dist/css/bootstrap.css"
+        "lib/bootstrap/dist/css/bootstrap.css",
+        "css/content.css"
       ],
       "js": [
         "lib/jquery/jquery-2.0.3.min.js",

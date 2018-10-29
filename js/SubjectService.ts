@@ -78,7 +78,7 @@ class SubjectService  {
             trust = this.packageBuilder.CreateBinaryTrust(
             this.settings.address, 
             this.SCRIPT, 
-            profile.address, 
+            profile.address.toString('base64'), 
             value, 
             note,
             profile.scope,

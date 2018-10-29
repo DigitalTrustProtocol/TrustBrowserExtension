@@ -77,3 +77,8 @@
 .dtpUserAction-Button {
     margin-right: 5px;
 }
+.position-trust-icons {
+    float: left;
+    display: inline-block;
+    padding-right: 3px;
+}
