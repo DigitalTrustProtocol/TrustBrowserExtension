@@ -121,7 +121,7 @@ class TagBar  {
     }
     
     createButton(type, title, text, subject, value, expire) {
-        const self = this;
+        //const self = this;
 
         let $element = null;
         switch (type) {
@@ -129,9 +129,9 @@ class TagBar  {
             case 'link' : $element = $("<a title='"+title+"' href='javascript:void 0'>["+text+"]</a>");
         }
         if (type !== 'text') {
-            $element.click(function(event) {
+            $element.click((event) =>{
                 event.stopPropagation();
-                self.BuildAndSubmitBinaryTrust(subject, value, expire);
+                this.BuildAndSubmitBinaryTrust(subject, value, expire);
             });
         }
 
@@ -142,19 +142,21 @@ class TagBar  {
     }
 
     BuildAndSubmitBinaryTrust (subject, value, expire) {
-        const self = this;
-        var trustpackage = this.subjectService.BuildBinaryTrust(subject, value, null, expire);
+        //const self = this;
+        let trustpackage = this.subjectService.BuildBinaryTrust(subject, value, null, expire);
         this.packageBuilder.SignPackage(trustpackage);
+        console.log(`trust pkg ${JSON.stringify(trustpackage)}`)
         $['notify']("Updating trust", 'information');
-        this.trustchainService.PostTrust(trustpackage).done(function(trustResult){
+        this.trustchainService.PostTrust(trustpackage).done((trustResult) =>{
+            console.log(`trust post result ${JSON.stringify(trustResult)}`)
             //$.notify("Updating view",trustResult.status.toLowerCase());
             console.log("Posting package is a "+trustResult.status.toLowerCase());
 
-            if (self.updateCallback) {
-                self.updateCallback(subject);
+            if (this.updateCallback) {
+                this.updateCallback(subject);
             }
 
-        }).fail(function(trustResult){ 
+        }).fail((trustResult) => { 
             $['notify']("Adding trust failed: " +trustResult.message,"fail");
         });
     }

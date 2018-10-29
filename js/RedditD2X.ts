@@ -15,8 +15,8 @@ class RedditD2X {
     subjects: any[];
     targets: any[];
     trustHandler: any;
-
     static JSAPI_CONSUMER_NAME: string = "DTPreddit";
+    
     constructor(settings, packageBuilder, subjectService, trustchainService) {
         this.settings = settings;
         this.subjectService = subjectService;
@@ -32,22 +32,38 @@ class RedditD2X {
 
     update () {
 
-        for (let subject of this.targets) {
+        this.targets.map(subject => {
+            
             let container = this.subjects[subject.author];
-            for (let key in container.tagBars) {
-                const tagBar = container.tagBars[key];
-
+            
+            container.tagBars.map((key, index) => {
+                const tagBar = container.tagBars[index];
                 if (!container.result) {
-
                     subject.queryResult = this.queryResult;
-                    var owner = subject.owner;
-                    var ownerAddressBase64 = (owner) ? owner.address.toString('base64') : "";
+                    let owner = subject.owner;
+                    let ownerAddressBase64 = (owner) ? owner.address.toString('base64') : "";
                     container.result = this.trustHandler.CalculateBinaryTrust2(subject.address.toString('base64'), ownerAddressBase64);
                 }
 
                 tagBar.update(container.result.networkScore, container.result.personalScore);
-            }
-        }
+            })
+        })
+        // for (let subject of this.targets) {
+        //     let container = this.subjects[subject.author];
+        //     for (let key in container.tagBars) {
+        //         const tagBar = container.tagBars[key];
+
+        //         if (!container.result) {
+
+        //             subject.queryResult = this.queryResult;
+        //             let owner = subject.owner;
+        //             let ownerAddressBase64 = (owner) ? owner.address.toString('base64') : "";
+        //             container.result = this.trustHandler.CalculateBinaryTrust2(subject.address.toString('base64'), ownerAddressBase64);
+        //         }
+
+        //         tagBar.update(container.result.networkScore, container.result.personalScore);
+        //     }
+        // }
     }
 
     bindEvents () {
@@ -163,7 +179,6 @@ class RedditD2X {
             setTimeout(() => this.queryDTP(null), 100);
         }
         
-
         if(!event) return;
         if(!event.detail) return;
 
