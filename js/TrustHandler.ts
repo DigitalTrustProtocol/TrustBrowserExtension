@@ -31,7 +31,6 @@ class TrustHandler  {
         for(let trustIndex in this.package.trusts)
         {
             let trust = this.package.trusts[trustIndex];
-            trust.claimObj = JSON.parse(trust.claim);
 
             if(trust.type === this.packageBuilder.BINARY_TRUST_DTP1) {
                 var list = this.subjects[trust.subject.address];
@@ -83,7 +82,7 @@ class TrustHandler  {
                 if(trust.type === pkgBuilder.BINARY_TRUST_DTP1) {
                     binaryTrustCount ++;
 
-                    if(trust.claimObj.trust === true) 
+                    if(trust.claim === true) 
                         result.trust++;
                     else
                         result.distrust++;
@@ -91,7 +90,7 @@ class TrustHandler  {
                     if(trust.issuer.address == settings.address)
                     {
                         result.direct = true;
-                        result.directValue = trust.claimObj.trust;
+                        result.directValue = trust.claim;
                     }
                 }
             }
@@ -129,9 +128,9 @@ class TrustHandler  {
                 //binaryTrustCount ++;
 
                 if(trust.issuer.address == settings.address) { // Its your trust!
-                    result.personalScore += (trust.claimObj.trust) ? 1 : -1;
+                    result.personalScore += (trust.claim) ? 1 : -1;
                 } else {
-                    result.networkScore += (trust.claimObj.trust) ? 1 : -1;
+                    result.networkScore += (trust.claim) ? 1 : -1;
                 }
             }
         }

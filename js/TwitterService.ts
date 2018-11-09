@@ -63,7 +63,7 @@ class TwitterService{
                'x-twitter-active-user': 'yes'
            },
            dataType: dataType,
-       }).done(function (data, textStatus, jqXHR) {
+       }).done((data, textStatus, jqXHR) => {
            deferred.resolve(data);
        }).fail( (jqXHR, textStatus, errorThrown) => {
            this.errorHandler(jqXHR, textStatus, errorThrown);
@@ -96,7 +96,7 @@ class TwitterService{
                'x-twitter-active-user': 'yes'
            },
            dataType: 'json',
-       }).done(function (msg, textStatus, jqXHR) {
+       }).done((msg, textStatus, jqXHR) =>{
            deferred.resolve(msg);
        }).fail( (jqXHR, textStatus, errorThrown) => {
            this.errorHandler(jqXHR, textStatus, errorThrown);

@@ -25,7 +25,7 @@ class TrustchainService  {
                 continue;
                 // do stuff
             let target = targets[key];
-            let subject = { address: target.address };
+            let subject = { address: (target.screen_name) ? target.screen_name : target.address };
             subjects.push(subject);
             if(target.owner && target.owner.address) {
                 subject = { address: target.owner.address };
@@ -116,10 +116,10 @@ class TrustchainService  {
             data: data,
             contentType: 'application/json; charset=utf-8',
             dataType: 'json'
-        }).done(function (msg, textStatus, jqXHR) {
+        }).done((msg, textStatus, jqXHR) => {
             let resolve = msg;
             deferred.resolve(resolve);
-        }).fail(function (jqXHR, textStatus, errorThrown) {
+        }).fail((jqXHR, textStatus, errorThrown) => {
             this.TrustServerErrorAlert(jqXHR, textStatus, errorThrown, this.settings.infoserver);
             deferred.fail();
         });

@@ -74,17 +74,29 @@ class SubjectService  {
 
     BuildBinaryTrust (profile, value, note, expire) {
         let trust = undefined;
-        if(profile.address) {
+        if(profile.screen_name) {
             trust = this.packageBuilder.CreateBinaryTrust(
             this.settings.address, 
             this.SCRIPT, 
-            profile.address.toString('base64'), 
+            profile.screen_name, //profile.address.toString('base64'),
             value, 
             note,
             profile.scope,
             0,
             expire);
         }
+
+        // if(profile.address) {
+        //     trust = this.packageBuilder.CreateBinaryTrust(
+        //     this.settings.address, 
+        //     this.SCRIPT, 
+        //     profile.address.toString('base64'), 
+        //     value, 
+        //     note,
+        //     profile.scope,
+        //     0,
+        //     expire);
+        // }
         
         let trustpackage = this.packageBuilder.CreatePackage(trust);
 

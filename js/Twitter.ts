@@ -27,9 +27,9 @@ class  Twitter {
        waiting: boolean;
        profilesToQuery: {};
        sessionProfiles: {};
-       screen_name: any;
        Profile: any;
        DTPProfileController: {};
+
         constructor(settings, packageBuilder, subjectService, trustchainService, twitterService, profileRepository) {
            
             this.OwnerPrefix = "[#owner_]";
@@ -53,11 +53,12 @@ class  Twitter {
         }
         processElement(element) { // Element = dom element
             let profileView = new ProfileView(null);
-             this.screen_name = element.attributes["data-screen-name"].value;
-             console.log('screen_name',  this.screen_name)
-           // console.log('screen name in twitter class',  this.screen_name)
-            let profile = this.profileRepository.ensureProfile( this.screen_name, profileView);
-
+             var screen_name = element.attributes["data-screen-name"].value;
+           
+             let profile = this.profileRepository.ensureProfile( screen_name, profileView);
+            profile.alias = element.attributes["data-name"].value;
+            
+            console.log('screen_name: '+ screen_name + ' - ' + profile.alias);
             //this.DTPProfileController = new ProfileController(profile, this, element)
             ProfileController.addTo(profile, this, element);
             
@@ -196,7 +197,7 @@ settingsController.loadSettings( (settings: ISettings) =>{
     let twitter = new Twitter(settings, packageBuilder, subjectService, trustchainService, twitterService, profileRepository);
 
     // Update the content when trust changes on the Trustlist.html popup
-    chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.command === 'updateContent') {
             twitter.updateContent();
         }

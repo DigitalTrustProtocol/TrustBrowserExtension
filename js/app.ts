@@ -116,7 +116,6 @@ import * as angular from 'angular';
 
 
             let trust = this.packageBuilder.CreateTrust(t.issuer.address, t.issuer.script, t.subject.address, t.type, t.scope, t.claim, t.activate, t.expire, t.note);
-            trust.claimObj = t.claimObj;
 
             if(!trust.owner) {
                 let owner = {  
@@ -133,7 +132,7 @@ import * as angular from 'angular';
                     Object.defineProperty(trust, 'identiconData64', { value: this.getIdenticoinData(trust.issuer.address, null), writable: false });
 
                 // Add trust to the right list
-                if(trust.claimObj.trust)
+                if(trust.claim)
                     this.trusted.push(trust);
                 else
                     this.distrusted.push(trust);
@@ -145,7 +144,7 @@ import * as angular from 'angular';
                 let alias = this.trustHandler.alias[trust.issuer.address];
                 if(alias && alias.length > 0) {
                     let item = alias[0];
-                    let screen_name = item.claimObj.alias;
+                    let screen_name = item.claim;
                     trust.address = screen_name.hash160().toDTPAddress();
                     trust.alias = screen_name + (trust.showUntrustButton ? " (You)": "");
                 } else {

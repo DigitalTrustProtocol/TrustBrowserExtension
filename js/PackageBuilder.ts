@@ -27,21 +27,19 @@ class PackageBuilder {
         return this;
     }
 
-    CreateBinaryTrust (issuer, script, subject, value, note, scope, activate, expire, note2)
+    CreateBinaryTrust (issuer, script, subject, value : boolean, note, scope, activate, expire, note2)
     {
-        let claim = (value !== undefined) ? { trust: value } : undefined;
-            
-        return this.CreateTrust(issuer, script, subject, this.BINARY_TRUST_DTP1, scope, JSON.stringify(claim), activate, expire, note);
+        return this.CreateTrust(issuer, script, subject, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
     }
 
-    CreateAliasIdentityTrust (issuer, script, subject, claim, scope, activate, expire, note)
+    CreateAliasIdentityTrust (issuer, script, subject, claim : string, scope, activate, expire, note)
     {
         return this.CreateTrust(issuer, script, subject, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
     }
 
     CreateTrust (issuer, script, subject, type, scope, claim, activate, expire, note)  {
-        if(typeof scope === 'string')
-            scope = { value : scope };
+        if(typeof scope != 'string')
+            scope = JSON.stringify(scope);
 
         let trust = {
             issuer : { 
@@ -53,9 +51,8 @@ class PackageBuilder {
             },
             type: type,
             claim: (claim) ? claim : "",
-            scope: (scope) ? scope: undefined,
+            scope: (scope) ? scope: "",
             created: Math.round(Date.now()/1000.0),
-            cost: 100,
             activate: (activate) ? activate: 0,
             expire: (expire) ? expire: 0,
             node: note
@@ -100,19 +97,21 @@ class PackageBuilder {
             offset += buf.write(trust.type.toLowerCase(), offset);
 
 
-        if(trust.claim)
-            offset += buf.write(trust.claim, offset);
+        if(trust.claim) {
+            if(typeof trust.claim != 'string') 
+            {
+                var claimString = JSON.stringify(trust.claim);
+                offset += buf.write(claimString, offset);
+            }
+            else
+                offset += buf.write(trust.claim, offset);
+        }
 
         if(trust.scope) {
-            if(trust.scope.type)
-                offset += buf.write(trust.scope.type.toLowerCase(), offset);
-
-            if(trust.scope.value)
-                offset += buf.write(trust.scope.value, offset);
+           offset += buf.write(trust.scope, offset);
         }
 
         offset = buf.writeInt32LE(trust.created, offset);
-        offset = buf.writeInt32LE(trust.cost, offset);
         offset = buf.writeInt32LE(trust.activate, offset);
         offset = buf.writeInt32LE(trust.expire, offset);
 

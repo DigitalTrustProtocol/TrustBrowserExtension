@@ -54,7 +54,7 @@ class ProfileController{
             return;
 
         let ownerAddress = (this.profile.owner) ? this.profile.owner.address : "";
-        this.profile.result = this.trustHandler.CalculateBinaryTrust(this.profile.address, ownerAddress);
+        this.profile.result = this.trustHandler.CalculateBinaryTrust(this.profile.screen_name, ownerAddress);
     }
 
 
