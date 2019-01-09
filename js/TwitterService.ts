@@ -67,7 +67,7 @@ class TwitterService{
            deferred.resolve(data);
        }).fail( (jqXHR, textStatus, errorThrown) => {
            this.errorHandler(jqXHR, textStatus, errorThrown);
-           deferred.fail();
+           deferred.reject();
        });
        return deferred.promise();
    }
@@ -100,7 +100,7 @@ class TwitterService{
            deferred.resolve(msg);
        }).fail( (jqXHR, textStatus, errorThrown) => {
            this.errorHandler(jqXHR, textStatus, errorThrown);
-           deferred.fail();
+           deferred.reject();
        });
        return deferred.promise();
    }

@@ -1,3 +1,6 @@
+import './common.js';
+import { ModelPackage, Claim, IssuerIdentity, SubjectIdentity } from "../lib/dtpapi/model/models";
+
 declare var tce: any;
 class PackageBuilder {
    settings: any;
@@ -11,113 +14,130 @@ class PackageBuilder {
         this.settings = settings;
     }
 
-   CreatePackage(trust) {
-        let trustpackage = {
-            trusts: (trust) ? [trust] : []
+   CreatePackage(claim) {
+        let claimPackage : ModelPackage = {
+            claims: (claim) ? [claim] : [],
         }
-        return trustpackage;
+        return claimPackage;
     }
 
-    SignPackage(trustpackage) {
-        for(let trustIndex in trustpackage.trusts) {
-            let trust = trustpackage.trusts[trustIndex];
-            this.CalculateTrustId(trust);
-            this.SignTrust(trust);
+    SignPackage(claimPackage : ModelPackage) {
+        for(let index in claimPackage.claims) {
+            let claim = claimPackage.claims[index];
+            this.CalculateClaimId(claim);
+            this.SignClaim(claim);
         }
         return this;
     }
 
-    CreateBinaryTrust (issuer, script, subject, value : boolean, note, scope, activate, expire, note2)
+    CreateBinaryClaim (issuer, script, subject, value : boolean, note, scope, activate, expire, note2)
     {
-        return this.CreateTrust(issuer, script, subject, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
     }
 
-    CreateAliasIdentityTrust (issuer, script, subject, claim : string, scope, activate, expire, note)
+    CreateAliasIdentityClaim (issuer, script, subject, claim : string, scope, activate, expire, note)
     {
-        return this.CreateTrust(issuer, script, subject, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
     }
 
-    CreateTrust (issuer, script, subject, type, scope, claim, activate, expire, note)  {
+    CreateClaim (issuer: any, script, subject, type, scope, value, activate, expire, note)  {
         if(typeof scope != 'string')
             scope = JSON.stringify(scope);
 
-        let trust = {
-            issuer : { 
+        let claim : Claim = {
+            issuer : <IssuerIdentity>{ 
                 type: script,
-                address: issuer
+                id: issuer
             },
-            subject : {
-                address: subject
+            subject : <SubjectIdentity>{
+                id: subject
             },
             type: type,
-            claim: (claim) ? claim : "",
+            value: (value) ? value : "",
             scope: (scope) ? scope: "",
             created: Math.round(Date.now()/1000.0),
             activate: (activate) ? activate: 0,
             expire: (expire) ? expire: 0,
-            node: note
+            note: note
         }
 
-        return trust;
+        return claim;
     }
 
-    SignTrust (trust) {
-        //trust.issuer.signature = this.settings.keyPair.signCompact(id);
-        trust.issuer.signature = tce.bitcoin.message.sign(this.settings.keyPair, trust.id.base64ToBuffer());
+    SignClaim (claim) {
+        //claim.issuer.signature = this.settings.keyPair.signCompact(id);
+        claim.issuer.signature = tce.bitcoin.message.sign(this.settings.keyPair, claim.id.base64ToBuffer());
     }
 
-    CalculateTrustId (trust) {
-        let buf = new tce.buffer.Buffer(1024 * 256); // 256 Kb
-        let offset = 0;
+    CalculateClaimId (claim : Claim) {
+        let buffers = [];
+        
+        function addBuffer(value: any) {
+            if(value === null || value === undefined)
+                return;
 
-        if(trust.issuer) {
-            if(trust.issuer.type)
-                offset += buf.write(trust.issuer.type.toLowerCase(), offset);
-
-            if(trust.issuer.address) {
-                //var address = trust.issuer.address.base64ToBuffer();
-                //offset += address.copy(buf, offset, 0, trust.issuer.address.length);
-                offset += buf.write(trust.issuer.address, offset);
-
-            }
+            if(typeof value === 'string')
+                buffers.push(new tce.buffer.Buffer(value));
+            else
+                buffers.push(value);
         }
 
-        if(trust.subject) {
-            if(trust.subject.type)
-                offset += buf.write(trust.subject.type.toLowerCase(), offset);
+        function addBufferLowerCase(value: string) {
+            if(value == null || undefined) return;
+            addBuffer(value.toLowerCase());
+        }
+        
 
-            if(trust.subject.address) {
-                // var subjectaddress = trust.subject.address.base64ToBuffer();
-                // offset += subjectaddress.copy(buf, offset, 0, trust.subject.address.length); // Bytes!
-                offset += buf.write(trust.subject.address, offset);
-            }
+        function addInt32LE(value : number) {
+            let buf = new tce.buffer.Buffer(4);
+            buf.writeInt32LE(value);
+            addBuffer(buf);
+        }
+       
+
+        if(claim.issuer) {
+            addBufferLowerCase(claim.issuer.type);
+            addBuffer(claim.issuer.id);
         }
 
-        if(trust.type)
-            offset += buf.write(trust.type.toLowerCase(), offset);
 
+        if(claim.subject) {
+            addBufferLowerCase(claim.subject.type);
+            addBuffer(claim.subject.id);
+        }
 
-        if(trust.claim) {
-            if(typeof trust.claim != 'string') 
+        addBufferLowerCase(claim.type);
+
+        if(claim.value) {
+            if(typeof claim.value != 'string') 
             {
-                var claimString = JSON.stringify(trust.claim);
-                offset += buf.write(claimString, offset);
+                var claimString = JSON.stringify(claim.value);
+                addBuffer(claimString);
             }
             else
-                offset += buf.write(trust.claim, offset);
+                addBuffer(claim.value);
         }
 
-        if(trust.scope) {
-           offset += buf.write(trust.scope, offset);
+        if(claim.scope) {
+           addBuffer(claim.scope);
         }
 
-        offset = buf.writeInt32LE(trust.created, offset);
-        offset = buf.writeInt32LE(trust.activate, offset);
-        offset = buf.writeInt32LE(trust.expire, offset);
+        addInt32LE(claim.created);
+        addInt32LE(claim.activate);
+        addInt32LE(claim.expire);
 
-        var data = new tce.buffer.Buffer(offset);
-        buf.copy(data, 0, 0, offset);
-        trust.id = tce.bitcoin.crypto.hash256(data); 
+        let data = tce.buffer.Buffer.concat(buffers);
+
+        // let offset = 0;
+        // let data = new tce.buffer.Buffer(offset);
+        // buffers.forEach(buffer => {
+        //     buffer.copy(data, 0, 0, offset);
+        //     offset += buffer.length;
+        // });
+
+        claim.id = tce.bitcoin.crypto.hash256(data); 
     }
+
+
 }
 export = PackageBuilder

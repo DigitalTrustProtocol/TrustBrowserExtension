@@ -139,10 +139,10 @@ class ProfileController{
 
     buildAndSubmitBinaryTrust (profile, value, expire) {
         const self = this;
-        let trustPackage = this.host.subjectService.BuildBinaryTrust(profile, value, null, expire);
+        let trustPackage = this.host.subjectService.BuildBinaryClaim(profile, value, null, expire);
         this.host.packageBuilder.SignPackage(trustPackage);
         DTP['trace']("Updating trust");
-        return this.host.trustchainService.PostTrust(trustPackage).then(function(trustResult){
+        return this.host.dtpService.PostPackage(trustPackage).then(function(trustResult){
             DTP['trace']("Posting package is a "+trustResult.status.toLowerCase()+ ' '+ trustResult.message);
 
             // Requery everything, as we have changed a trust

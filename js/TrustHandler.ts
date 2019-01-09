@@ -1,4 +1,3 @@
-///<reference path="../typings/globals/jquery/index.d.ts" />
 import  PackageBuilder = require('./PackageBuilder');
 import ISettings from './Settings.interface';
 

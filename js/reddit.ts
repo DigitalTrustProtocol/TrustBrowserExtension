@@ -1,5 +1,3 @@
-///<reference path="../typings/globals/jquery/index.d.ts" />
-
 //var modalUrl = chrome.extension.getURL("redditmodal.html");
 //var imageUrl = chrome.extension.getURL("img/Question_blue.png");
 declare var Identicon: any;
@@ -8,7 +6,7 @@ import SettingsController = require('./SettingsController');
 import  TrustHandler = require('./TrustHandler');
 import SubjectService = require('./SubjectService')
 import  PackageBuilder = require('./PackageBuilder');
-import TrustchainService = require('./TrustchainService');
+import DTPService = require('./DTPService');
 import RedditD2X = require('./RedditD2X');
 class Reddit  {
     OwnerPrefix: string;
@@ -16,20 +14,20 @@ class Reddit  {
     subjectService: any;
     targets: any[];
     packageBuilder: any;
-    trustchainService: any;
+    dtpService: any;
     queryResult: {};
     CreateText: (text: any, title: any) => JQLite;
     CreateLink: (subject: any, text: any, title: any, value: any, expire: any) => JQLite;
     CreateIdenticon: (subject: any, title: any) => JQLite;
     CreateIcoin: ($nameLink: any, name: any) => void;
     trustHandler: any;
-    constructor(settings, packageBuilder, subjectService, trustchainService) {
+    constructor(settings, packageBuilder, subjectService, dtpService) {
         this.OwnerPrefix = "[#owner_]";
         this.settings = settings;
         this.subjectService = subjectService;
         this.targets = [];
         this.packageBuilder = packageBuilder;
-        this.trustchainService = trustchainService;
+        this.dtpService = dtpService;
         this.queryResult = {};
 
         $("div.thing[data-author]").each((i, elm:any) => {
@@ -282,10 +280,10 @@ class Reddit  {
 
     BuildAndSubmitBinaryTrust(subject, value, expire) {
 
-        let trustpackage = this.subjectService.BuildBinaryTrust(subject, value, null, expire);
+        let trustpackage = this.subjectService.BuildBinaryClaim(subject, value, null, expire);
         this.packageBuilder.SignPackage(trustpackage);
         $['notify']("Updating trust", 'success');
-        this.trustchainService.PostTrust(trustpackage).done((trustResult)=> {
+        this.dtpService.PostTrust(trustpackage).done((trustResult)=> {
             //$.notify("Updating view",trustResult.status.toLowerCase());
             console.log("Posting package is a "+trustResult.status.toLowerCase());
 
@@ -301,7 +299,7 @@ class Reddit  {
     }
 
     QueryAndRender (params) {
-        return this.trustchainService.Query(this.targets, window.location.hostname).then((result) => {
+        return this.dtpService.Query(this.targets, window.location.hostname).then((result) => {
             if (result || result.status == "Success") 
             this.queryResult = result.data.results;
             else
@@ -324,12 +322,12 @@ const settingsController = new SettingsController();
 settingsController.loadSettings(function (settings) {
     let packageBuilder = new PackageBuilder(settings);
     let subjectService = new SubjectService(settings, packageBuilder);
-    let trustchainService = new TrustchainService(settings);
+    let dtpService = new DTPService(settings);
    
 	if (document.documentElement.getAttribute('xmlns')) {
         // Old reddit
         console.log('Old reddit')
-        let reddit = new Reddit(settings,  packageBuilder, subjectService, trustchainService);
+        let reddit = new Reddit(settings,  packageBuilder, subjectService, dtpService);
 
         reddit.EnableProof();
         reddit.QueryAndRender(null);
@@ -343,7 +341,7 @@ settingsController.loadSettings(function (settings) {
     } else {
         console.log('New reddit')
         // Mew reddit
-        const redditD2X = new RedditD2X(settings,  packageBuilder, subjectService, trustchainService);
+        const redditD2X = new RedditD2X(settings,  packageBuilder, subjectService, dtpService);
         redditD2X.bindEvents()
     }
 });

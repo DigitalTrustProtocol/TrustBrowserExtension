@@ -3,7 +3,7 @@ import * as angular from 'angular';
  import './common.js';
  import SettingsController = require('./SettingsController');
  import  PackageBuilder = require('./PackageBuilder');
- import TrustchainService = require('./TrustchainService');
+ import DTPService = require('./DTPService');
  import  TrustHandler = require('./TrustHandler');
  import SubjectService = require('./SubjectService');
  class Controller {
@@ -13,7 +13,7 @@ import * as angular from 'angular';
     settings: any;
     packageBuilder: any;
     subjectService: any;
-    trustchainService: any;
+    dtpService: any;
     contentTabId: number;
     trustHandler:any;
     subject:any;
@@ -38,7 +38,7 @@ import * as angular from 'angular';
         this.settings = settings;
         this.packageBuilder = new PackageBuilder(settings);
         this.subjectService = new SubjectService(settings, this.packageBuilder);
-        this.trustchainService = new TrustchainService(settings);
+        this.dtpService = new DTPService(settings);
 
         this.addListeners();
         this.requestProfile(null); // Default 
@@ -200,7 +200,7 @@ import * as angular from 'angular';
     };
 
     trustDataClick  (trust) {
-        this.trustchainService.GetSimilarTrust(trust).done((result) => {
+        this.dtpService.GetSimilarTrust(trust).done((result) => {
             console.log('trust data from xhr', result)
             this.trustData =  JSON.stringify(result.data, undefined, 2);
             this.jsonVisible = true;
@@ -235,9 +235,9 @@ import * as angular from 'angular';
 
     buildAndSubmitBinaryTrust (profile, value, expire, message){
         
-        var package_ = this.subjectService.BuildBinaryTrust(profile, value, null, expire);
+        var package_ = this.subjectService.BuildBinaryClaim(profile, value, null, expire);
         this.packageBuilder.SignPackage(package_);
-        this.trustchainService.PostTrust(package_).done((trustResult)=> {
+        this.dtpService.PostTrust(package_).done((trustResult)=> {
             //$.notify("Updating view",trustResult.status.toLowerCase());
             console.log("Posting package is a "+trustResult.status.toLowerCase());
 

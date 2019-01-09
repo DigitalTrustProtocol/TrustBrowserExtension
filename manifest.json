@@ -1,9 +1,9 @@
 {
-  "name": "Trust Browser Extension V2",
-  "description": "Proof of concept of Digital Trust Protocol UI implementation - Currently only for Twitter and Reddit. This extension is in alpha and do not provide any security features, no effort has been done to protect your password!",
-  "version": "0.2.180704",
+  "name": "DTP Browser Extension V2",
+  "description": "Proof of concept of Digital Trust Protocol UI implementation - Currently only for Twitter. This extension is in alpha and do not provide any security features, no effort has been done to protect your password!",
+  "version": "0.2.190108",
   "manifest_version": 2,
-  "author": "Trustchain",
+  "author": "DTP protocol developers",
 
   "icons": {
     "16": "img/DTP16a.png",
@@ -39,6 +39,8 @@
         "lib/identiconjs/identicon.js",
         "lib/bitcoinjs/bitcoin.js",
         "lib/Notify/notify.min.js",
+        "lib/bililite/bililiteRange.js",
+        "lib/bililite/bililiteRange.plugin.js",
         "main.bundle.js",
         "js/tagbar.bundle.js",
         "js/reddit.bundle.js"

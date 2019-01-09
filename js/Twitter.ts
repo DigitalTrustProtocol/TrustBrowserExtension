@@ -6,13 +6,14 @@ import Profile = require('./Profile');
 import ProfileController= require('./ProfileController');
 import ProfileView = require('./ProfileView');
 import ProfileRepository= require('./ProfileRepository');
-import TrustchainService = require('./TrustchainService');
+import dtpService = require('./DTPService');
 import ISettings from './Settings.interface';
 import SettingsController = require('./SettingsController');
 import SubjectService = require('./SubjectService')
 import  PackageBuilder = require('./PackageBuilder');
 import  TwitterService = require('./TwitterService');
 import  TrustHandler = require('./TrustHandler')
+import DTPService = require('./DTPService');
    
 class  Twitter {
        OwnerPrefix: string;
@@ -20,7 +21,7 @@ class  Twitter {
        subjectService: any;
        targets: any[];
        packageBuilder: any;
-       trustchainService: any;
+       dtpService: DTPService;
        twitterService: any;
        profileRepository: any;
        queryResult: {};
@@ -30,14 +31,14 @@ class  Twitter {
        Profile: any;
        DTPProfileController: {};
 
-        constructor(settings, packageBuilder, subjectService, trustchainService, twitterService, profileRepository) {
+        constructor(settings, packageBuilder, subjectService, dtpService: DTPService, twitterService, profileRepository) {
            
             this.OwnerPrefix = "[#owner_]";
             this.settings = settings;
             this.subjectService = subjectService;
             this.targets = [];
             this.packageBuilder = packageBuilder;
-            this.trustchainService = trustchainService;
+            this.dtpService = dtpService;
             this.twitterService = twitterService;
             this.profileRepository = profileRepository;
   
@@ -80,10 +81,11 @@ class  Twitter {
                 return;
             }
 
-            return this.trustchainService.Query(profiles, window.location.hostname).then((result) => {
-                if (result && result.status == "Success") {
+            this.dtpService.Query(profiles, window.location.hostname).done((response,result) => {
+                //if (result && result.status == "Success") {
+                    //let result = "";
                     DTP['trace'](JSON.stringify(result, null, 2));
-                    let th = new TrustHandler(result.data.results, this.settings);
+                    let th = new TrustHandler(result, this.settings);
                     th.BuildSubjects();
                     
                     for (let key in profiles) {
@@ -99,11 +101,11 @@ class  Twitter {
                         profile.controller.render();
                         profile.controller.save();
                     }
-                }
-                else {
-                    if(result)
-                        DTP['trace'](result.message);
-                }
+                // }
+                // else {
+                //     if(result)
+                //         DTP['trace'](result["message"]);
+                // }
             });
         }
 
@@ -145,10 +147,8 @@ class  Twitter {
 
             });
 
-
-
             $(element).on('DOMNodeInserted',  (e) => {
-                let classObj = e.target.attributes['class'];
+                let classObj = e.target["attributes"]['class'];
                 if (!classObj) 
                     return;
 
@@ -190,11 +190,11 @@ const settingsController = new SettingsController();
 settingsController.loadSettings( (settings: ISettings) =>{
     let packageBuilder = new PackageBuilder(settings);
     let subjectService = new SubjectService(settings, packageBuilder);
-    let trustchainService = new TrustchainService(settings);
+    let dtpService = new DTPService(settings);
     let twitterService = new TwitterService(settings);
     let profileRepository = new ProfileRepository(settings, localStorage);
 
-    let twitter = new Twitter(settings, packageBuilder, subjectService, trustchainService, twitterService, profileRepository);
+    let twitter = new Twitter(settings, packageBuilder, subjectService, dtpService, twitterService, profileRepository);
 
     // Update the content when trust changes on the Trustlist.html popup
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

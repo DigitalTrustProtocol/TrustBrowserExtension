@@ -1,3 +1,4 @@
+///<reference path="../typings/globals/jquery/index.d.ts" />
 declare var tce: any;
 import './common.js';
 import SettingsController = require('./SettingsController');

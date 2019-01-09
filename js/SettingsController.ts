@@ -10,11 +10,8 @@
             "seed": '',
             "rememberme": true,
             "infoserver": "https://trust.dance",
-            // "buildserver": "https://trust.dance:12701",
-            // "graphserver": "https://trust.dance:12702",
             'trustrender': 'icon',
             "resultrender": 'warning'
-            //"keypair": null
         }
     }
     saveSettings (settings: ISettings){

@@ -1,4 +1,5 @@
-///<reference path="../typings/globals/jquery/index.d.ts" />
+import DTPService = require("./DTPService");
+
 declare var Identicon: any;
 
 class TagBar  {
@@ -7,7 +8,7 @@ class TagBar  {
     settings: any;
     packageBuilder: any;
     subjectService: any;
-    trustchainService: any;
+    dtpService: any;
     updateCallback: any;
     // Static properties
     static TAGBAR_NAME = 'reddittagbar';
@@ -21,13 +22,13 @@ class TagBar  {
 
 
     // Constructor
-    constructor(subject, settings: any, packageBuilder, subjectService, trustchainService) {
+    constructor(subject, settings: any, packageBuilder, subjectService, dtpService) {
         this.subject = subject;
         this.container = $('<span />')[0];
         this.settings = settings;
         this.packageBuilder = packageBuilder;
         this.subjectService = subjectService;
-        this.trustchainService = trustchainService;
+        this.dtpService = dtpService;
         this.updateCallback = undefined;
     }
 
@@ -98,6 +99,7 @@ class TagBar  {
         if($htmlElement.data(TagBar.TAGBAR_NAME)) return;
 
         if(this.container.childElementCount === 0) {
+            
             this.$identicon = this.createIdenticon(this.subject, "Analyse "+this.subject.author);
             //this.$trustLink = this.createButtonTw("Trust","trustIconPassive", 'link', 0);
             this.$trustLink = this.createButton('link', "Trust "+this.subject.author, "T", subject, true, 0, "trustIconPassive");
@@ -119,6 +121,7 @@ class TagBar  {
         }
         $htmlElement.append(this.container);
         $htmlElement.data(TagBar.TAGBAR_NAME, true);
+        $htmlElement.attr("data-dtpName", this.subject.author);
     }
     
     createButton(type, title, text, subject, value, expire, iconClass) {
@@ -147,10 +150,10 @@ class TagBar  {
 
     BuildAndSubmitBinaryTrust (subject, value, expire) {
         //const self = this;
-        let trustpackage = this.subjectService.BuildBinaryTrust(subject, value, null, expire);
+        let trustpackage = this.subjectService.BuildBinaryClaim(subject, value, null, expire);
         this.packageBuilder.SignPackage(trustpackage);
         $['notify']("Updating trust", 'information');
-        this.trustchainService.PostTrust(trustpackage).done((trustResult) =>{
+        this.dtpService.PostTrust(trustpackage).done((trustResult) =>{
             console.log(`trust post result ${JSON.stringify(trustResult)}`)
             //$.notify("Updating view",trustResult.status.toLowerCase());
             console.log("Posting package is a "+trustResult.status.toLowerCase());
@@ -202,11 +205,11 @@ class TagBar  {
     }
 
     // Static methods
-    static bind (expando, subject, settings, packageBuilder, subjectService, trustchainService) {
+    static bind (expando, subject, settings, packageBuilder, subjectService, dtpService: DTPService) {
         const id = expando.id;
         let instance = this.instances[id];
         if(!instance) {
-            instance = new TagBar(subject, settings, packageBuilder, subjectService, trustchainService);
+            instance = new TagBar(subject, settings, packageBuilder, subjectService, dtpService);
             this.instances[id] = instance;
         }
 

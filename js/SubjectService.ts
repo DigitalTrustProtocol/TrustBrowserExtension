@@ -1,4 +1,3 @@
-///<reference path="../typings/globals/jquery/index.d.ts" />
 declare var tce: any;
 import ISettings from './Settings.interface';
 import ISubject from './SubjectInterface';
@@ -72,10 +71,10 @@ class SubjectService  {
         return !input || !input.trim();
     }
 
-    BuildBinaryTrust (profile, value, note, expire) {
+    BuildBinaryClaim (profile, value, note, expire) {
         let trust = undefined;
         if(profile.screen_name) {
-            trust = this.packageBuilder.CreateBinaryTrust(
+            trust = this.packageBuilder.CreateBinaryClaim(
             this.settings.address, 
             this.SCRIPT, 
             profile.screen_name, //profile.address.toString('base64'),
@@ -87,7 +86,7 @@ class SubjectService  {
         }
 
         // if(profile.address) {
-        //     trust = this.packageBuilder.CreateBinaryTrust(
+        //     trust = this.packageBuilder.CreateBinaryClaim(
         //     this.settings.address, 
         //     this.SCRIPT, 
         //     profile.address.toString('base64'), 
@@ -101,7 +100,7 @@ class SubjectService  {
         let trustpackage = this.packageBuilder.CreatePackage(trust);
 
         if(profile.owner && profile.owner.address) {
-            let ownerTrust = this.packageBuilder.CreateBinaryTrust(
+            let ownerTrust = this.packageBuilder.CreateBinaryClaim(
                 this.settings.address, 
                 this.SCRIPT, 
                 profile.owner.address, 
@@ -113,7 +112,7 @@ class SubjectService  {
                 trustpackage.trusts.push(ownerTrust);
 
             if(!this.isNullOrWhitespace(profile.alias)) { 
-                let aliastrust = this.packageBuilder.CreateAliasIdentityTrust(
+                let aliastrust = this.packageBuilder.CreateAliasIdentityClaim(
                     this.settings.address,
                     this.SCRIPT, 
                     profile.owner.address,

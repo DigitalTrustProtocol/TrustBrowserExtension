@@ -1,6 +1,6 @@
 {
-    "name": "trustchain",
-    "version": "0.1.0",
+    "name": "dtp",
+    "version": "0.2.0",
     "typeAcquisition": {
         "include": [
             "jquery"
@@ -11,8 +11,10 @@
         "build": "webpack --mode production --config webpack.config.js"
     },
     "dependencies": {
+        "@types/jquery": "^3.3.29",
         "angular": "^1.7.4",
-        "identicon.js": "^2.3.1"
+        "identicon.js": "^2.3.1",
+        "jquery": "^3.3.1"
     },
     "devDependencies": {
         "@types/angular": "^1.6.50",
@@ -32,6 +34,6 @@
         "url-loader": "^1.1.1",
         "webpack": "^4.17.2",
         "webpack-cli": "^3.1.0",
-        "webpack-dev-server": "^3.1.8"
+        "webpack-dev-server": "^3.1.14"
     }
 }
