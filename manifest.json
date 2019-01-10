@@ -28,26 +28,6 @@
   },
   "content_scripts": [
     {
-      "matches": [ "*://*.reddit.com/*" ],
-      "css": [
-        "lib/bootstrap/dist/css/bootstrap.css",
-        "css/content.css"
-      ],
-      "js": [
-        "lib/jquery/jquery-2.0.3.min.js",
-        "lib/bootstrap/dist/js/bootstrap.min.js",
-        "lib/identiconjs/identicon.js",
-        "lib/bitcoinjs/bitcoin.js",
-        "lib/Notify/notify.min.js",
-        "lib/bililite/bililiteRange.js",
-        "lib/bililite/bililiteRange.plugin.js",
-        "main.bundle.js",
-        "js/tagbar.bundle.js",
-        "js/reddit.bundle.js"
-      ],
-      "run_at": "document_end"
-    },
-    {
       "matches": [ "*://*.twitter.com/*" ],
       "css": [
         "css/content.css"
