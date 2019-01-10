@@ -10,9 +10,10 @@
             "seed": '',
             "rememberme": true,
             "infoserver": "https://trust.dance",
-            'trustrender': 'icon',
-            "resultrender": 'warning'
-        }
+            'twitterdistrust': 'hidecontent',
+            "twittertrust": 'noaction',
+            "identicon" : ""
+        } as ISettings;
     }
     saveSettings (settings: ISettings){
         if (settings.rememberme) {

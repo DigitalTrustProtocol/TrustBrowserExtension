@@ -6,6 +6,45 @@ import * as angular from 'angular';
  import DTPService = require('./DTPService');
  import  TrustHandler = require('./TrustHandler');
  import SubjectService = require('./SubjectService');
+ import ISettings from './Settings.interface';
+
+ class ExtensionpopupController {
+
+    settingsController: any = new SettingsController();
+    settings: ISettings;
+    showIcon: boolean  = true;
+
+    constructor(private $scope: ng.IScope){
+    }
+
+    init(){
+        this.settingsController.loadSettings((items : ISettings) => {
+            this.settings = items;
+                         
+            this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true:false;
+
+            this.$scope.$apply();
+        });
+    }
+
+    modelChange(state?: string) {
+        if(state === 'identicon') {
+            var identicon = new Identicon(this.settings.address, {margin:0.1, size:64, format: 'svg'}).toString();
+            if(identicon.length > 0) {
+                this.settings.identicon = "data:image/svg+xml;base64,"+identicon.toString();
+                this.showIcon = true;
+            }
+        }
+
+        if(this.settings.rememberme || state === 'rememberme') {
+            this.settingsController.saveSettings(this.settings);
+        }
+
+        this.settingsController.buildKey(this.settings);
+    }
+
+}
+
  class Controller {
     showContainer: boolean;
     history: any[];
@@ -30,6 +69,7 @@ import * as angular from 'angular';
     constructor(private $scope: ng.IScope){
 
     }
+    
     init(){
        this.showContainer = false
        this.history = []
@@ -257,3 +297,4 @@ import * as angular from 'angular';
 
   const app = angular.module("myApp", []);
   app.controller('Controller',["$scope", Controller]) // bootstrap angular app here 
+  app.controller('ExtensionpopupController',["$scope", ExtensionpopupController]) // bootstrap angular app here 

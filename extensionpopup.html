@@ -11,9 +11,10 @@
     <!-- Cascading Style Sheets -->
     <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
     <link href="css/bootstrap.custom.css" rel="stylesheet" media="screen">
+    <!-- <script src="js/trustlist.js"></script> -->
 </head>
 
-<body>
+<body ng-app="myApp" ng-controller="ExtensionpopupController as ct" ng-init="ct.init()"> 
 
     <nav class="navbar navbar-default" role="navigation">
         <div class="collapse navbar-collapse navbar-ex1-collapse">
@@ -32,131 +33,80 @@
             <div id="my-tab-content" class="tab-content">
                 <div id="usercontainer" class="tab-pane active">
                     <h3 class="form-signin-heading">User identity</h3>
-                    <p>The user account ID is generated from the Password and the additional seed (optional). No signup is needed. NB! The password is not encrypted on the client and may be very insecure. The password and seed will never be submittet to the server.</p>
+                    <p>This is an alpha product. The user account ID is generated from the Password and the additional seed (optional). No signup is needed. NB! The password is not encrypted on the client and may be very insecure. The password and seed will never be submittet to the server.</p>
                     <div><label for="inputPassword">Password</label></div>
                     <div class="input-group">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-                        <input id="inputPassword" type="text" class="form-control" name="inputPassword" placeholder="Password" required autofocus>
+                        <input id="inputPassword" type="text" class="form-control" name="inputPassword" placeholder="Password" required autofocus ng-model="ct.settings.password" ng-trim="false" ng-change="ct.modelChange('identicon')">
                     </div>
                     <label for="inputSeed">Additional seed - Fill in for better security.</label>
                     <div class="input-group">
                         <span class="input-group-addon">Text</span>
-                        <input type="text" id="inputSeed" class="form-control" name="msg" placeholder="E-mail / Phone / Pin or any text">
+                        <input type="text" id="inputSeed" class="form-control" ng-model="ct.settings.seed" ng-trim="false" placeholder="E-mail / Phone / Pin or any text" ng-change="ct.modelChange('identicon')">
                     </div>
                     <div class="input-group">
-                        <img id="identicon" style="float: left; padding: 5px;">
+                        <img id="identicon" style="float: left; padding: 5px;" src="{{ ct.settings.identicon }}" ng-show="ct.showIcon">
                         <div style="float: left; padding: 5px;">
-                            <label for="address">Address: </label><br><span id="address"></span>
+                            <label for="address">Address: </label><br><span id="address" ng-bind="ct.settings.address"></span>
                         </div>
-                        <label for="writeDTPbtn">Write DTP data to target input on page</label>
-                        <button id="writeDTPbtn" >DTP</button>
                     </div>
-                    <!-- <div class="input-group">
-                        <button type="button" data-toggle="collapse" class="btn btn-link" data-target="#keyContainer">Crypto data</button>
-                    </div>
-                    <div class="input-group">
-                        <div id="keyContainer" class="collapse col-xs-12">
-                            <div><label for="keyid">ID</label></div>
-                            <div id="keyid"></div>
-                            <div><label for="privateKey">Private key</label></div>
-                            <div id="privateKey"></div> -->
-                            <!-- <div><label for="signature">Signature</label></div> -->
-                            <!-- <div id="signature" style="overflow-wrap: break-word;"></div> -->
-                            <!--<div>Public key: <span id="publicKey"></span></div>-->
-                            <!--<p>Hash Value: <span id="hashValue"></span></p>
-                        <p>Message: <span id="message"></span></p>
-                        <p>Pre HEX: <span id="prehex"></span></p>-->
-
-                        <!-- </div>
-                    </div> -->
                     <div class="input-group">
                         <div class="checkbox">
                             <label>
-                                <input id="rememberMe" type="checkbox" value="remember-me" checked>Remember me
+                                <input id="rememberMe" type="checkbox" value="remember-me" ng-model="ct.settings.rememberme" ng-change="ct.modelChange('rememberme')" checked>Remember me
                             </label>
                         </div>
                     </div>
                 </div>
+
                 <div id="settingscontainer" class="tab-pane">
                     <h3 class="form-signin-heading">Trust settings</h3>
-                    <!-- <div>Behavior of rendering trust</div>
-                    <div>Twitter settings</div> -->
-                    <!-- <div class="input-group">
-                        <div class="radio">
-                            <label><input type="radio" name="twittertrustradio" value="noaction">No action</label>
-                        </div>
-                        <div class="radio">
-                            <label><input type="radio" name="twittertrustradio" value="autofollow">Auto follow</label>
-                        </div>
-                    </div> -->
-                    <p><b>Behavior of rendering distrust</b></p>
+                    <p><b>Trust</b></p>
+                    <div>When the query result on a name is positive.</div>
                     <div class="input-group">
-                        <div class="radio">
-                            <label><input type="radio" name="twitterdistrustradio" value="noaction">No action</label>
+                        <div class="radio" title="Will not perform any action on names that is trusted by your network.">
+                            <label><input type="radio" name="twittertrustradio" value="noaction" ng-model="ct.settings.twittertrust" ng-change="ct.modelChange('radio')">No action</label>
                         </div>
-                        <div class="radio">
-                            <label><input type="radio" name="twitterdistrustradio" value="hidecontent">Hide content</label>
-                        </div>
-                        <!-- <div class="radio">
-                            <label><input type="radio" name="twitterdistrustradio" value="hidetweet">Hide tweet</label>
-                        </div> -->
-                        <div class="radio">
-                            <label><input type="radio" name="twitterdistrustradio" value="automute">Auto mute</label>
-                        </div>
-                        <div class="radio">
-                            <label><input type="radio" name="twitterdistrustradio" value="autoblock">Auto block</label>
+                        <div class="radio" title="Will automatically follow names that is trusted by your network.">
+                            <label><input type="radio" name="twittertrustradio" value="autofollow" ng-model="ct.settings.twittertrust" ng-change="ct.modelChange('radio')">Auto follow</label>
                         </div>
                     </div>
-                    <!-- <hr> -->
-                    <!-- <div>Reddit settings</div>
+                    <hr>
+                    <p><b>Distrust</b></p>
+                    <div>When the query result on a name from the DTP server is negative.</div>
                     <div class="input-group">
-                        <div class="radio">
-                            <label><input type="radio" name="trustrenderradio" value="noaction">No action</label>
+                        <div class="radio" title="Will not perform any action on names that is distrusted by your network.">
+                            <label><input type="radio" name="twitterdistrustradio" value="noaction" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">No action</label>
                         </div>
-                        <div class="radio">
-                            <label><input type="radio" name="trustrenderradio" value="icon">Icon</label>
+                        <div class="radio" title="Will automatically hide the content from names that is distrusted by your network.">
+                            <label><input type="radio" name="twitterdistrustradio" value="hidecontent" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">Hide content</label>
                         </div>
-                        <div class="radio">
-                            <label><input type="radio" name="trustrenderradio" value="color">Color</label>
+                        <div class="radio" title="Will automatically mute names that is distrusted by your network.">
+                            <label><input type="radio" name="twitterdistrustradio" value="automute" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">Auto mute</label>
+                        </div>
+                        <div class="radio" title="Will automatically block names that is distrusted by your network.">
+                            <label><input type="radio" name="twitterdistrustradio" value="autoblock" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">Auto block</label>
                         </div>
                     </div>
-                    <p>Behavior of rendering distrust</p>
-                    <div class="input-group">
-                        <div class="radio">
-                            <label><input type="radio" name="resultrenderradio" value="noaction">No action</label>
-                        </div>
-                        <div class="radio">
-                            <label><input type="radio" name="resultrenderradio" value="icon">Icon</label>
-                        </div>
-                        <div class="radio">
-                            <label><input type="radio" name="resultrenderradio" value="color">Color</label>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <div class="checkbox">
-                            <label>
-                                <input id="distrusthide" type="checkbox" value="hide" checked>Hide content
-                            </label>
-                        </div>
-                    </div> -->
                 </div>
                 <div id="servercontainer" class="tab-pane">
                     <h3 class="form-signin-heading">Server</h3>
                     <div class="input-group">
                         <label for="trustserver">Trust server</label>
-                        <input type="url" id="trustserver" class="form-control" placeholder="Trust server" value="https://trust.dance" required autofocus>
+                        <input type="url" id="trustserver" class="form-control" placeholder="Trust server" ng-model="ct.settings.infoserver" ng-change="ct.modelChange()" required autofocus>
                     </div>
                 </div>
                 <div id="aboutcontainer" class="tab-pane">
                     <h3 class="form-signin-heading">About</h3>
-                    <h4>Version 0.2.180706</h4>
+                    <h4>Version 0.2.20190110</h4>
                     <div>Alpha release.</div>
                     <h4>Terms and conditions</h4>
                     <div>
                         By using this product, you agree that everything that you submit to the server will be available to everyone else, that includes anonymous entities.
                         There is no encryption of data or privacy, therefore anyone may use this data as they see fit.
-                        Do not submit data that you do not what to share with everyone.
-                        This is an open platform where the sharing of “Trust” is the basics of the system. Data stored on client is for caching purposes.
+                        Do not submit data that you do not want to share with everyone. Submitting personal identifiable data is not allowed.
+                        This is an open platform where the sharing of “Trust” is the basics of the system.
+                        Data stored on client is for caching and efficiency purposes and may not be safe from data mining.
                     </div>
                     <div>
                         <h4>Github repositories</h4>
@@ -180,7 +130,4 @@
     <script src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="lib/bitcoinjs/bitcoin.js"></script>
     <script src="lib/identiconjs/identicon.js"></script>
-    <!-- <script src="js/common.js"></script>
-    <script src="js/SettingsController.js"></script>
-    <script src="js/extensionpopup.js"></script> -->
 </html>

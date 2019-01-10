@@ -1,11 +1,12 @@
 
 export default interface ISettings  {
+    identicon?: string;
     password: string;
     seed: string;
     rememberme: boolean;
     infoserver: string;
-    trustrender: string;
-    resultrender: string;
+    twitterdistrust: string;
+    twittertrust: string;
     keyPair?: string;
     address?: string;
 }
