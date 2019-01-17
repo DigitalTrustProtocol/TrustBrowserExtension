@@ -5,6 +5,8 @@ class Profile {
     alias: string;
     address: any;
     scope: string;
+    owner: any;
+
     constructor(screen_name) { 
         this.screen_name = screen_name;
         this.alias = screen_name;

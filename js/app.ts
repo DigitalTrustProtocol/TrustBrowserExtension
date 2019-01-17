@@ -117,7 +117,7 @@ import * as angular from 'angular';
     }
 
     loadOnData (profile) {
-        this.trustHandler = new TrustHandler(profile.queryResult, this.settings);
+        this.trustHandler = new TrustHandler(profile.controller.queryContext, this.settings);
         this.trustHandler.BuildSubjects();
 
         this.load(profile);
@@ -218,7 +218,7 @@ import * as angular from 'angular';
         profile.address = trust.issuer.address;
         profile.alias = trust.alias;
         profile.screen_name = trust.alias;
-        profile.queryResult = this.subject.queryResult;
+        profile.controller.queryContext = this.subject.controller.queryContext;
         profile.scope = this.subject.scope;
 
         this.load(profile);

@@ -1,102 +1,92 @@
 import  PackageBuilder = require('./PackageBuilder');
 import ISettings from './Settings.interface';
+import { ModelPackage,QueryContext, Claim } from '../lib/dtpapi/model/models';
+import BinaryTrustResult = require('./Model/BinaryTrustResult');
+
 
 class TrustHandler  {
     settings: ISettings;
-    package: any;
+    queryContext: QueryContext;
     subjects: any[];
     alias: any[];
     packageBuilder: PackageBuilder;
     
-    constructor(trustpackage, settings: ISettings) {
-        console.log('trust', trustpackage)
-        if(!trustpackage) 
-        trustpackage = { trusts: [] };
+    constructor(result : QueryContext, settings: ISettings) {
+        console.log('trust', result)
 
         this.settings = settings;
-        this.package = trustpackage;
+        this.queryContext = result;
         this.subjects = [];
         this.alias = [];
         this.packageBuilder = new PackageBuilder(settings);
+
+        if(!this.queryContext) 
+        {
+            this.queryContext = <QueryContext>{};
+        }
+
     }
 
     BuildSubjects() {
         
-        if(!this.package.trusts)
-        {
+        if(!this.queryContext.results.claims)
             return;
-        }
 
-        for(let trustIndex in this.package.trusts)
-        {
-            let trust = this.package.trusts[trustIndex];
-
-            if(trust.type === this.packageBuilder.BINARY_TRUST_DTP1) {
-                var list = this.subjects[trust.subject.address];
+        this.queryContext.results.claims.forEach((claim) => {
+            if(claim.type === this.packageBuilder.BINARY_TRUST_DTP1) {
+                var list = this.subjects[claim.subject.id];
 
                 if(!list) {
                     list = [];
-                    this.subjects[trust.subject.address] = list;
+                    this.subjects[claim.subject.id] = list;
                 } 
 
-                list.push(trust);
+                list.push(claim);
             }
 
-            if(trust.type === this.packageBuilder.ALIAS_IDENTITY_DTP1) {
-                let list = this.alias[trust.subject.address];
+            if(claim.type === this.packageBuilder.ALIAS_IDENTITY_DTP1) {
+                let list = this.alias[claim.subject.id];
 
                 if(!list) {
                     list = [];
-                    this.alias[trust.subject.address] = list;
+                    this.alias[claim.subject.id] = list;
                 } 
 
-                list.push(trust);
+                list.push(claim);
             }
-
-        }
+        });
     }
 
 
-    CalculateBinaryTrust(subjectAddress, ownerAddress) {
-        //var self = this;
-        let result = {
-            direct : false,
-            directValue: undefined,
-            trust : 0,
-            distrust: 0,
-            state: 0
-        };
+    CalculateBinaryTrust(subjectId, ownerId) : BinaryTrustResult {
+        let result = new BinaryTrustResult();
 
-        let binaryTrustCount = 0;
-        
-        let subjectTrusts = this.subjects[subjectAddress];
-        let ownerTrusts = this.subjects[ownerAddress];
-        if(!subjectTrusts && !ownerTrusts)
+        let subjectClaims = this.subjects[subjectId];
+        let ownerClaims = this.subjects[ownerId];
+        if(!subjectClaims && !ownerClaims)
             return result;
 
-        function CalcTrust(trusts, pkgBuilder, settings) {
-            if(!trusts) return;
-            for(let i in trusts) {
-                let trust = subjectTrusts[i];
-                if(trust.type === pkgBuilder.BINARY_TRUST_DTP1) {
-                    binaryTrustCount ++;
-
-                    if(trust.claim === true) 
-                        result.trust++;
-                    else
-                        result.distrust++;
-                                    // IssuerAddress is base64
-                    if(trust.issuer.address == settings.address)
-                    {
-                        result.direct = true;
-                        result.directValue = trust.claim;
-                    }
+        let CalcTrust = (claims) => {
+            if(!claims) return;
+            claims.forEach((claim) => {
+                if(claim.type !== this.packageBuilder.BINARY_TRUST_DTP1) 
+                    return;
+                
+                if(claim.value === true) 
+                    result.trust++;
+                else
+                    result.distrust++;
+                                // IssuerAddress is base64
+                if(claim.issuer.id == this.settings.address)
+                {
+                    result.direct = true;
+                    result.directValue = claim.value;
                 }
-            }
+            });
         }
         
-        CalcTrust(subjectTrusts, this.packageBuilder, this.settings);   
-        CalcTrust(ownerTrusts, this.packageBuilder, this.settings); 
+        CalcTrust(subjectClaims);   
+        CalcTrust(ownerClaims); 
 
         result.state = result.trust - result.distrust;
 

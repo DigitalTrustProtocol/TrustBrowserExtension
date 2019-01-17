@@ -14,6 +14,8 @@ import  PackageBuilder = require('./PackageBuilder');
 import  TwitterService = require('./TwitterService');
 import  TrustHandler = require('./TrustHandler')
 import DTPService = require('./DTPService');
+import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
+import BinaryTrustResult = require('./Model/BinaryTrustResult');
    
 class  Twitter {
        OwnerPrefix: string;
@@ -24,7 +26,6 @@ class  Twitter {
        dtpService: DTPService;
        twitterService: any;
        profileRepository: any;
-       queryResult: {};
        waiting: boolean;
        profilesToQuery: {};
        sessionProfiles: {};
@@ -42,7 +43,6 @@ class  Twitter {
             this.twitterService = twitterService;
             this.profileRepository = profileRepository;
   
-            this.queryResult = {};
             this.waiting = false;
             this.profilesToQuery= {};
             this.sessionProfiles = {};
@@ -76,36 +76,30 @@ class  Twitter {
         }
 
         queryDTP(profiles): void {
-            //let this = this;
             if(!profiles || Object.keys(profiles).length == 0) {
                 return;
             }
 
-            this.dtpService.Query(profiles, window.location.hostname).done((response,result) => {
-                //if (result && result.status == "Success") {
-                    //let result = "";
-                    DTP['trace'](JSON.stringify(result, null, 2));
-                    let th = new TrustHandler(result, this.settings);
-                    th.BuildSubjects();
-                    
-                    for (let key in profiles) {
-                        if (!profiles.hasOwnProperty(key))
-                            continue;
-        
-                        let profile = profiles[key];
-                        profile.queryResult = result.data.results;
-                        profile.controller.trustHandler = th;
-                        profile.controller.time = Date.now();
-                        profile.controller.calculateTrust();
-                        profile.controller.twitterUserAction();
-                        profile.controller.render();
-                        profile.controller.save();
-                    }
-                // }
-                // else {
-                //     if(result)
-                //         DTP['trace'](result["message"]);
-                // }
+            this.dtpService.Query(profiles, window.location.hostname).then((response,result : QueryContext) => {
+                DTP['trace'](JSON.stringify(result, null, 2));
+                let th = new TrustHandler(result, this.settings);
+                th.BuildSubjects();
+                
+                for (let key in profiles) {
+                    if (!profiles.hasOwnProperty(key))
+                        continue;
+    
+                    let profile = profiles[key];
+                    profile.controller.queryContext = result;
+                    profile.controller.trustHandler = th;
+                    profile.controller.time = Date.now();
+                    profile.controller.calculateTrust();
+                    profile.controller.twitterUserAction();
+                    profile.controller.render();
+                    profile.controller.save();
+                }
+            }).fail(() => {
+
             });
         }
 

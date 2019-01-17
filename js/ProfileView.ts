@@ -55,20 +55,21 @@ class ProfileView {
         bar.distrust.$a.removeClass("distrustIconActive").addClass("trustIconPassive");
         bar.distrust.$span.text('');
 
-        if(!this.controller.profile.result)
+        if(!this.controller.binaryTrustResult)
             return;
+        let result = this.controller.binaryTrustResult;
 
-        if (this.controller.profile.result.state > 0) {
+        if (result.state > 0) {
             bar.trust.$a.removeClass("trustIconPassive").addClass("trustIconActive");
-            bar.trust.$span.text(this.controller.profile.result.trust);
+            bar.trust.$span.text(result.trust);
 
         } 
 
-        if (this.controller.profile.result.state < 0 ) {
+        if (result.state < 0 ) {
 
             if(this.controller.host.settings.twitterdistrust == "hidecontent") {
                 bar.distrust.$a.removeClass("trustIconPassive").addClass("distrustIconActive");
-                bar.distrust.$span.text(this.controller.profile.result.distrust);
+                bar.distrust.$span.text(result.distrust);
                 $element.find('.js-tweet-text-container').hide();
                 $element.find('.QuoteTweet-container').hide();
                 $element.find('.AdaptiveMediaOuterContainer').hide();
@@ -83,7 +84,7 @@ class ProfileView {
             $element.find('.AdaptiveMediaOuterContainer').show();
         }
 
-        if (this.controller.profile.result.direct) {
+        if (result.direct) {
             bar.untrust.$html.show();
         }
     } 

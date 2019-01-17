@@ -1,14 +1,21 @@
 declare var tce: any;
 import ProfileView = require('./ProfileView');
+import TrustHandler = require('./TrustHandler');
+import Profile = require('./Profile');
+import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
+import BinaryTrustResult = require('./Model/BinaryTrustResult');
 class ProfileController {
-    profile: any;
+    profile: Profile;
     view: any;
     host: any;
-    trustHandler: any;
+    trustHandler: TrustHandler;
     domElements: any[];
     time: number;
     blocked: boolean;
     following: boolean = false;
+    queryContext: QueryContext;
+    binaryTrustResult : BinaryTrustResult;
+
 
     constructor(profile, view, host) { 
         this.profile = profile;
@@ -56,7 +63,7 @@ class ProfileController {
             return;
 
         let ownerAddress = (this.profile.owner) ? this.profile.owner.address : "";
-        this.profile.result = this.trustHandler.CalculateBinaryTrust(this.profile.screen_name, ownerAddress);
+        this.binaryTrustResult = this.trustHandler.CalculateBinaryTrust(this.profile.screen_name, ownerAddress);
     }
 
 
@@ -114,13 +121,13 @@ class ProfileController {
     }
 
     twitterUserAction () {
-        if(!this.profile.result)
+        if(!this.binaryTrustResult)
             return;
 
         if(location.href.indexOf(this.profile.screen_name) >= 0) 
             return; // Ignore the profile page for now
     
-        if(this.profile.result.state > 0) {
+        if(this.binaryTrustResult.state > 0) {
             if(this.host.settings.twittertrust == "autofollow") {
                 this.follow();
             }
@@ -128,7 +135,7 @@ class ProfileController {
         }
 
 
-        if(this.profile.result.state < 0) {
+        if(this.binaryTrustResult.state < 0) {
 
             if(this.blocked || this.domElements.length == 0)
                 return;
@@ -168,14 +175,14 @@ class ProfileController {
         let trustPackage = this.host.subjectService.BuildBinaryClaim(profile, value, null, expire);
         this.host.packageBuilder.SignPackage(trustPackage);
         DTP['trace']("Updating trust");
-        return this.host.dtpService.PostPackage(trustPackage).then(function(trustResult){
-            DTP['trace']("Posting package is a "+trustResult.status.toLowerCase()+ ' '+ trustResult.message);
+        return this.host.dtpService.PostPackage(trustPackage).then((trustResult) => {
+            DTP['trace']("Posting package code: "+trustResult.status+ ' - Action: '+ trustResult.statusText);
 
             // Requery everything, as we have changed a trust
             self.host.queryDTP(self.host.sessionProfiles);
 
         }).fail(function(trustResult){ 
-            DTP['trace']("Adding trust failed: " +trustResult.message);
+            DTP['trace']("Adding trust failed: " +trustResult.statusText);
         });
     }
 

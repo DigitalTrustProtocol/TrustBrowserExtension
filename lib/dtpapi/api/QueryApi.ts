@@ -15,6 +15,7 @@ import * as $ from 'jquery';
 import * as models from '../model/models';
 import { COLLECTION_FORMATS } from '../variables';
 import { Configuration } from '../configuration';
+import { QueryContext } from '../model/models';
 
 /* tslint:disable:no-unused-variable member-ordering */
 
@@ -111,7 +112,7 @@ export class QueryApi {
      * @summary Query the graph on multiple subject
      * @param query 
      */
-    public resolvePost(query?: models.QueryRequest, extraJQueryAjaxSettings?: JQueryAjaxSettings) : JQueryPromise<{ }> {
+    public resolvePost(query?: models.QueryRequest, extraJQueryAjaxSettings?: JQueryAjaxSettings) : JQueryPromise<{ response: JQueryXHR; body: QueryContext;  }> {
         let localVarPath = this.basePath + '/api/graph/Query';
 
         let queryParameters: any = {};
@@ -155,11 +156,11 @@ export class QueryApi {
 
         let dfd = $.Deferred();
         $.ajax(requestOptions).then(
-            (data: any, textStatus: string, jqXHR: JQueryXHR) =>
+            (data: QueryContext, textStatus: string, jqXHR: JQueryXHR) =>
                 dfd.resolve(jqXHR, data),
             (xhr: JQueryXHR, textStatus: string, errorThrown: string) =>
                 dfd.reject(xhr, errorThrown)
         );
-        return dfd.promise();
+        return <JQueryPromise<{ response: JQueryXHR; body: QueryContext;  }>>dfd.promise();
     }
 }

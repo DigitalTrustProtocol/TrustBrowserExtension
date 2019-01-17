@@ -1,6 +1,7 @@
 export * from './Claim';
 export * from './IssuerIdentity';
 export * from './ModelPackage';
+export * from './QueryContext';
 export * from './QueryRequest';
 export * from './ServerIdentity';
 export * from './SubjectIdentity';

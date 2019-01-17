@@ -133,17 +133,7 @@ class PackageBuilder {
         addInt32LE(claim.expire);
 
         let data = tce.buffer.Buffer.concat(buffers);
-
-        // let offset = 0;
-        // let data = new tce.buffer.Buffer(offset);
-        // buffers.forEach(buffer => {
-        //     buffer.copy(data, 0, 0, offset);
-        //     offset += buffer.length;
-        // });
-
         claim.id = tce.bitcoin.crypto.hash256(data); 
     }
-
-
 }
 export = PackageBuilder
