@@ -1,6 +1,6 @@
 declare var tce: any;
 import ProfileView = require('./ProfileView');
-class ProfileController{
+class ProfileController {
     profile: any;
     view: any;
     host: any;
@@ -8,10 +8,12 @@ class ProfileController{
     domElements: any[];
     time: number;
     blocked: boolean;
+    following: boolean = false;
+
     constructor(profile, view, host) { 
         this.profile = profile;
         this.view = view;
-       // this.view.controller = this;
+        this.view.controller = this;
         this.host = host;
         this.trustHandler = null;
         this.domElements = [];
@@ -86,6 +88,23 @@ class ProfileController{
         return this.trustProfile(undefined, 1);
     }
 
+    follow () {
+        DTP['trace']("Follow "+ this.profile.screen_name);
+        if(this.domElements.length == 0)
+            return;
+
+        let $selectedTweet = $(this.domElements[0]);
+
+        let follow = $selectedTweet.data("you-follow");
+        if(follow || this.following)
+            return;
+
+        var  $button = this.view.createFollowButton($selectedTweet);
+
+        $button.click();
+    }
+
+
     trustProfile (value, expire) {
         //const self = this;
         return this.buildAndSubmitBinaryTrust( this.profile, value, expire).then(function(result) {
@@ -95,18 +114,24 @@ class ProfileController{
     }
 
     twitterUserAction () {
-         //const self = this;
-
         if(!this.profile.result)
             return;
+
+        if(location.href.indexOf(this.profile.screen_name) >= 0) 
+            return; // Ignore the profile page for now
+    
+        if(this.profile.result.state > 0) {
+            if(this.host.settings.twittertrust == "autofollow") {
+                this.follow();
+            }
+            return;
+        }
+
 
         if(this.profile.result.state < 0) {
 
             if(this.blocked || this.domElements.length == 0)
                 return;
-
-            if(location.href.indexOf(this.profile.screen_name) >= 0) 
-                return; // Ignore the profile page for now
 
             let $selectedTweet = $(this.domElements[0]);
 
@@ -133,6 +158,7 @@ class ProfileController{
             
         }
 
+
         
     }
 
@@ -148,10 +174,6 @@ class ProfileController{
             // Requery everything, as we have changed a trust
             self.host.queryDTP(self.host.sessionProfiles);
 
-            // if (self.updateCallback) {
-            //     self.updateCallback(profile);
-            // }
-
         }).fail(function(trustResult){ 
             DTP['trace']("Adding trust failed: " +trustResult.message);
         });
@@ -161,12 +183,13 @@ class ProfileController{
     // profile will usually be a deserialized neutral object
    static addTo(profile, twitterService, domElement) {
         if (!profile.controller) {
-            let view = new ProfileView(profile);
+            let view = new ProfileView(profile.controller);
             let controller = new ProfileController(profile, view, twitterService);
             // Make sure that this property will no be serialized by using Object.defineProperty
             Object.defineProperty(profile, 'controller', { value: controller });
         }
         profile.controller.domElements.push(domElement);
+
         $(domElement).data("dtp_profile", profile);
     }
 
@@ -191,6 +214,12 @@ class ProfileController{
                     if(button['classList'].contains('untrust')) {
                         profile.controller.untrust().then(RemoveSpinner);
                     }
+
+                    if(button['classList'].contains('follow')) {
+                        profile.controller.follow();
+                        RemoveSpinner();
+                    }
+
                 });
 
                 function RemoveSpinner() {

@@ -1,13 +1,15 @@
 declare var tce: any;
 import ISettings from './Settings.interface';
 import ISubject from './SubjectInterface';
+import PackageBuilder = require('./PackageBuilder');
+import { Claim } from '../lib/dtpapi/model/Claim';
 
 class SubjectService  {
     SCRIPT: string;
     settings: ISettings;
-    packageBuilder: any;
+    packageBuilder: PackageBuilder;
     subjects = [];
-    constructor(settings: ISettings, packageBuilder) {
+    constructor(settings: ISettings, packageBuilder: PackageBuilder) {
         this.SCRIPT = "btc-pkh";
         this.settings = settings;
         this.packageBuilder = packageBuilder;
@@ -71,18 +73,18 @@ class SubjectService  {
         return !input || !input.trim();
     }
 
-    BuildBinaryClaim (profile, value, note, expire) {
-        let trust = undefined;
+    BuildBinaryClaim (profile, value: any, note, expire) {
+        let claim: Claim = null;
         if(profile.screen_name) {
-            trust = this.packageBuilder.CreateBinaryClaim(
+            claim = this.packageBuilder.CreateBinaryClaim(
             this.settings.address, 
             this.SCRIPT, 
             profile.screen_name, //profile.address.toString('base64'),
             value, 
-            note,
             profile.scope,
             0,
-            expire);
+            expire,
+            note);
         }
 
         // if(profile.address) {
@@ -97,7 +99,7 @@ class SubjectService  {
         //     expire);
         // }
         
-        let trustpackage = this.packageBuilder.CreatePackage(trust);
+        let trustpackage = this.packageBuilder.CreatePackage(claim);
 
         if(profile.owner && profile.owner.address) {
             let ownerTrust = this.packageBuilder.CreateBinaryClaim(
@@ -105,23 +107,23 @@ class SubjectService  {
                 this.SCRIPT, 
                 profile.owner.address, 
                 value, 
-                note,
                 "", // Do not use scope on global identity
                 0,
-                expire);
-                trustpackage.trusts.push(ownerTrust);
+                expire,
+                note);
+                trustpackage.claims.push(ownerTrust);
 
             if(!this.isNullOrWhitespace(profile.alias)) { 
                 let aliastrust = this.packageBuilder.CreateAliasIdentityClaim(
                     this.settings.address,
                     this.SCRIPT, 
                     profile.owner.address,
-                    { alias: profile.alias },
+                    profile.alias,
                     profile.scope,
                     0,
                     expire);
 
-                    trustpackage.trusts.push(aliastrust);
+                    trustpackage.claims.push(aliastrust);
             }
         }
         return trustpackage;

@@ -14,14 +14,14 @@ class PackageBuilder {
         this.settings = settings;
     }
 
-   CreatePackage(claim) {
+   CreatePackage(claim) : ModelPackage {
         let claimPackage : ModelPackage = {
             claims: (claim) ? [claim] : [],
         }
         return claimPackage;
     }
 
-    SignPackage(claimPackage : ModelPackage) {
+    SignPackage(claimPackage : ModelPackage) : PackageBuilder {
         for(let index in claimPackage.claims) {
             let claim = claimPackage.claims[index];
             this.CalculateClaimId(claim);
@@ -30,19 +30,25 @@ class PackageBuilder {
         return this;
     }
 
-    CreateBinaryClaim (issuer, script, subject, value : boolean, note, scope, activate, expire, note2)
+    CreateBinaryClaim (issuer, script, subject, value : boolean, scope, activate, expire, note?: string) : Claim
     {
         return this.CreateClaim(issuer, script, subject, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
     }
 
-    CreateAliasIdentityClaim (issuer, script, subject, claim : string, scope, activate, expire, note)
+    CreateAliasIdentityClaim (issuer, script, subject, claim : string, scope, activate, expire, note? : string) : Claim
     {
         return this.CreateClaim(issuer, script, subject, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
     }
 
-    CreateClaim (issuer: any, script, subject, type, scope, value, activate, expire, note)  {
+    CreateClaim (issuer: any, script, subject, type, scope, value, activate, expire, note? : string) : Claim {
         if(typeof scope != 'string')
             scope = JSON.stringify(scope);
+
+
+        let stringValue : string = "";
+        if(value) {
+            stringValue = (typeof value === 'string') ? value : JSON.stringify(value);
+        } 
 
         let claim : Claim = {
             issuer : <IssuerIdentity>{ 
@@ -53,7 +59,7 @@ class PackageBuilder {
                 id: subject
             },
             type: type,
-            value: (value) ? value : "",
+            value: stringValue,
             scope: (scope) ? scope: "",
             created: Math.round(Date.now()/1000.0),
             activate: (activate) ? activate: 0,
@@ -64,12 +70,12 @@ class PackageBuilder {
         return claim;
     }
 
-    SignClaim (claim) {
+    SignClaim (claim) : void {
         //claim.issuer.signature = this.settings.keyPair.signCompact(id);
         claim.issuer.signature = tce.bitcoin.message.sign(this.settings.keyPair, claim.id.base64ToBuffer());
     }
 
-    CalculateClaimId (claim : Claim) {
+    CalculateClaimId (claim : Claim) : void {
         let buffers = [];
         
         function addBuffer(value: any) {
