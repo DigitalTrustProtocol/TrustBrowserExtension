@@ -9,6 +9,8 @@ class PackageBuilder {
    public RATING_TRUST_DTP1: string = "rating.trust.dtp1";
    public IDENTITY_DTP1: string = "identity.dtp1";
    public ALIAS_IDENTITY_DTP1: string = "alias.identity.dtp1";
+   public IDENTITY_TYPE_NAME = "name";
+   public IDENTITY_TYPE_ID = "id";
    
     constructor(settings) {
         this.settings = settings;
@@ -32,15 +34,15 @@ class PackageBuilder {
 
     CreateBinaryClaim (issuer, script, subject, value : boolean, scope, activate, expire, note?: string) : Claim
     {
-        return this.CreateClaim(issuer, script, subject, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_ID, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
     }
 
     CreateAliasIdentityClaim (issuer, script, subject, claim : string, scope, activate, expire, note? : string) : Claim
     {
-        return this.CreateClaim(issuer, script, subject, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_NAME, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
     }
 
-    CreateClaim (issuer: any, script, subject, type, scope, value, activate, expire, note? : string) : Claim {
+    CreateClaim (issuer: any, script, subject, subjectType, type, scope, value, activate, expire, note? : string) : Claim {
         if(typeof scope != 'string')
             scope = JSON.stringify(scope);
 
@@ -66,6 +68,9 @@ class PackageBuilder {
             expire: (expire) ? expire: 0,
             note: note
         }
+
+        if(subjectType) 
+            claim.subject.type = subjectType;
 
         return claim;
     }

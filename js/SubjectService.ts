@@ -10,7 +10,7 @@ class SubjectService  {
     packageBuilder: PackageBuilder;
     subjects = [];
     constructor(settings: ISettings, packageBuilder: PackageBuilder) {
-        this.SCRIPT = "btc-pkh";
+        this.SCRIPT = "secp256k1-pkh";
         this.settings = settings;
         this.packageBuilder = packageBuilder;
     }
