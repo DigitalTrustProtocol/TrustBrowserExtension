@@ -27,13 +27,11 @@ class ProfileView {
                 trust: this.createButton("Trust", "trustIconPassive", "trust", undefined),
                 distrust: this.createButton("Distrust", "distrustIconPassive", "distrust", undefined),
                 untrust:this.createButton("Untrust", "untrustIconPassive", "untrust", undefined),
-                follow:this.createButton("Follow", "trustIconPassive", "follow", undefined)
             }
 
             bar.$fullNameGroup = $element.find(this.fullNameGroup);
             bar.$fullNameGroup.prepend(this.createIdenticon(this.controller.profile));
            
-            $anchor.after(bar.follow.$html);
             $anchor.after(bar.untrust.$html);
             $anchor.after(bar.distrust.$html);
             $anchor.after(bar.trust.$html);
@@ -42,9 +40,9 @@ class ProfileView {
             $element.data('dtp_bar', bar);
 
             
-            let $followButton = $("<li class='follow-link js-actionFollow' data-nav='follow' role='presentation'>"+
-                                 "<button type='button' class='dropdown-link' role='menuitem'>Follow <span class='username u-dir u-textTruncate' dir='ltr'>@<b>zerohedge</b></span></button>"+
-                                 "</li>");
+            // let $followButton = $("<li class='follow-link js-actionFollow' data-nav='follow' role='presentation'>"+
+            //                      "<button type='button' class='dropdown-link' role='menuitem'>Follow <span class='username u-dir u-textTruncate' dir='ltr'>@<b>zerohedge</b></span></button>"+
+            //                      "</li>");
             
             
             //$followButton.insertAfter($element.find("li.mute-user-item"));

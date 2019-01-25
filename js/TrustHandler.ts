@@ -72,7 +72,7 @@ class TrustHandler  {
                 if(claim.type !== this.packageBuilder.BINARY_TRUST_DTP1) 
                     return;
                 
-                if(claim.value === true) 
+                if(claim.value === "true" || claim.value === "1")
                     result.trust++;
                 else
                     result.distrust++;
