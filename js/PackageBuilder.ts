@@ -32,6 +32,12 @@ class PackageBuilder {
         return this;
     }
 
+    CreateNameClaim (issuer, script, subject, value : boolean, scope, activate, expire, note?: string) : Claim
+    {
+        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_NAME, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
+    }
+
+
     CreateBinaryClaim (issuer, script, subject, value : boolean, scope, activate, expire, note?: string) : Claim
     {
         return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_ID, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
@@ -39,7 +45,7 @@ class PackageBuilder {
 
     CreateAliasIdentityClaim (issuer, script, subject, claim : string, scope, activate, expire, note? : string) : Claim
     {
-        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_NAME, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_ID, this.ALIAS_IDENTITY_DTP1, scope, JSON.stringify(claim), activate, expire, note);
     }
 
     CreateClaim (issuer: any, script, subject, subjectType, type, scope, value, activate, expire, note? : string) : Claim {
@@ -47,10 +53,10 @@ class PackageBuilder {
             scope = JSON.stringify(scope);
 
 
-        let stringValue : string = "";
-        if(value) {
-            stringValue = (typeof value === 'string') ? value : JSON.stringify(value);
-        } 
+        let stringValue = value.toString();
+        // if(value) {
+        //     stringValue = (typeof value === 'string') ? value : JSON.stringify(value);
+        // } 
 
         let claim : Claim = {
             issuer : <IssuerIdentity>{ 

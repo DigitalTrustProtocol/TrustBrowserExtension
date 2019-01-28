@@ -76,7 +76,7 @@ class SubjectService  {
     BuildBinaryClaim (profile, value: any, note, expire) {
         let claim: Claim = null;
         if(profile.screen_name) {
-            claim = this.packageBuilder.CreateBinaryClaim(
+            claim = this.packageBuilder.CreateNameClaim(
             this.settings.address, 
             this.SCRIPT, 
             profile.screen_name, //profile.address.toString('base64'),
@@ -87,18 +87,6 @@ class SubjectService  {
             note);
         }
 
-        // if(profile.address) {
-        //     trust = this.packageBuilder.CreateBinaryClaim(
-        //     this.settings.address, 
-        //     this.SCRIPT, 
-        //     profile.address.toString('base64'), 
-        //     value, 
-        //     note,
-        //     profile.scope,
-        //     0,
-        //     expire);
-        // }
-        
         let trustpackage = this.packageBuilder.CreatePackage(claim);
 
         if(profile.owner && profile.owner.address) {
