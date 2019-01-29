@@ -81,18 +81,18 @@ class ProfileController {
    trust () {
         console.log('Trust clicked');
         DTP['trace']("Trust "+ this.profile.screen_name);
-        return this.trustProfile(true, 0);
+        return this.trustProfile("true", 0);
     }
 
    distrust () {
         DTP['trace']("Distrust "+ this.profile.screen_name);
 
-        return this.trustProfile(false, 0);
+        return this.trustProfile("false", 0);
     }
 
     untrust () {
         DTP['trace']("Untrust "+ this.profile.screen_name);
-        return this.trustProfile(undefined, 1);
+        return this.trustProfile("", 1);
     }
 
     follow () {

@@ -73,7 +73,7 @@ class SubjectService  {
         return !input || !input.trim();
     }
 
-    BuildBinaryClaim (profile, value: any, note, expire) {
+    BuildBinaryClaim (profile, value: string, note, expire) {
         let claim: Claim = null;
         if(profile.screen_name) {
             claim = this.packageBuilder.CreateNameClaim(
@@ -90,7 +90,7 @@ class SubjectService  {
         let trustpackage = this.packageBuilder.CreatePackage(claim);
 
         if(profile.owner && profile.owner.address) {
-            let ownerTrust = this.packageBuilder.CreateBinaryClaim(
+            let ownerClaim = this.packageBuilder.CreateBinaryClaim(
                 this.settings.address, 
                 this.SCRIPT, 
                 profile.owner.address, 
@@ -99,10 +99,11 @@ class SubjectService  {
                 0,
                 expire,
                 note);
-                trustpackage.claims.push(ownerTrust);
+                trustpackage.claims.push(ownerClaim);
 
             if(!this.isNullOrWhitespace(profile.alias)) { 
-                let aliastrust = this.packageBuilder.CreateAliasIdentityClaim(
+                var alias = (!value || value == "") ? "" : profile.alias;
+                let aliasClaim = this.packageBuilder.CreateAliasIdentityClaim(
                     this.settings.address,
                     this.SCRIPT, 
                     profile.owner.address,
@@ -111,7 +112,7 @@ class SubjectService  {
                     0,
                     expire);
 
-                    trustpackage.claims.push(aliastrust);
+                    trustpackage.claims.push(aliasClaim);
             }
         }
         return trustpackage;

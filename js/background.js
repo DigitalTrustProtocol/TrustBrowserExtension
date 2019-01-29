@@ -81,6 +81,9 @@ function GetpopupWindow(cb)
 }
 
 chrome.windows.onRemoved.addListener(function (id) {
+    if(!popupWindow)
+        return; 
+        
     if(id == popupWindow.id)
         popupWindow = null;
 });

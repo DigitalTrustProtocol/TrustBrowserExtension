@@ -28,7 +28,9 @@ class TrustHandler  {
     }
 
     BuildSubjects() {
-        
+        if(!this.queryContext.results)
+            return;
+
         if(!this.queryContext.results.claims)
             return;
 
