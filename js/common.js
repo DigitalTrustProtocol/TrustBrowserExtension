@@ -4,38 +4,48 @@ DTP.trace = function (message) {
     console.log(message);
 };
 
+// Code for reddit
+// function ParseTrustMe(a) {
+//     var user = null;
+//     if (a instanceof HTMLAnchorElement) {
+//         user = CreateTarget(a.text);
 
-function ParseTrustMe(a) {
-    var user = null;
-    if (a instanceof HTMLAnchorElement) {
-        user = CreateTarget(a.text);
+//         if (a.search) {
+//             var pairs = a.search.substring(1).split('&');
+//             for (var i = 0; i < pairs.length; i++) {
+//                 var kv = pairs[i].split('=');
+//                 var val = decodeURIComponent(kv[1].replace(/\+/g, ' '));
+//                 user[kv[0].toLowerCase()] = val;
+//             }
+//         }
+//     }
+//     else if (a instanceof String) {
+//         user = CreateTarget(a);
+//     }
+//     var $proof = $("a[href*='&scope=reddit']:contains('Proof')").first();
+//     if ($proof.length > 0) {
+//         var href = $proof.attr("href").split("&");
+//         for (key in href) {
+//             var part = href[key];
+//             var p = part.split("=");
+//             user[p[0]] = p[1];
+//         }
+//     }
 
-        if (a.search) {
-            var pairs = a.search.substring(1).split('&');
-            for (var i = 0; i < pairs.length; i++) {
-                var kv = pairs[i].split('=');
-                var val = decodeURIComponent(kv[1].replace(/\+/g, ' '));
-                user[kv[0].toLowerCase()] = val;
-            }
-        }
-    }
-    else if (a instanceof String) {
-        user = CreateTarget(a);
-    }
-    var $proof = $("a[href*='&scope=reddit']:contains('Proof')").first();
-    if ($proof.length > 0) {
-        var href = $proof.attr("href").split("&");
-        for (key in href) {
-            var part = href[key];
-            var p = part.split("=");
-            user[p[0]] = p[1];
-        }
-    }
+//     user.address = GetTargetAddress(user);
 
-    user.address = GetTargetAddress(user);
+//     return user;
+// }
 
-    return user;
-}
+// function GetTargetAddress(target) {
+//     var address = (target.id) ? GetAddress(target.id, target.sig, target.content) :
+//                 GetIDFromContent(target.content);
+//     return address;
+// }
+
+// function GetIDFromContent(content) {
+//     return tce.bitcoin.crypto.hash160(new tce.buffer.Buffer(content, 'UTF8'));
+// }
 
 
 tce.buffer.Buffer.prototype.toJSON = function() {
@@ -103,25 +113,15 @@ String.prototype.findSubstring = function(startText, endText, returnInner, ignor
 }
 
 
-function GetTargetAddress(target) {
-    var address = (target.id) ? GetAddress(target.id, target.sig, target.content) :
-                GetIDFromContent(target.content);
-    return address;
-}
-
-
 function isNullOrWhitespace(input) {
     return !input || !input.trim();
 }
 
 // Create a hash160 of a string
-String.prototype.hash160 = function() {
-    return tce.bitcoin.crypto.hash160(new tce.buffer.Buffer(this.toString(), 'UTF8'));
-}
+// String.prototype.hash160 = function() {
+//     return tce.bitcoin.crypto.hash160(new tce.buffer.Buffer(this.toString(), 'UTF8'));
+// }
 
-function GetIDFromContent(content) {
-    return tce.bitcoin.crypto.hash160(new tce.buffer.Buffer(content, 'UTF8'));
-}
 
 
 function getQueryParams(url) {

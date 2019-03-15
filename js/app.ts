@@ -4,9 +4,10 @@ import * as angular from 'angular';
  import SettingsController = require('./SettingsController');
  import  PackageBuilder = require('./PackageBuilder');
  import DTPService = require('./DTPService');
- import  TrustHandler = require('./TrustHandler');
+ import  TrustStrategy = require('./TrustStrategy');
  import SubjectService = require('./SubjectService');
  import ISettings from './Settings.interface';
+ import Crypto = require('./Crypto');
 
  class ExtensionpopupController {
 
@@ -45,7 +46,7 @@ import * as angular from 'angular';
 
 }
 
- class Controller {
+ class TrustListController {
     showContainer: boolean;
     history: any[];
     settingsController : any;
@@ -117,7 +118,7 @@ import * as angular from 'angular';
     }
 
     loadOnData (profile) {
-        this.trustHandler = new TrustHandler(profile.controller.queryContext, this.settings);
+        this.trustHandler = new TrustStrategy(profile.getController().queryContext, this.settings);
         this.trustHandler.BuildSubjects();
 
         this.load(profile);
@@ -165,7 +166,7 @@ import * as angular from 'angular';
             }
 
             // If trust is a BinaryTrust, decorate the trust object with data
-            if(trust.type == this.packageBuilder.BINARY_TRUST_DTP1) {
+            if(trust.type == PackageBuilder.BINARY_TRUST_DTP1) {
                 this.binarytrusts[trust.subject.address] = trust;
 
                 if(!trust.identiconData64)
@@ -185,7 +186,7 @@ import * as angular from 'angular';
                 if(alias && alias.length > 0) {
                     let item = alias[0];
                     let screen_name = item.claim;
-                    trust.address = screen_name.hash160().toDTPAddress();
+                    trust.address = Crypto.Hash160(screen_name).toDTPAddress();
                     trust.alias = screen_name + (trust.showUntrustButton ? " (You)": "");
                 } else {
                   if(this.subject.binaryTrust.direct) 
@@ -218,7 +219,7 @@ import * as angular from 'angular';
         profile.address = trust.issuer.address;
         profile.alias = trust.alias;
         profile.screen_name = trust.alias;
-        profile.controller.queryContext = this.subject.controller.queryContext;
+        profile.getController().queryContext = this.subject.controller.queryContext;
         profile.scope = this.subject.scope;
 
         this.load(profile);
@@ -239,13 +240,13 @@ import * as angular from 'angular';
         return new Identicon(address, {margin:0.1, size:size, format: 'svg'}).toString();
     };
 
-    trustDataClick  (trust) {
-        this.dtpService.GetSimilarTrust(trust).done((result) => {
-            console.log('trust data from xhr', result)
-            this.trustData =  JSON.stringify(result.data, undefined, 2);
-            this.jsonVisible = true;
-        });
-    }
+    // trustDataClick  (trust) {
+    //     this.dtpService.GetSimilarTrust(trust).done((result) => {
+    //         console.log('trust data from xhr', result)
+    //         this.trustData =  JSON.stringify(result.data, undefined, 2);
+    //         this.jsonVisible = true;
+    //     });
+    // }
 
     verifyTrustLink (trust) {
         let url = this.settings.infoserver+
@@ -295,6 +296,8 @@ import * as angular from 'angular';
     }
   }
 
+
+
   const app = angular.module("myApp", []);
-  app.controller('Controller',["$scope", Controller]) // bootstrap angular app here 
+  app.controller('TrustListController',["$scope", TrustListController]) // bootstrap angular app here 
   app.controller('ExtensionpopupController',["$scope", ExtensionpopupController]) // bootstrap angular app here 

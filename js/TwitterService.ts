@@ -2,6 +2,7 @@
  import Profile = require('./Profile');
  import ProfileView = require('./ProfileView');
  import ISettings from './Settings.interface';
+import DTPIdentity = require('./Model/DTPIdentity');
 
 class TwitterService{
     settings: ISettings;
@@ -11,10 +12,10 @@ class TwitterService{
        }
 
 
-   getProfileDTP (screen_name: string) {
-       let deferred = $.Deferred();
+   getProfileDTP (screen_name: string): JQueryPromise<DTPIdentity> {
+       let deferred = $.Deferred<DTPIdentity>();
        let url = '/search?f=tweets&q=%23DTP%20Address%20Signature%20from%3A'+ screen_name +'&src=typd';
-       this.getData(url, 'html').then((html) => {
+       this.getData(url, 'html').then((html: string) => {
 
            let $body = $(html);
            let tweets = $body.find(null)
@@ -23,10 +24,10 @@ class TwitterService{
            deferred.resolve(result);
        }).fail((error) => deferred.fail(error));
 
-       return deferred;
+       return deferred.promise();
    }
 
-   extractDTP (html) {
+   extractDTP (html: any) : DTPIdentity {
        let content = html.findSubstring('<div class="js-tweet-text-container">', '</div>');
        if(content == null) {
            return null;
@@ -39,18 +40,14 @@ class TwitterService{
            return null;
        }
 
-       let result = {
-           address: text['findSubstring']('Address:', ' ', true, true),
-           signature: text['findSubstring']('Signature:', ' ', true, true),
-           scope: '', // global
-       }
-
-       return result;
+       let id = text['findSubstring']('ID:', ' ', true, true);
+       let proof = text['findSubstring']('Proof:', ' ', true, true); 
+       return new DTPIdentity(id, proof);
    }
 
-   getData (path: string, dataType: any) {
-       let deferred = $.Deferred();
-       //let self = this;
+   getData (path: string, dataType: any) : JQueryPromise<any> {
+       let deferred = $.Deferred<any>();
+
        let url = this.BaseUrl+path;
        dataType = dataType || "json";
 
@@ -73,13 +70,12 @@ class TwitterService{
    }
 
 
-   sendTweet  (data: any) {
+   sendTweet (data: any) : JQueryPromise<any> {
        return this.postData('/i/tweet/create', data);
    }
 
-   postData (path: string, data: any) {
-       //let self = this;
-       var deferred = $.Deferred();
+   postData (path: string, data: any) : JQueryPromise<any> {
+       var deferred = $.Deferred<any>();
 
        let url = this.BaseUrl + path;
        //let postData = 'authenticity_token=' + DTP.Profile.Current.formAuthenticityToken + '&' + data;

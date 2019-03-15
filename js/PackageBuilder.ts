@@ -4,13 +4,13 @@ import { ModelPackage, Claim, IssuerIdentity, SubjectIdentity } from "../lib/dtp
 declare var tce: any;
 class PackageBuilder {
    settings: any;
-   public BINARY_TRUST_DTP1: string = "binary.trust.dtp1";
-   public CONFIRM_TRUST_DTP1: string = "confirm.trust.dtp1";
-   public RATING_TRUST_DTP1: string = "rating.trust.dtp1";
-   public IDENTITY_DTP1: string = "identity.dtp1";
-   public ALIAS_IDENTITY_DTP1: string = "alias.identity.dtp1";
-   public IDENTITY_TYPE_NAME = "name";
-   public IDENTITY_TYPE_ID = "id";
+   static BINARY_TRUST_DTP1: string = "binary.trust.dtp1";
+   static CONFIRM_TRUST_DTP1: string = "confirm.trust.dtp1";
+   static RATING_TRUST_DTP1: string = "rating.trust.dtp1";
+   static IDENTITY_DTP1: string = "identity.dtp1";
+   static ALIAS_IDENTITY_DTP1: string = "alias.identity.dtp1";
+   static IDENTITY_TYPE_NAME = "name";
+   static IDENTITY_TYPE_ID = "id";
    
     constructor(settings) {
         this.settings = settings;
@@ -34,18 +34,18 @@ class PackageBuilder {
 
     CreateNameClaim (issuer, script, subject, value : string, scope, activate, expire, note?: string) : Claim
     {
-        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_NAME, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_NAME, PackageBuilder.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
     }
 
 
     CreateBinaryClaim (issuer, script, subject, value : string, scope, activate, expire, note?: string) : Claim
     {
-        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_ID, this.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.BINARY_TRUST_DTP1, scope, value, activate, expire, note);
     }
 
     CreateAliasIdentityClaim (issuer, script, subject, value : string, scope, activate, expire, note? : string) : Claim
     {
-        return this.CreateClaim(issuer, script, subject, this.IDENTITY_TYPE_ID, this.ALIAS_IDENTITY_DTP1, scope, value, activate, expire, note);
+        return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.ALIAS_IDENTITY_DTP1, scope, value, activate, expire, note);
     }
 
     CreateClaim (issuer: any, script, subject, subjectType, type, scope, value: string, activate, expire, note? : string) : Claim {

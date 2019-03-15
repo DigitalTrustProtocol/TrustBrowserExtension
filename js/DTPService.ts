@@ -2,6 +2,8 @@
 import ISettings from './Settings.interface';
 import { SubjectQuery, QueryRequest, ModelPackage, TrustScope } from '../lib/dtpapi/model/models';
 import { PackageApi, QueryApi } from '../lib/dtpapi/api/api';
+import { QueryContext } from '../lib/dtpapi/model/models';
+import Profile = require('./Profile');
 
 
 class DTPService  {
@@ -16,28 +18,29 @@ class DTPService  {
         this.queryApi = new QueryApi(settings.infoserver);
     } 
 
-    Query (targets: any, scope: any) {
+    Query (targets: Array<Profile>, scope: any) :JQueryPromise<QueryContext> {
         let query = this.BuildQuery(targets, scope);
         if(query == null) {
             let deferred = $.Deferred();
             deferred.resolve(null);
             return deferred.promise();
         }
+        this.queryApi.basePath = this.settings.infoserver;
         return this.queryApi.resolvePost(query);
-        //return this.PostData('/api/graph/Query', JSON.stringify(query));
     }
 
-    BuildQuery (targets: any, scope: any) : QueryRequest {
+    BuildQuery (targets: Array<Profile>, scope: any) : QueryRequest {
         let subjects = new Array<SubjectQuery>();
+        //targets.forEach((target, index) => {
         for (let key in targets) {
             if (!targets.hasOwnProperty(key))
-                continue;
-                
+                continue;            
             let target = targets[key];
-            let subject = <SubjectQuery>{ address: (target.screen_name) ? target.screen_name : target.address };
+            
+            let subject = <SubjectQuery>{ address: (target.userId) ? target.userId : target.address };
             subjects.push(subject);
-            if(target.owner && target.owner.address) {
-                let owner = <SubjectQuery>{ address: target.owner.address };
+            if(target.owner && target.owner.ID) {
+                let owner = <SubjectQuery>{ address: target.owner.ID };
                 subjects.push(owner);
             }
         }
@@ -73,11 +76,11 @@ class DTPService  {
     //     return this.GetData(url);
     // }
 
-    GetSimilarTrust (trust) {
-        let url ='/api/trust/get/?issuer='+trust.issuer.address+'&subject='+trust.subject.address+'&type='+encodeURIComponent(trust.type)+'&scopevalue='+encodeURIComponent((trust.scope) ? trust.scope.value : "");
+    // GetSimilarTrust (trust) {
+    //     let url ='/api/trust/get/?issuer='+trust.issuer.address+'&subject='+trust.subject.address+'&type='+encodeURIComponent(trust.type)+'&scopevalue='+encodeURIComponent((trust.scope) ? trust.scope.value : "");
     
-        return null; // this.GetData(url);
-    }
+    //     return null; // this.GetData(url);
+    // }
 
 
     // GetTrustTemplate (subject, alias) {
@@ -91,8 +94,8 @@ class DTPService  {
     //     return this.PostData('/api/package/build', JSON.stringify(trustPackage));
     // }
 
-    PostPackage (claimPackage: ModelPackage) : JQueryPromise<{}> {
-        //return this.PostData('/api/trust/add', JSON.stringify(package));
+    PostPackage (claimPackage: ModelPackage) : JQueryPromise<any> {
+        this.packageApi.basePath = this.settings.infoserver;
         return this.packageApi.postPackage(claimPackage);
     }
     

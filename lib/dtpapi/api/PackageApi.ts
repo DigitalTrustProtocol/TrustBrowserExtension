@@ -20,7 +20,7 @@ import { Configuration } from '../configuration';
 
 
 export class PackageApi {
-    protected basePath = 'https://localhost';
+    public basePath = 'https://localhost';
     public defaultHeaders: Array<string> = [];
     public defaultExtraJQueryAjaxSettings?: JQueryAjaxSettings = null;
     public configuration: Configuration = new Configuration();
@@ -51,7 +51,7 @@ export class PackageApi {
      * @summary Add a package to the server
      * @param _package 
      */
-    public postPackage(_package?: models.ModelPackage, extraJQueryAjaxSettings?: JQueryAjaxSettings): JQueryPromise<{  }> {
+    public postPackage(_package?: models.ModelPackage, extraJQueryAjaxSettings?: JQueryAjaxSettings): JQueryPromise<any> {
         let localVarPath = this.basePath + '/api/Package';
 
         let queryParameters: any = {};
@@ -93,7 +93,7 @@ export class PackageApi {
             requestOptions = (<any>Object).assign(requestOptions, this.defaultExtraJQueryAjaxSettings);
         }
 
-        let dfd = $.Deferred();
+        let dfd = $.Deferred<any>();
         $.ajax(requestOptions).then(
             (data: any, textStatus: string, jqXHR: JQueryXHR) =>
                 dfd.resolve(jqXHR, data),

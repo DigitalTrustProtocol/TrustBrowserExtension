@@ -20,7 +20,7 @@ import { QueryContext } from '../model/models';
 /* tslint:disable:no-unused-variable member-ordering */
 
 export class QueryApi {
-    protected basePath = 'https://localhost';
+    public basePath = 'https://localhost';
     public defaultHeaders: Array<string> = [];
     public defaultExtraJQueryAjaxSettings?: JQueryAjaxSettings = null;
     public configuration: Configuration = new Configuration();
@@ -112,7 +112,7 @@ export class QueryApi {
      * @summary Query the graph on multiple subject
      * @param query 
      */
-    public resolvePost(query?: models.QueryRequest, extraJQueryAjaxSettings?: JQueryAjaxSettings) : JQueryPromise<{ response: JQueryXHR; body: QueryContext;  }> {
+    public resolvePost(query?: models.QueryRequest, extraJQueryAjaxSettings?: JQueryAjaxSettings) : JQueryPromise<QueryContext> {
         let localVarPath = this.basePath + '/api/graph/Query';
 
         let queryParameters: any = {};
@@ -154,13 +154,13 @@ export class QueryApi {
             requestOptions = (<any>Object).assign(requestOptions, this.defaultExtraJQueryAjaxSettings);
         }
 
-        let dfd = $.Deferred();
+        let dfd = $.Deferred<QueryContext>();
         $.ajax(requestOptions).then(
             (data: QueryContext, textStatus: string, jqXHR: JQueryXHR) =>
-                dfd.resolve(jqXHR, data),
+                dfd.resolve(data),
             (xhr: JQueryXHR, textStatus: string, errorThrown: string) =>
                 dfd.reject(xhr, errorThrown)
         );
-        return <JQueryPromise<{ response: JQueryXHR; body: QueryContext;  }>>dfd.promise();
+        return dfd.promise();
     }
 }

@@ -2,7 +2,9 @@
     "compilerOptions": {
         "outDir": "./dist/js",
         "allowJs": true,
-        "target": "es5"
+        "target": "es5",
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true
     },
     "include": [
         "./js/**/*"

@@ -1,73 +1,64 @@
 declare var tce: any;
 import ProfileView = require('./ProfileView');
-import TrustHandler = require('./TrustHandler');
+import TrustStrategy = require('./TrustStrategy');
 import Profile = require('./Profile');
 import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
+import DTPIdentity = require('./Model/DTPIdentity');
+import Crypto = require('./Crypto');
+import TwitterService = require('./TwitterService');
+import ProfileRepository = require('./ProfileRepository');
+
 class ProfileController {
     profile: Profile;
     view: any;
     host: any;
-    trustHandler: TrustHandler;
     domElements: any[];
-    time: number;
     blocked: boolean;
     following: boolean = false;
-    queryContext: QueryContext;
-    binaryTrustResult : BinaryTrustResult;
+    binaryTrustResult : BinaryTrustResult = new BinaryTrustResult();
+    selectedElement: JQuery<any>;
 
 
-    constructor(profile, view, host) { 
+    constructor(profile: Profile, view, host) { 
         this.profile = profile;
         this.view = view;
         this.view.controller = this;
         this.host = host;
-        this.trustHandler = null;
         this.domElements = [];
-        this.time = 0;
     }
 
     // Update data for the profile
-    update() {
-        let deferred = $.Deferred();
-        //let self = this;
+    update() : JQueryPromise<Profile> {
+        let deferred = $.Deferred<Profile>();
 
         if(this.profile.owner) {
             deferred.resolve(this.profile);
-
         } else {
-            this.host.twitterService.getProfileDTP(this.profile.screen_name).then((owner) => {
+            this.host.twitterService.getProfileDTP(this.profile.userId).then((owner: DTPIdentity) => {
                 if(owner != null) {
                     try {
-                        if(ProfileController.verifyDTPsignature(owner, this.profile.screen_name)) {
+                        if(Crypto.Verify(owner, this.profile.userId)) {
                             this.profile.owner = owner;
                             this.save();
+                            this.host.profileRepository.setIndexKey(owner.ID, this.profile); // Save an index to the profile
                         }
                     } catch(error) {
-                        DTP['trace'](error);
+                        DTP['trace'](error); // Catch it if Crypto.Verify fails!
                     }
                 }
                 deferred.resolve(this.profile);
             });
         }
 
-        return deferred;
+        return deferred.promise();
     }
 
     save () {
         this.host.profileRepository.setProfile(this.profile);
     }
-
-    calculateTrust () {
-        if(!this.trustHandler) 
-            return;
-
-        let ownerAddress = (this.profile.owner) ? this.profile.owner.address : "";
-        this.binaryTrustResult = this.trustHandler.CalculateBinaryTrust(this.profile.screen_name, ownerAddress);
-    }
-
-
-    render (element) {
+    
+    render (element?: any) {
         if(element) {
             this.view.renderElement(element);
             return;
@@ -170,7 +161,7 @@ class ProfileController {
     }
 
 
-    buildAndSubmitBinaryTrust (profile, value, expire) {
+    buildAndSubmitBinaryTrust (profile: Profile, value: any, expire: number) {
         const self = this;
         let trustPackage = this.host.subjectService.BuildBinaryClaim(profile, value, null, expire);
         this.host.packageBuilder.SignPackage(trustPackage);
@@ -179,7 +170,7 @@ class ProfileController {
             DTP['trace']("Posting package code: "+trustResult.status+ ' - Action: '+ trustResult.statusText);
 
             // Requery everything, as we have changed a trust
-            self.host.queryDTP(self.host.sessionProfiles);
+            self.host.queryDTP(self.host.profileRepository.getSessionProfiles());
 
         }).fail(function(trustResult){ 
             DTP['trace']("Adding trust failed: " +trustResult.statusText);
@@ -188,42 +179,47 @@ class ProfileController {
 
 
     // profile will usually be a deserialized neutral object
-   static addTo(profile, twitterService, domElement) {
-        if (!profile.controller) {
-            let view = new ProfileView(profile.controller);
-            let controller = new ProfileController(profile, view, twitterService);
-            // Make sure that this property will no be serialized by using Object.defineProperty
-            Object.defineProperty(profile, 'controller', { value: controller });
+   static addTo(profile: Profile, twitterService : any, domElement) : void {
+        if(!profile)
+            return;
+        try {
+            
+            if (!profile.getController()) {
+                profile.setController(new ProfileController(profile, new ProfileView(), twitterService));
+            }
+        } catch (error) {
+            console.log(error);
         }
-        profile.controller.domElements.push(domElement);
+    profile.getController().domElements.push(domElement);
 
         $(domElement).data("dtp_profile", profile);
     }
 
-    static  bindEvents(element, profileRepository) {
+    static bindEvents(element, profileRepository : ProfileRepository) : void {
             $(element).on('click', '.trustIcon',  (event) => {
                 let button = event.target;
                 $(button).addClass('trustSpinner24');
                 let tweetContainer = ProfileController.getTweetContainer(button);
-                let screen_name = $(tweetContainer).attr("data-screen-name");
-                let profile = profileRepository.ensureProfile(screen_name);
-                profile.controller.selectedElement = tweetContainer;
+                //let screen_name = $(tweetContainer).attr("data-screen-name");
+                let userId = $(tweetContainer).attr("data-user-id");
+                let profile = profileRepository.ensureProfile(userId);
+                profile.getController().selectedElement = tweetContainer;
 
-                this.loadProfile(screen_name, profileRepository).then(function(profile) {
+                this.loadProfile(userId, profileRepository).then(function(profile: Profile) {
                     if(button['classList'].contains('trust')) {
-                        profile.controller.trust().then(RemoveSpinner);
+                        profile.getController().trust().then(RemoveSpinner);
                     }
 
                     if(button['classList'].contains('distrust')) {
-                        profile.controller.distrust().then(RemoveSpinner);
+                        profile.getController().distrust().then(RemoveSpinner);
                     }
 
                     if(button['classList'].contains('untrust')) {
-                        profile.controller.untrust().then(RemoveSpinner);
+                        profile.getController().untrust().then(RemoveSpinner);
                     }
 
                     if(button['classList'].contains('follow')) {
-                        profile.controller.follow();
+                        profile.getController().follow();
                         RemoveSpinner();
                     }
 
@@ -236,17 +232,13 @@ class ProfileController {
 
     }
 
-   static getTweetContainer(element)  {
+   static getTweetContainer(element) : JQuery<any> {
         return $(element).closest('div.tweet'); //.attr("data-screen-name");
     }
 
-   static verifyDTPsignature(dtp, message) {
-        return tce.bitcoin.message.verify(dtp.address, dtp.signature, message);
-    }
-
-  static loadProfile(screen_name, profileRepository) {
-        let profile = profileRepository.getProfile(screen_name);
-        return profile.controller.update();
+  static loadProfile(id: string, profileRepository) {
+        let profile = profileRepository.getProfile(id);
+        return profile.getController().update();
     }
 
 }

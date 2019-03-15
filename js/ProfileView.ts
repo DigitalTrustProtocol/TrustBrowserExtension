@@ -7,8 +7,9 @@ class ProfileView {
     Anchor: string;
     fullNameGroup: string;
 
-    constructor( controller?: ProfileController) {
-        this.controller = controller;
+    //constructor(controller?: ProfileController) {
+    constructor() {
+        //this.controller = controller;
         //this.checkIconUrl = chrome.extension.getURL("img/check13.gif");
         this.Anchor = '.ProfileTweet-action--favorite';
         this.fullNameGroup = '.FullNameGroup';
@@ -71,6 +72,8 @@ class ProfileView {
                 $element.find('.js-tweet-text-container').hide();
                 $element.find('.QuoteTweet-container').hide();
                 $element.find('.AdaptiveMediaOuterContainer').hide();
+                $element.find('.card2').hide();
+                
             }
             if(this.controller.host.settings.twitterdistrust == "automute") {
                  $element.hide(); // Hide the tweet!
@@ -119,7 +122,7 @@ class ProfileView {
             let icon = new Identicon(profile.address, {margin:0.1, size:16, format: 'svg'});
             profile.identiconData16 = icon.toString();
             profile.time = Date.now();
-            profile.controller.save();
+            profile.getController().save();
         }
         iconData = profile.identiconData16;
 

@@ -16,7 +16,8 @@
         "identicon.js": "^2.3.1",
         "jquery": "^3.3.1",
         "lodash": "^4.17.11",
-        "popper.js": "^1.14.6"
+        "popper.js": "^1.14.6",
+        "vis": "^4.21.0"
     },
     "devDependencies": {
         "@types/angular": "^1.6.50",
