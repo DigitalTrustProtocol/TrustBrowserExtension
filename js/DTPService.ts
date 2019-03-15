@@ -3,7 +3,7 @@ import ISettings from './Settings.interface';
 import { SubjectQuery, QueryRequest, ModelPackage, TrustScope } from '../lib/dtpapi/model/models';
 import { PackageApi, QueryApi } from '../lib/dtpapi/api/api';
 import { QueryContext } from '../lib/dtpapi/model/models';
-import Profile = require('./Profile');
+import IProfile from './IProfile';
 
 
 class DTPService  {
@@ -18,7 +18,7 @@ class DTPService  {
         this.queryApi = new QueryApi(settings.infoserver);
     } 
 
-    Query (targets: Array<Profile>, scope: any) :JQueryPromise<QueryContext> {
+    Query (targets: Array<IProfile>, scope: any) :JQueryPromise<QueryContext> {
         let query = this.BuildQuery(targets, scope);
         if(query == null) {
             let deferred = $.Deferred();
@@ -29,7 +29,7 @@ class DTPService  {
         return this.queryApi.resolvePost(query);
     }
 
-    BuildQuery (targets: Array<Profile>, scope: any) : QueryRequest {
+    BuildQuery (targets: Array<IProfile>, scope: any) : QueryRequest {
         let subjects = new Array<SubjectQuery>();
         //targets.forEach((target, index) => {
         for (let key in targets) {

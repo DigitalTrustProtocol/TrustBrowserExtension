@@ -1,16 +1,17 @@
 declare var tce: any;
 import ProfileView = require('./ProfileView');
 import TrustStrategy = require('./TrustStrategy');
-import Profile = require('./Profile');
 import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import DTPIdentity = require('./Model/DTPIdentity');
 import Crypto = require('./Crypto');
 import TwitterService = require('./TwitterService');
 import ProfileRepository = require('./ProfileRepository');
+import IProfile from './IProfile';
+import Profile = require('./Profile');
 
 class ProfileController {
-    profile: Profile;
+    profile: IProfile;
     view: any;
     host: any;
     domElements: any[];
@@ -20,7 +21,7 @@ class ProfileController {
     selectedElement: JQuery<any>;
 
 
-    constructor(profile: Profile, view, host) { 
+    constructor(profile: IProfile, view, host) { 
         this.profile = profile;
         this.view = view;
         this.view.controller = this;
@@ -29,8 +30,8 @@ class ProfileController {
     }
 
     // Update data for the profile
-    update() : JQueryPromise<Profile> {
-        let deferred = $.Deferred<Profile>();
+    update() : JQueryPromise<IProfile> {
+        let deferred = $.Deferred<IProfile>();
 
         if(this.profile.owner) {
             deferred.resolve(this.profile);
@@ -161,7 +162,7 @@ class ProfileController {
     }
 
 
-    buildAndSubmitBinaryTrust (profile: Profile, value: any, expire: number) {
+    buildAndSubmitBinaryTrust (profile: IProfile, value: any, expire: number) {
         const self = this;
         let trustPackage = this.host.subjectService.BuildBinaryClaim(profile, value, null, expire);
         this.host.packageBuilder.SignPackage(trustPackage);
@@ -179,21 +180,21 @@ class ProfileController {
 
 
     // profile will usually be a deserialized neutral object
-   static addTo(profile: Profile, twitterService : any, domElement) : void {
-        if(!profile)
-            return;
-        try {
+//    static addTo(profile: IProfile, twitterService : any, domElement) : void {
+//         if(!profile)
+//             return;
+//         try {
             
-            if (!profile.getController()) {
-                profile.setController(new ProfileController(profile, new ProfileView(), twitterService));
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    profile.getController().domElements.push(domElement);
+//             if (!profile.controller) {
+//                 profile.controller = new ProfileController(profile, new ProfileView(), twitterService);
+//             }
+//         } catch (error) {
+//             console.log(error);
+//         }
+//         profile.controller.domElements.push(domElement);
 
-        $(domElement).data("dtp_profile", profile);
-    }
+//         $(domElement).data("dtp_profile", profile);
+//     }
 
     static bindEvents(element, profileRepository : ProfileRepository) : void {
             $(element).on('click', '.trustIcon',  (event) => {
@@ -203,23 +204,23 @@ class ProfileController {
                 //let screen_name = $(tweetContainer).attr("data-screen-name");
                 let userId = $(tweetContainer).attr("data-user-id");
                 let profile = profileRepository.ensureProfile(userId);
-                profile.getController().selectedElement = tweetContainer;
+                profile.controller.selectedElement = tweetContainer;
 
-                this.loadProfile(userId, profileRepository).then(function(profile: Profile) {
+                this.loadProfile(userId, profileRepository).then(function(profile: IProfile) {
                     if(button['classList'].contains('trust')) {
-                        profile.getController().trust().then(RemoveSpinner);
+                        profile.controller.trust().then(RemoveSpinner);
                     }
 
                     if(button['classList'].contains('distrust')) {
-                        profile.getController().distrust().then(RemoveSpinner);
+                        profile.controller.distrust().then(RemoveSpinner);
                     }
 
                     if(button['classList'].contains('untrust')) {
-                        profile.getController().untrust().then(RemoveSpinner);
+                        profile.controller.untrust().then(RemoveSpinner);
                     }
 
                     if(button['classList'].contains('follow')) {
-                        profile.getController().follow();
+                        profile.controller.follow();
                         RemoveSpinner();
                     }
 
@@ -238,8 +239,19 @@ class ProfileController {
 
   static loadProfile(id: string, profileRepository) {
         let profile = profileRepository.getProfile(id);
-        return profile.getController().update();
+        return profile.controller.update();
     }
+
+    static LoadCurrent(settings, profileRepository) : void {
+        Profile.Current = JSON.parse($("#init-data")[0]['value']);
+        if(settings.address) 
+            Profile.Current.owner = new DTPIdentity(settings.address, Crypto.Sign(settings.keyPair, Profile.Current.userId));
+
+        // let profile = profileRepository.ensureProfile(Profile.Current.userId);
+        // profile.owner =   Profile.Current.owner;
+        // profileRepository.setProfile(profile);
+    }
+
 
 }
 export = ProfileController

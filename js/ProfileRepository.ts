@@ -1,10 +1,11 @@
 /// TS_IGNORE
 import Profile = require('./Profile'); //declare var DTP: any;
 import DTPIdentity = require('./Model/DTPIdentity');
+import IProfile from './IProfile';
 class ProfileRepository {
     settings: any;
-    profiles: Array<Profile> = [];
-    index: Array<Profile> = [];
+    profiles: Array<IProfile> = [];
+    index: Array<IProfile> = [];
     storage: any;
     constructor(settings: any, storage: any) {
         this.settings = settings;
@@ -15,8 +16,8 @@ class ProfileRepository {
         return 'Twitter' + this.settings.address + id;
     }
 
-    getProfile(id: string): Profile {
-        let profile: Profile = this.profiles[id]; // Quick cache
+    getProfile(id: string): IProfile {
+        let profile: IProfile = this.profiles[id]; // Quick cache
         if (profile)
             return profile;
 
@@ -24,12 +25,13 @@ class ProfileRepository {
         if (!data) 
             return null;
 
-        profile = JSON.parse(data);
+        profile = new Profile(JSON.parse(data));
+
         this.profiles[id] = profile; // Save to quick cache
         return profile;
     }
 
-    setProfile(profile: Profile): void {
+    setProfile(profile: IProfile): void {
         this.profiles[profile.userId] = profile;
         try {
             let data = JSON.stringify(profile);
@@ -40,10 +42,10 @@ class ProfileRepository {
         }
     }
 
-    ensureProfile(id: string): Profile {
-        let profile : Profile = this.getProfile(id);
+    ensureProfile(id: string): IProfile {
+        let profile : IProfile = this.getProfile(id);
         if (!profile) {
-            profile = new Profile(id);
+            profile = new Profile({ userId: id} as IProfile) ;
             this.setProfile(profile);
             DTP['trace']('Profile ' + profile.userId + ' created');
         }
@@ -54,14 +56,14 @@ class ProfileRepository {
         this.settings = settings;
     }
 
-    getSessionProfiles(): Array<Profile> {
+    getSessionProfiles(): Array<IProfile> {
         return this.profiles;
     }
 
     // Get Profile by a index key
-    getProfileByIndex(key: string) : Profile
+    getProfileByIndex(key: string) : IProfile
     {
-        let profile: Profile = this.index[key]; // Quick cache
+        let profile: IProfile = this.index[key]; // Quick cache
         if (profile)
             return profile;
 
@@ -86,7 +88,7 @@ class ProfileRepository {
     }
 
     // Only store the profile id
-    setIndexKey(identity: DTPIdentity, profile: Profile): void {
+    setIndexKey(identity: DTPIdentity, profile: IProfile): void {
         this.index[identity.ID] = profile;
         identity.PlatformID = profile.userId;
         this.storage.setItem(this.getCacheKey(identity.ID), JSON.stringify(identity));

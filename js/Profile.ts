@@ -1,52 +1,33 @@
 import DTPIdentity = require("./Model/DTPIdentity");
 import Crypto = require("./Crypto");
 import ProfileController = require("./ProfileController");
+import IProfile from "./IProfile";
+import { jsonIgnoreReplacer, jsonIgnore } from 'json-ignore';
 
-/**
- * @enumerable decorator that sets the enumerable property of a class field to false.
- * @param value true|false
- */
-function enumerable(value: boolean) {
-    return function (target: any, propertyKey: string) {
-        let descriptor = Object.getOwnPropertyDescriptor(target, propertyKey) || {};
-        if (descriptor.enumerable != value) {
-            descriptor.enumerable = value;
-            descriptor.writable = true;
-            Object.defineProperty(target, propertyKey, descriptor)
-        }
-    };
-}
-class Profile {
+class Profile implements IProfile {
     static Current = null;
-    screen_name: string;
-    alias: string;
-    address: any;
-    scope: string;
-    owner: DTPIdentity;
-    userId: string;
-    biggerImage: string;
 
-    //@enumerable(false)
-    //controller: ProfileController;
+    public screen_name: string;
+    public alias: string;
+    public owner: DTPIdentity;
+    public userId: string;
+    public biggerImage: string;
 
-    constructor(id: string) { 
-        this.userId = id;
-        this.screen_name = id;
-        this.alias = id;
-        this.address = Crypto.Hash160(id).toDTPAddress(); // Convert id to DTP Address
-        this.scope = Profile.SimpleDomainFormat(window.location.hostname);
+    @jsonIgnore() public address: any;
+    @jsonIgnore() public scope: string;
+    @jsonIgnore() public controller: ProfileController;
 
+    constructor(source: IProfile) { 
+        Object.defineProperty(this, 'address', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'scope', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'controller', { enumerable: false, writable: true, value: null }); // No serialize to json!
-    }
 
-    getController() : ProfileController {
-        return this["controller"];
+        this.userId = source.userId;
+        this.screen_name = (source.screen_name) ? source.screen_name : source.userId;
+        this.alias = (source.alias) ? source.alias : source.userId;
+        this.address = Crypto.Hash160(this.userId).toDTPAddress(); // Convert id to DTP Address
+        this.scope = Profile.SimpleDomainFormat(window.location.hostname);
     }
-
-    setController(controller : ProfileController) {
-        this["controller"] = controller;
-    }
-
 
     static SimpleDomainFormat(host: string) : string {
         host = host.toLocaleLowerCase();
@@ -59,14 +40,5 @@ class Profile {
     }
 
 
-   static LoadCurrent(settings, profileRepository) : void {
-        Profile.Current = JSON.parse($("#init-data")[0]['value']);
-        if(settings.address) 
-            Profile.Current.owner = new DTPIdentity(settings.address, Crypto.Sign(settings.keyPair, Profile.Current.userId));
-
-        let profile = profileRepository.ensureProfile(Profile.Current.userId);
-        profile.owner =   Profile.Current.owner;
-        profileRepository.setProfile(profile);
-    }
 }
 export = Profile

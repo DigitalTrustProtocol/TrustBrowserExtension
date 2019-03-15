@@ -39,7 +39,7 @@ class TrustStrategy  {
                     continue; // No Profile found, wait for now
                 }
                 
-                let trustResult = profile.getController().binaryTrustResult;
+                let trustResult = profile.controller.binaryTrustResult as BinaryTrustResult;
 
                 if(trustResult.time != checkTime) {
                     trustResult.Clean(); // Reset the trustResult
@@ -63,6 +63,8 @@ class TrustStrategy  {
                     trustResult.direct = true;
                     trustResult.directValue = claim.value;
                 }
+
+                trustResult.state = trustResult.trust - trustResult.distrust;
             }
         }
     }

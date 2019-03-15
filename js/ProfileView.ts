@@ -122,7 +122,7 @@ class ProfileView {
             let icon = new Identicon(profile.address, {margin:0.1, size:16, format: 'svg'});
             profile.identiconData16 = icon.toString();
             profile.time = Date.now();
-            profile.getController().save();
+            profile.controller.save();
         }
         iconData = profile.identiconData16;
 

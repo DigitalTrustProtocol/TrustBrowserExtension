@@ -2,7 +2,6 @@ declare var Identicon: any;
 declare var tce: any;
 declare var DTP: any;
 
-import Profile = require('./Profile');
 import ProfileController= require('./ProfileController');
 import ProfileView = require('./ProfileView');
 import ProfileRepository= require('./ProfileRepository');
@@ -16,6 +15,8 @@ import  TrustStrategy = require('./TrustStrategy')
 import DTPService = require('./DTPService');
 import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
+import IProfile from './IProfile';
+import Profile = require('./Profile');
    
 class  Twitter {
        OwnerPrefix: string;
@@ -27,7 +28,7 @@ class  Twitter {
        twitterService: any;
        profileRepository: ProfileRepository;
        waiting: boolean;
-       profilesToQuery: Array<Profile> = [];
+       profilesToQuery: Array<IProfile> = [];
 
         constructor(settings, packageBuilder, subjectService, dtpService: DTPService, twitterService, profileRepository: ProfileRepository) {
            
@@ -48,11 +49,6 @@ class  Twitter {
             var userID = element.attributes["data-user-id"].value;
         
             let profile = this.profileRepository.ensureProfile(userID);
-            if(!(profile instanceof Profile)) {
-                profile = new Profile(userID);
-                this.profileRepository.setProfile(profile);
-                DTP['trace']('Profile ' + profile.userId + ' created');
-            }
 
             profile.screen_name = element.attributes["data-screen-name"].value;
             profile.alias = element.attributes["data-name"].value;
@@ -66,13 +62,19 @@ class  Twitter {
             
             console.log('screen_name: '+ profile.screen_name + ' - ' + profile.alias);
 
-            ProfileController.addTo(profile, this, element);
+            //ProfileController.addTo(profile, this, element);
+            if (!profile.controller) {
+                profile.controller = new ProfileController(profile, new ProfileView(), this);
+            }
+            profile.controller.domElements.push(element);
+
+            $(element).data("dtp_profile", profile);
             
             // Add profile to query on server
             this.profilesToQuery[profile.userId] = profile;
     
-            //if(profile.getController().queryContext) // Only render if there is a result!
-            //    profile.getController().render(element);
+            //if(profile.controller.queryContext) // Only render if there is a result!
+            //    profile.controller.render(element);
         }
 
         getTweets() : JQLite {
@@ -80,7 +82,7 @@ class  Twitter {
             return tweets;
         }
 
-        queryDTP(profiles: Array<Profile>): void {
+        queryDTP(profiles: Array<IProfile>): void {
             this.dtpService.Query(profiles, window.location.hostname).then((result : QueryContext) => {
                 DTP['trace'](JSON.stringify(result, null, 2));
 
@@ -91,13 +93,18 @@ class  Twitter {
                 for(let key in profiles) {
                     if (!profiles.hasOwnProperty(key))
                         continue;                               
-
-                    let profile = profiles[key];
-                    profile.getController().twitterUserAction();
-                    profile.getController().render();
-                    //profile.getController().save(); // Why?
+                    try {
+                        let profile = profiles[key] as IProfile;
+                        profile.controller.twitterUserAction();
+                        profile.controller.render();
+                            
+                    } catch (error) {
+                        console.log(error);
+                    }
+                    //profile.controller.save(); // Why?
                 }
             }).fail(() => {
+                console.log("Error in queryDTP");
                 // TODO: Write a error handler
             });
         }
@@ -120,7 +127,7 @@ class  Twitter {
         ready (doc: Document): void {
             $(doc).ready( () =>{
 
-                Profile.LoadCurrent(this.settings, this.profileRepository);
+                ProfileController.LoadCurrent(this.settings, this.profileRepository);
 
                 var tweets = this.getTweets();
 
