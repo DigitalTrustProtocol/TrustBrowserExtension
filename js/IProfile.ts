@@ -6,10 +6,9 @@ export default interface IProfile {
     userId: string;
     screen_name: string;
     alias: string;
-    address: any;
     biggerImage: string;
     owner: DTPIdentity;
-    @jsonIgnore() public address: any;
-    @jsonIgnore() public scope: string;
-    @jsonIgnore() public controller: ProfileController;
+    address: any;
+    scope: string;
+    controller: ProfileController;
 }

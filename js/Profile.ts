@@ -13,9 +13,9 @@ class Profile implements IProfile {
     public userId: string;
     public biggerImage: string;
 
-    @jsonIgnore() public address: any;
-    @jsonIgnore() public scope: string;
-    @jsonIgnore() public controller: ProfileController;
+    public address: any;
+    public scope: string;
+    public controller: ProfileController;
 
     constructor(source: IProfile) { 
         Object.defineProperty(this, 'address', { enumerable: false, writable: true, value: null }); // No serialize to json!
