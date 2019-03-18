@@ -8,6 +8,7 @@ class PackageBuilder {
    static CONFIRM_TRUST_DTP1: string = "confirm.trust.dtp1";
    static RATING_TRUST_DTP1: string = "rating.trust.dtp1";
    static IDENTITY_DTP1: string = "identity.dtp1";
+   static ID_IDENTITY_DTP1: string = "id.identity.dtp1";
    static ALIAS_IDENTITY_DTP1: string = "alias.identity.dtp1";
    static IDENTITY_TYPE_NAME = "name";
    static IDENTITY_TYPE_ID = "id";
@@ -47,6 +48,12 @@ class PackageBuilder {
     {
         return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.ALIAS_IDENTITY_DTP1, scope, value, activate, expire, note);
     }
+
+    CreateIDIdentityClaim (issuer, script, subject, value : string, scope, activate, expire, note? : string) : Claim
+    {
+        return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.ID_IDENTITY_DTP1, scope, value, activate, expire, note);
+    }
+
 
     CreateClaim (issuer: any, script, subject, subjectType, type, scope, value: string, activate, expire, note? : string) : Claim {
         if(typeof scope != 'string')

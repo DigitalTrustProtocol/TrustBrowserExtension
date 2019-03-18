@@ -9,6 +9,7 @@ import TwitterService = require('./TwitterService');
 import ProfileRepository = require('./ProfileRepository');
 import IProfile from './IProfile';
 import Profile = require('./Profile');
+import ISettings from './Settings.interface';
 
 class ProfileController {
     profile: IProfile;
@@ -17,7 +18,6 @@ class ProfileController {
     domElements: any[];
     blocked: boolean;
     following: boolean = false;
-    binaryTrustResult : BinaryTrustResult = new BinaryTrustResult();
     selectedElement: JQuery<any>;
 
 
@@ -42,7 +42,7 @@ class ProfileController {
                         if(Crypto.Verify(owner, this.profile.userId)) {
                             this.profile.owner = owner;
                             this.save();
-                            this.host.profileRepository.setIndexKey(owner.ID, this.profile); // Save an index to the profile
+                            this.host.profileRepository.setIndexKey(this.profile); // Save an index to the profile
                         }
                     } catch(error) {
                         DTP['trace'](error); // Catch it if Crypto.Verify fails!
@@ -113,13 +113,13 @@ class ProfileController {
     }
 
     twitterUserAction () {
-        if(!this.binaryTrustResult)
+        if(!this.profile.binaryTrustResult)
             return;
 
         if(location.href.indexOf(this.profile.screen_name) >= 0) 
             return; // Ignore the profile page for now
     
-        if(this.binaryTrustResult.state > 0) {
+        if(this.profile.binaryTrustResult.state > 0) {
             if(this.host.settings.twittertrust == "autofollow") {
                 this.follow();
             }
@@ -127,7 +127,7 @@ class ProfileController {
         }
 
 
-        if(this.binaryTrustResult.state < 0) {
+        if(this.profile.binaryTrustResult.state < 0) {
 
             if(this.blocked || this.domElements.length == 0)
                 return;
@@ -237,21 +237,36 @@ class ProfileController {
         return $(element).closest('div.tweet'); //.attr("data-screen-name");
     }
 
-  static loadProfile(id: string, profileRepository) {
+  static loadProfile(id: string, profileRepository : ProfileRepository) : JQueryPromise<IProfile> {
         let profile = profileRepository.getProfile(id);
-        return profile.controller.update();
+        if(profile != null)
+            return profile.controller.update();
+        return null;
     }
 
-    static LoadCurrent(settings, profileRepository) : void {
-        Profile.Current = JSON.parse($("#init-data")[0]['value']);
-        if(settings.address) 
-            Profile.Current.owner = new DTPIdentity(settings.address, Crypto.Sign(settings.keyPair, Profile.Current.userId));
+    static loadCurrentUserProfile(settings: ISettings, profileRepository: ProfileRepository) : void {
+        const initData = $("#init-data")[0];
+        const user = JSON.parse(initData['value']);
 
-        // let profile = profileRepository.ensureProfile(Profile.Current.userId);
-        // profile.owner =   Profile.Current.owner;
-        // profileRepository.setProfile(profile);
+        const source = { 
+            userId: user.userId, 
+            screen_name: user.screen_name,
+            alias: user.displayName,
+            formAuthenticityToken: user.formAuthenticityToken
+        }
+
+        Profile.CurrentUser = profileRepository.ensureProfile(user.userId) as Profile;
+        Profile.CurrentUser.update(source as IProfile);
+        
+        if(settings.address) {
+            Profile.CurrentUser.owner = new DTPIdentity( { ID: settings.address, Proof: Crypto.Sign(settings.keyPair, user.userId)});
+            profileRepository.setProfile(Profile.CurrentUser);
+        }
+
+        if(!Profile.CurrentUser.biggerImage) {
+            //this.loadProfile(Profile.CurrentUser.userId, profileRepository);
+        }
     }
-
-
 }
+
 export = ProfileController

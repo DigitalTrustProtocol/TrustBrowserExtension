@@ -8,10 +8,12 @@ import SubjectService = require('./SubjectService');
 import ISettings from './Settings.interface';
 import Crypto = require('./Crypto');
 import IProfile from './IProfile.js';
-import vis = require('vis');
+import ProfileRepository = require('./ProfileRepository');
+import BinaryTrustResult = require('./Model/BinaryTrustResult');
+import vis2 = require('vis');
 
 declare var Identicon: any;
-//declare var vis: any;
+declare var vis: any;
 
 class ExtensionpopupController {
 
@@ -32,7 +34,7 @@ class ExtensionpopupController {
 
         });
     }
-
+    
     modelChange(state?: string) {
         if (state === 'identicon') {
             var identicon = new Identicon(this.settings.address, { margin: 0.1, size: 64, format: 'svg' }).toString();
@@ -49,6 +51,19 @@ class ExtensionpopupController {
         this.settingsController.buildKey(this.settings);
     }
 
+}
+
+class memoryStorage {
+
+    private cache : Array<any> = [];
+
+    setItem(key: string, data: any) {
+        this.cache[key] = data;
+    }
+
+    getItem(key: string) : any {
+        return this.cache[key];
+    }
 }
 
 class TrustListController {
@@ -69,6 +84,9 @@ class TrustListController {
     defaultScope;
     json;
     trustData: string;
+    network: any;
+    profileRepository: ProfileRepository;
+
     //static $inject = [];
     //static $inject = ['$scope'];
     //$apply: any;
@@ -82,112 +100,24 @@ class TrustListController {
         this.settingsController = new SettingsController();
         this.settingsController.loadSettings((settings) => {
             this.settings = settings;
+            this.profileRepository = new ProfileRepository(this.settings, new memoryStorage());
             this.packageBuilder = new PackageBuilder(settings);
             this.subjectService = new SubjectService(settings, this.packageBuilder);
             this.dtpService = new DTPService(settings);
 
             this.addListeners();
-            this.requestProfile(null); // Default 
+            this.requestData(null); // Default 
         })
 
     }
 
-    // Called when the Visualization API is loaded.
-    draw(profile: IProfile) {
-        // create people.
-        // value corresponds with the age of the person
-        var elon = 5;
-        var DJNightStar = 2;
-        var Knud = 6;
-
-        var DIR = 'http://visjs.org/examples/network/img/indonesia/';
-        let nodes2 = [
-            //{ id: 1, shape: 'circularImage', image: DIR + '1.png', label: "*Keutmann*\n_@jdfjdkd_\n(you)", color: { border: 'green' }, x: 0, y: 0, physics: false },
-            { id: DJNightStar, shape: 'circularImage', image: DIR + '2.png', label: "*DJNightStar*\n_@djnight_", color: { border: 'green' } },
-            { id: 3, shape: 'circularImage', image: DIR + '3.png', label: "*Hans Hansen*\n_@hansgunnersen_", color: { border: 'green' } },
-            { id: 4, shape: 'circularImage', image: DIR + '4.png', label: "*Jens Ole*\n_@banana_", color: { border: 'red' } },
-            { id: Knud, shape: 'circularImage', image: DIR + '6.png', label: "*Knud*\n_@Knud_", color: { border: 'green' } },
-            { id: 7, shape: 'circularImage', image: DIR + '7.png', label: "*Sigmundfunny*\n_@Multiguid_", color: { border: 'red' } },
-            { id: elon, shape: 'circularImage', image: DIR + '5.png', label: "*Elon Musk*\n_@elon_" },
-            { id: 8, shape: 'circularImage', image: profile.biggerImage, label: '*'+profile.alias+'*\n_@'+profile.screen_name+'_', color: { border: 'green' } }
-            // {id: 8,  shape: 'circularImage', image: DIR + '8.png'},
-            // {id: 9,  shape: 'circularImage', image: DIR + '9.png'},
-            // {id: 10, shape: 'circularImage', image: DIR + '10.png'},
-            // {id: 11, shape: 'circularImage', image: DIR + '11.png'},
-            // {id: 12, shape: 'circularImage', image: DIR + '12.png'},
-            // {id: 13, shape: 'circularImage', image: DIR + '13.png'},
-            // {id: 14, shape: 'circularImage', image: DIR + '14.png'},
-            //{id: 15, shape: 'circularImage', image: DIR + 'missing.png', brokenImage: DIR + 'missingBrokenImage.png', label:"when images\nfail\nto load"},
-            //{id: 16, shape: 'circularImage', image: DIR + 'anotherMissing.png', brokenImage: DIR + '9.png', label:"fallback image in action"}
-        ];
-        
-        
-
-        // create connections between people
-        // value corresponds with the amount of contact between two people
-
-        let edges = [
-            { from: 8, to: DJNightStar },
-            { from: DJNightStar, to: 3 },
-            { from: DJNightStar, to: 4 },
-            { from: 3, to: elon },
-            { from: 4, to: elon },
-
-            { from: 8, to: Knud },
-            { from: Knud, to: 7 },
-            { from: 7, to: elon },
-        ];
-
-        // create a network
-        let container = document.getElementById('networkContainer');
-        var data = {
-            nodes: nodes2,
-            edges: edges
-        };
-        var options = {
-            layout: {
-                hierarchical: {
-                    direction: "LR",
-                    sortMethod: "directed"
-                }
-            },
-            interaction:
-             { 
-                 dragNodes: false,
-                 hover: false
-            },
-            physics: {
-                enabled: false
-            },
-            nodes: {
-                borderWidth: 4,
-                size: 20,
-                color: {
-                    border: '#222222',
-                    background: '#ffffff'
-                },
-                shadow: true,
-                font: {
-                    color: '#000000',
-                    multi: 'md'
-                }
-            },
-            edges: {
-                arrows: { to: true },
-                shadow: true
-
-            }        };
-        let network = new vis.Network(container, data, options);
-    }
-
-    requestProfile(profile_name) {
+    requestData(profile: string) {
         console.log("RequestData send to background page");
-        chrome.runtime.sendMessage({ command: 'requestData', profile_name: null }, (response) => {
+        chrome.runtime.sendMessage({ command: 'requestData', profile_name: profile }, (response) => {
             console.log("RequestData response from background page");
             console.log(response);
             console.log('tabid', response.contentTabId)
             this.contentTabId = response.contentTabId;
-
             this.loadOnData(response.data);
         });
 
@@ -211,14 +141,140 @@ class TrustListController {
             });
     }
 
-    loadOnData(profile: IProfile) {
+    loadOnData(source: any) {
         //this.trustHandler = new TrustStrategy(profile.controller.queryContext, this.settings);
         //this.trustHandler.BuildSubjects();
 
         //this.load(profile);
-        this.draw(profile);
-
+        this.network = this.buildNetwork(source);
     }
+
+    buildNetwork(source: any) : any {
+
+        (<BinaryTrustResult>source.binaryTrustResult).profiles.forEach((profile) => {
+            this.profileRepository.setProfile(profile);
+        });
+
+        var graph = {
+            nodes: [],
+            edges: []
+        };
+        
+        this.buildNodes(source.selectedProfile, source.currentUser, null, source.binaryTrustResult, graph);
+        let options = this.buildOptions();
+        let container = document.getElementById('networkContainer');
+
+        let nn = new vis2.Network(container, graph, options);
+        return nn;
+    }
+
+
+    buildNodes(profile: IProfile, currentUser: IProfile, claim: any, binaryTrustResult: BinaryTrustResult, graph: any) : void {
+        var node = {
+            id: profile.userId,
+            image: (profile.biggerImage) ? profile.biggerImage : 'chrome-extension://__MSG_@@extension_id__/img/Neutral24a.png',
+            label: '*'+profile.alias+'*\n_@'+profile.screen_name+'_',
+        }
+        
+        if(claim != null) {
+            let claimValue = (claim.value === "true" || claim.value === "1");
+            node["color"] = { 
+                border: (claimValue) ? 'green' : 'red'
+            };
+        }
+        
+        graph.nodes.push(node)
+
+        if(profile.userId == currentUser.userId)
+            return; // Stop with oneself
+
+        if(!binaryTrustResult.queryContext)
+            return;
+
+        binaryTrustResult.queryContext.results.claims.forEach((claim) => {
+            if(claim.type != PackageBuilder.BINARY_TRUST_DTP1)
+                return;
+            if(claim.subject.id != profile.userId) 
+                return;
+
+            let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
+            if(parentProfile == null)  {
+                console.log("Unknown issuer ID: "+ claim.issuer.id);
+                return; //
+            }
+
+            let edge = { from: parentProfile.userId, to: profile.userId };
+            graph.edges.push(edge);
+
+            this.buildNodes(parentProfile, currentUser, claim, binaryTrustResult, graph);
+        });
+    }
+
+    buildOptions() : any {
+        var options = {
+            layout: {
+                hierarchical: {
+                    direction: "LR",
+                    sortMethod: "directed"
+                }
+            },
+            interaction:
+             { 
+                 dragNodes: false,
+                 hover: false
+            },
+            physics: {
+                enabled: false
+            },
+            nodes: {
+                shape: 'circularImage',
+                borderWidth: 4,
+                size: 20,
+                color: {
+                    border: '#222222',
+                    background: '#ffffff'
+                },
+                shadow: true,
+                font: {
+                    color: '#000000',
+                    multi: 'md'
+                }
+            },
+            edges: {
+                arrows: { to: true },
+                shadow: true
+
+            }        
+        };
+        return options;
+    }
+
+
+    update() : JQueryPromise<IProfile> {
+        let deferred = $.Deferred<IProfile>();
+
+        // if(this.profile.owner) {
+        //     deferred.resolve(this.profile);
+        // } else {
+        //     this.host.twitterService.getProfileDTP(this.profile.userId).then((owner: DTPIdentity) => {
+        //         if(owner != null) {
+        //             try {
+        //                 if(Crypto.Verify(owner, this.profile.userId)) {
+        //                     this.profile.owner = owner;
+        //                     this.save();
+        //                     this.host.profileRepository.setIndexKey(owner.ID, this.profile); // Save an index to the profile
+        //                 }
+        //             } catch(error) {
+        //                 DTP['trace'](error); // Catch it if Crypto.Verify fails!
+        //             }
+        //         }
+        //         deferred.resolve(this.profile);
+        //     });
+        // }
+
+        return deferred.promise();
+    }
+
 
     // reset() {
     //     this.subject = null;

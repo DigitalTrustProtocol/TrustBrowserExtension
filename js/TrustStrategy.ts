@@ -3,6 +3,9 @@ import ISettings from './Settings.interface';
 import { ModelPackage,QueryContext, Claim } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import ProfileRepository = require('./ProfileRepository');
+import Profile = require('./Profile');
+import IProfile from './IProfile';
+import DTPIdentity = require('./Model/DTPIdentity');
 
 
 class TrustStrategy  {
@@ -18,55 +21,85 @@ class TrustStrategy  {
         this.profileRepository = profileRepository;
     }
 
-    ProcessResult(queryContext : QueryContext) {
+    ProcessResult(queryContext : QueryContext) : BinaryTrustResult {
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
             return;
 
         const checkTime = Math.round(Date.now()/1000.0);
         
         let claims = queryContext.results.claims;
-        for(let key in claims) {
-            if (!claims.hasOwnProperty(key))
-                continue;            
+        let subjectIndex: Array<string> = [];
 
-            let claim = claims[key];
-            if(claim.type === PackageBuilder.BINARY_TRUST_DTP1) {
-                let profile = this.profileRepository.getProfile(claim.subject.id);
-                if(profile == null) 
-                    profile = this.profileRepository.getProfileByIndex(claim.subject.id);
+        claims.forEach((claim) => {
+            if(claim.type != PackageBuilder.ID_IDENTITY_DTP1)
+                return;
                 
-                if(profile == null) {
-                    continue; // No Profile found, wait for now
-                }
+            subjectIndex[claim.subject.id] = claim; // Subject is a DTP ID, value is the local ID
+        });
+
+
+        claims.forEach((claim) => {
+            if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
+                return;
+
+            let subjectId = subjectIndex[claim.subject.id];
+            if(!subjectId) // Undefined
+                subjectId = claim.subject.id;
+
+            let profile = this.profileRepository.getProfile(subjectId); // Id can be user id or a DTP id
+            if(profile == null) {
+                if(subjectId == claim.subject.id)
+                    return; // The profile do not exist! No data on who the claim is about.
+
                 
-                let trustResult = profile.controller.binaryTrustResult as BinaryTrustResult;
-
-                if(trustResult.time != checkTime) {
-                    trustResult.Clean(); // Reset the trustResult
-                    trustResult.time = checkTime; // Set check time
-                    trustResult.queryContext = queryContext;
-                }
-
-                const exists = (claim.issuer.id in trustResult.claims);
-                if(exists)
-                    continue; // There are already one claim for the subject
-
-                trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
-
-                if(claim.value === "true" || claim.value === "1")
-                    trustResult.trust++;
-                else
-                    trustResult.distrust++;
-                                // IssuerAddress is base64
-                if(claim.issuer.id == this.settings.address)
-                {
-                    trustResult.direct = true;
-                    trustResult.directValue = claim.value;
-                }
-
-                trustResult.state = trustResult.trust - trustResult.distrust;
+                // Create a new profile, but do not load its DTP data
+                // The profile should not be a subject as they are all known!(?)
+                let data = { 
+                    userId: subjectId, // Should be local id
+                    screen_name: 'Unknown', 
+                    alias: claim.subject.id, // Should be DTP ID
+                    //owner: new DTPIdentity({ID:claim.subject.id}) // Proof are missing, verify later if needed!
+                 };
+                profile = new Profile(data);
+                //this.profileRepository.setProfile(profile);
             }
-        }
+
+            // Make sure that an owner is added if missing and a ID identity claim is available.
+            if(!profile.owner && subjectId != claim.subject.id) {
+                profile.owner = new DTPIdentity({ID:claim.subject.id}); // Proof are missing, verify later if needed!
+                this.profileRepository.setProfile(profile);
+            }
+
+            let trustResult = profile.binaryTrustResult as BinaryTrustResult;
+
+            if(trustResult.time != checkTime) {
+                trustResult.Clean(); // Reset the trustResult
+                trustResult.time = checkTime; // Set check time
+                trustResult.queryContext = queryContext;
+            }
+
+            const exists = (claim.issuer.id in trustResult.claims);
+            if(exists)
+                return; // There are already one claim for the subject
+
+            trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
+
+            if(claim.value === "true" || claim.value === "1")
+                trustResult.trust++;
+            else
+                trustResult.distrust++;
+                            // IssuerAddress is base64
+            if(claim.issuer.id == this.settings.address)
+            {
+                trustResult.direct = true;
+                trustResult.directValue = claim.value;
+            }
+
+            trustResult.state = trustResult.trust - trustResult.distrust;
+        
+            // Issuer is always DTP ID, add reference to the issuer profile.
+            trustResult.profiles.push(this.profileRepository.getProfileByIndex(claim.issuer.id));
+        });
     }
 
     // BuildSubjects() {

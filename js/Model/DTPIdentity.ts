@@ -1,12 +1,12 @@
 class DTPIdentity {
     public ID: string;
-    public Proof: string;
+    public Proof: any;
     public PlatformID: string;
 
-    constructor(id:string, proof:string) {
-        this.ID = id;
-        this.Proof = proof;
-
+    constructor(source: any) {
+        this.ID = source.ID ;
+        this.Proof = source.Proof;
+        this.PlatformID = source.PlatformID;
     }
 }
 export = DTPIdentity

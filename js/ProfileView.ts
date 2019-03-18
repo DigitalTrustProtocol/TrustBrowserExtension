@@ -1,6 +1,10 @@
 import ProfileController = require("./ProfileController");
+import Profile = require("./Profile");
+import IProfile from "./IProfile";
+import Identicon = require('identicon.js');
+import Crypto = require("./Crypto");
 
-declare var Identicon: any;
+//declare var Identicon: any;
 declare var tce: any;
 class ProfileView {
     public controller: ProfileController;
@@ -54,9 +58,9 @@ class ProfileView {
         bar.distrust.$a.removeClass("distrustIconActive").addClass("trustIconPassive");
         bar.distrust.$span.text('');
 
-        if(!this.controller.binaryTrustResult)
+        if(!this.controller.profile.binaryTrustResult)
             return;
-        let result = this.controller.binaryTrustResult;
+        let result = this.controller.profile.binaryTrustResult;
 
         if (result.state > 0) {
             bar.trust.$a.removeClass("trustIconPassive").addClass("trustIconActive");
@@ -116,23 +120,38 @@ class ProfileView {
         });
     }
 
-    createIdenticon(profile) {
+    createIdenticon(profile: IProfile) {
         let iconData = null;
         if(!profile.identiconData16) {
-            let icon = new Identicon(profile.address, {margin:0.1, size:16, format: 'svg'});
+            //let hash = Crypto.Hash160(profile.userId).toBase64();
+            let hash = Crypto.Hash160(profile.userId).toDTPAddress();
+            let icon = new Identicon(hash, {margin:0.1, size:16, format: 'svg'}); // Need min 15 chars
             profile.identiconData16 = icon.toString();
-            profile.time = Date.now();
+            //profile.time = Date.now();
             profile.controller.save();
         }
         iconData = profile.identiconData16;
 
-        let $icon = $('<a title="'+profile.screen_name+'" href="javascript:void 0" title"'+ profile.address +'"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
+        let $icon = $('<a title="'+profile.screen_name+'" href="javascript:void 0"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
         $icon.data("dtp_profile", profile);
+
         $icon.click(function() {
+            let selectedProfile = $(this).data('dtp_profile');
+
+            //let p = selectedProfile.
+            //let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
+
+            let dialogData = {
+                currentUser: Profile.CurrentUser,
+                selectedProfile: selectedProfile,
+                binaryTrustResult: selectedProfile.binaryTrustResult
+                
+            };
+    
             var opt = {
                 command:'openDialog',
                  url: 'trustlist.html',
-                 data: $(this).data('dtp_profile')
+                 data: dialogData 
              };
              opt['w'] = 800;
              opt['h'] = 800;

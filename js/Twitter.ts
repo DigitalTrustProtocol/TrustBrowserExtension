@@ -9,9 +9,9 @@ import dtpService = require('./DTPService');
 import ISettings from './Settings.interface';
 import SettingsController = require('./SettingsController');
 import SubjectService = require('./SubjectService')
-import  PackageBuilder = require('./PackageBuilder');
-import  TwitterService = require('./TwitterService');
-import  TrustStrategy = require('./TrustStrategy')
+import PackageBuilder = require('./PackageBuilder');
+import TwitterService = require('./TwitterService');
+import TrustStrategy = require('./TrustStrategy')
 import DTPService = require('./DTPService');
 import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
@@ -95,9 +95,11 @@ class  Twitter {
                         continue;                               
                     try {
                         let profile = profiles[key] as IProfile;
+                        if(!profile.controller)
+                            continue;
                         profile.controller.twitterUserAction();
                         profile.controller.render();
-                            
+                        
                     } catch (error) {
                         console.log(error);
                     }
@@ -110,8 +112,8 @@ class  Twitter {
         }
 
        tweetDTP (): void {
-            let status = 'Digital Trust Protocol #DTP \ID:' +  Profile.Current.owner.ID
-                         + ' \rProof:' + Profile.Current.owner.Proof.toBase64();
+            let status = 'Digital Trust Protocol #DTP \ID:' +  Profile.CurrentUser.owner.ID
+                         + ' \rProof:' + Profile.CurrentUser.owner.Proof.toBase64();
             let data = {
                 batch_mode:'off',
                 is_permalink_page:false,
@@ -127,7 +129,7 @@ class  Twitter {
         ready (doc: Document): void {
             $(doc).ready( () =>{
 
-                ProfileController.LoadCurrent(this.settings, this.profileRepository);
+                ProfileController.loadCurrentUserProfile(this.settings, this.profileRepository);
 
                 var tweets = this.getTweets();
 

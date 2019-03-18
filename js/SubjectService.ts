@@ -107,16 +107,16 @@ class SubjectService  {
                 trustpackage.claims.push(ownerClaim);
 
             if(!this.isNullOrWhitespace(profile.screen_name)) { 
-                let aliasClaim = this.packageBuilder.CreateAliasIdentityClaim(
+                let idClaim = this.packageBuilder.CreateIDIdentityClaim(
                     this.settings.address,
                     this.SCRIPT, 
                     profile.owner.ID,
-                    profile.screen_name,
+                    profile.userId,
                     profile.scope,
                     0,
                     expire);
 
-                    trustpackage.claims.push(aliasClaim);
+                    trustpackage.claims.push(idClaim);
             }
         }
         return trustpackage;

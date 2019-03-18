@@ -37,7 +37,7 @@ class DTPService  {
                 continue;            
             let target = targets[key];
             
-            let subject = <SubjectQuery>{ address: (target.userId) ? target.userId : target.address };
+            let subject = <SubjectQuery>{ address: target.userId };
             subjects.push(subject);
             if(target.owner && target.owner.ID) {
                 let owner = <SubjectQuery>{ address: target.owner.ID };
@@ -61,7 +61,7 @@ class DTPService  {
             // Claim made about the subject. The format is specified by the version property in the header section.
             "types": [
                 "binary.trust.dtp1",
-                "alias.identity.dtp1"
+                "id.identity.dtp1"
               ],
             "level": 0, // Use default level search (0)
             //"flags": "LeafsOnly"

@@ -1,4 +1,5 @@
 import { QueryContext } from "../../lib/dtpapi/model/models";
+import IProfile from "../IProfile";
 
 class BinaryTrustResult {
     public direct : boolean = false;
@@ -9,9 +10,12 @@ class BinaryTrustResult {
     public claims: Array<any> = [];
     public time: number;
     public queryContext: QueryContext;
+    public profiles: Array<IProfile> = []
 
 
     public Clean() {
+        Object.defineProperty(this, 'claims', { enumerable: false, writable: true, value: null }); // No serialize to json!
+
         this.direct = false;
         this.directValue = 0;
         this.trust = 0;

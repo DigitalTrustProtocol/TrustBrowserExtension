@@ -16,7 +16,7 @@ class ProfileRepository {
         return 'Twitter' + this.settings.address + id;
     }
 
-    getProfile(id: string): IProfile {
+    getProfileDirect(id: string): IProfile {
         let profile: IProfile = this.profiles[id]; // Quick cache
         if (profile)
             return profile;
@@ -31,21 +31,29 @@ class ProfileRepository {
         return profile;
     }
 
+    getProfile(id: string): IProfile {
+        let profile = this.getProfileDirect(id);
+        if(profile == null) 
+            profile = this.getProfileByIndex(id);
+
+        return profile;
+    }
+
     setProfile(profile: IProfile): void {
         this.profiles[profile.userId] = profile;
-        try {
-            let data = JSON.stringify(profile);
-            this.storage.setItem(this.getCacheKey(profile.userId), data);
-            
-        } catch (error) {
-            console.log(error);
+        let data = JSON.stringify(profile);
+        this.storage.setItem(this.getCacheKey(profile.userId), data);
+
+        if(profile.owner) {
+            this.setIndexKey(profile);
         }
     }
 
-    ensureProfile(id: string): IProfile {
+    ensureProfile(id: string, source?: any): IProfile {
         let profile : IProfile = this.getProfile(id);
         if (!profile) {
-            profile = new Profile({ userId: id} as IProfile) ;
+            const data = (source) ? source : { userId: id};
+            profile = new Profile(data);
             this.setProfile(profile);
             DTP['trace']('Profile ' + profile.userId + ' created');
         }
@@ -88,10 +96,10 @@ class ProfileRepository {
     }
 
     // Only store the profile id
-    setIndexKey(identity: DTPIdentity, profile: IProfile): void {
-        this.index[identity.ID] = profile;
-        identity.PlatformID = profile.userId;
-        this.storage.setItem(this.getCacheKey(identity.ID), JSON.stringify(identity));
+    setIndexKey(profile: IProfile): void {
+        this.index[profile.owner.ID] = profile;
+        profile.owner.PlatformID = profile.userId;
+        this.storage.setItem(this.getCacheKey(profile.owner.ID), JSON.stringify(profile.owner));
     }
 
 

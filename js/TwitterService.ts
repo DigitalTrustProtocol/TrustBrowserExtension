@@ -42,7 +42,7 @@ class TwitterService{
 
        let id = text['findSubstring']('ID:', ' ', true, true);
        let proof = text['findSubstring']('Proof:', ' ', true, true); 
-       return new DTPIdentity(id, proof);
+       return new DTPIdentity({ID:id, Proof: proof});
    }
 
    getData (path: string, dataType: any) : JQueryPromise<any> {
@@ -78,8 +78,8 @@ class TwitterService{
        var deferred = $.Deferred<any>();
 
        let url = this.BaseUrl + path;
-       //let postData = 'authenticity_token=' + DTP.Profile.Current.formAuthenticityToken + '&' + data;
-       data.authenticity_token = Profile.Current.formAuthenticityToken;
+       //let postData = 'authenticity_token=' + DTP.Profile.CurrentUser.formAuthenticityToken + '&' + data;
+       data.authenticity_token = Profile.CurrentUser.formAuthenticityToken;
 
        $.ajax({
            type: "POST",
