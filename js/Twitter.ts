@@ -112,8 +112,9 @@ class  Twitter {
         }
 
        tweetDTP (): void {
-            let status = 'Digital Trust Protocol #DTP \ID:' +  Profile.CurrentUser.owner.ID
-                         + ' \rProof:' + Profile.CurrentUser.owner.Proof.toBase64();
+            let status = 'Digital Trust Protocol #DTP ID:' +  Profile.CurrentUser.owner.ID
+                         + ' \rProof:' + Profile.CurrentUser.owner.Proof.toBase64()
+                         + ' \rUserID:'+ Profile.CurrentUser.userId;
             let data = {
                 batch_mode:'off',
                 is_permalink_page:false,
