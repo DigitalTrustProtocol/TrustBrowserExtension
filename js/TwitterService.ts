@@ -4,6 +4,7 @@ import ProfileView = require('./ProfileView');
 import ISettings from './Settings.interface';
 import DTPIdentity = require('./Model/DTPIdentity');
 import IProfile from './IProfile';
+import Crypto = require('./Crypto');
 
 class TwitterService {
     settings: ISettings;
@@ -16,6 +17,7 @@ class TwitterService {
     getProfileDTP(profile: IProfile): JQueryPromise<DTPIdentity> {
         let deferred = $.Deferred<DTPIdentity>();
         let url = '/search?f=tweets&q=%23DTP%20ID%20Proof%20UserID:' + profile.userId
+        // /search?l=&q=%23DTP%20ID%20Proof%20UserID%3A22551796%20OR%20UserID%3A1002660175277363200&src=typd
         if (profile.screen_name) {
             url += '%20from%3A' + profile.screen_name;
         }
@@ -23,8 +25,8 @@ class TwitterService {
 
         this.getData(url, 'html').then((html: string) => {
 
-            let $body = $(html);
-            let tweets = $body.find(null)
+            //let $body = $(html);
+            //let tweets = $body.find(null)
             let result = this.extractDTP(html);
 
             deferred.resolve(result);
@@ -32,6 +34,47 @@ class TwitterService {
 
         return deferred.promise();
     }
+
+    getProfilesDTP(profiles : Array<IProfile>) : JQueryPromise<string>
+    {
+        let deferred = $.Deferred<string>();
+
+        let keywords = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
+        let path = '/search?l=&q=%23DTP%20ID%20Proof%20'+ keywords.join('%20OR%20') + '&src=typd';
+
+        this.getData(path, 'html').then((html: string) => {
+            deferred.resolve(html);
+        }).fail((error) => deferred.fail(error));
+
+        return deferred.promise();
+    }
+
+    updateProfiles(html: string, profiles : Array<IProfile>) : number {
+        let $document = $(html);
+        let count = 0;
+
+        profiles.forEach((profile) => {
+            let $tweet = $document.find('div.tweet[data-user-id="22551796"]')
+            if($tweet.length == 0)
+                return;
+
+            let owner = this.extractDTP($tweet.html());
+
+            try {
+                if(Crypto.Verify(owner, profile.userId)) {
+                    profile.owner = owner;
+                    profile.biggerImage = $tweet.find('img.avatar').attr('src');
+                    count ++;
+                }
+            } catch(error) {
+                DTP['trace'](error); // Catch it if Crypto.Verify fails!
+            }
+        });
+
+        return count;
+    }
+    
+
 
     extractDTP(html: any): DTPIdentity {
         let content = html.findSubstring('<div class="js-tweet-text-container">', '</div>');
@@ -48,7 +91,7 @@ class TwitterService {
 
         let id = text['findSubstring']('ID:', ' ', true, true);
         let proof = text['findSubstring']('Proof:', ' ', true, true);
-        // We may need an image!
+
         return new DTPIdentity({ ID: id, Proof: proof });
     }
 

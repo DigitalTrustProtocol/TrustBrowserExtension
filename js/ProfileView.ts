@@ -5,7 +5,6 @@ import Identicon = require('identicon.js');
 import Crypto = require("./Crypto");
 
 //declare var Identicon: any;
-declare var tce: any;
 class ProfileView {
     public controller: ProfileController;
     Anchor: string;

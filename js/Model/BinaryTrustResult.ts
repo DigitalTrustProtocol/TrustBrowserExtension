@@ -8,7 +8,7 @@ class BinaryTrustResult {
     public distrust: number = 0;
     public state: number = 0;
     public claims: Array<any> = [];
-    public time: number;
+    public time: number = 0;
     public queryContext: QueryContext;
     public profiles: Array<IProfile> = []
 

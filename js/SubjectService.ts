@@ -1,4 +1,3 @@
-declare var tce: any;
 import ISettings from './Settings.interface';
 import ISubject from './SubjectInterface';
 import PackageBuilder = require('./PackageBuilder');

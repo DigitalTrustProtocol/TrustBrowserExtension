@@ -1,4 +1,3 @@
-declare var tce: any;
 import ProfileView = require('./ProfileView');
 import TrustStrategy = require('./TrustStrategy');
 import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
@@ -54,6 +53,7 @@ class ProfileController {
 
         return deferred.promise();
     }
+
 
     save () {
         this.host.profileRepository.setProfile(this.profile);
@@ -242,30 +242,6 @@ class ProfileController {
         if(profile != null)
             return profile.controller.update();
         return null;
-    }
-
-    static loadCurrentUserProfile(settings: ISettings, profileRepository: ProfileRepository) : void {
-        const initData = $("#init-data")[0];
-        const user = JSON.parse(initData['value']);
-
-        const source = { 
-            userId: user.userId, 
-            screen_name: user.screen_name,
-            alias: user.displayName,
-            formAuthenticityToken: user.formAuthenticityToken
-        }
-
-        Profile.CurrentUser = profileRepository.ensureProfile(user.userId) as Profile;
-        Profile.CurrentUser.update(source as IProfile);
-        
-        if(settings.address) {
-            Profile.CurrentUser.owner = new DTPIdentity( { ID: settings.address, Proof: Crypto.Sign(settings.keyPair, user.userId)});
-            profileRepository.setProfile(Profile.CurrentUser);
-        }
-
-        if(!Profile.CurrentUser.biggerImage) {
-            //this.loadProfile(Profile.CurrentUser.userId, profileRepository);
-        }
     }
 }
 

@@ -7,6 +7,7 @@ export default interface ISettings  {
     infoserver: string;
     twitterdistrust: string;
     twittertrust: string;
-    keyPair?: string;
+    keyPair?: any;
     address?: string;
+    hash:any;
 }

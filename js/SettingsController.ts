@@ -1,5 +1,8 @@
- declare var tce: any;
- import ISettings from './Settings.interface';
+
+import ISettings from './Settings.interface';
+import Crypto = require('./Crypto');
+import bitcoin = require('bitcoinjs-lib');
+
  class SettingsController {
     settings: ISettings
     constructor(){
@@ -38,11 +41,12 @@
 
    public buildKey(settings) {
         let keystring = settings.password + settings.seed;
-        let hash = tce.bitcoin.crypto.hash256(keystring);
-        let d = tce.BigInteger.fromBuffer(hash)
-        
-        settings.keyPair = new tce.bitcoin.ECPair(d)
-        settings.address = settings.keyPair.getAddress();
+        let hash = Crypto.Hash256(keystring);
+                
+        settings.keyPair = bitcoin.ECPair.fromPrivateKey(hash);
+
+        const { address } = bitcoin.payments.p2pkh({ pubkey: settings.keyPair.publicKey });
+        settings.address = address;
         return settings.keyPair;
     }
 }

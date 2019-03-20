@@ -1,5 +1,3 @@
-declare var Identicon: any;
-declare var tce: any;
 declare var DTP: any;
 
 import ProfileController= require('./ProfileController');
@@ -17,6 +15,10 @@ import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import IProfile from './IProfile';
 import Profile = require('./Profile');
+import Crypto = require('./Crypto');
+import DTPIdentity = require('./Model/DTPIdentity');
+import bitcoin = require('bitcoinjs-lib');
+import bitcoinMessage = require('bitcoinjs-message');
    
 class  Twitter {
        OwnerPrefix: string;
@@ -25,10 +27,11 @@ class  Twitter {
        targets: any[];
        packageBuilder: any;
        dtpService: DTPService;
-       twitterService: any;
+       twitterService: TwitterService;
        profileRepository: ProfileRepository;
        waiting: boolean;
        profilesToQuery: Array<IProfile> = [];
+    
 
         constructor(settings, packageBuilder, subjectService, dtpService: DTPService, twitterService, profileRepository: ProfileRepository) {
            
@@ -82,6 +85,20 @@ class  Twitter {
             return tweets;
         }
 
+        updateProfiles(profiles: Array<IProfile>) : JQueryPromise<Array<IProfile>> {
+            let deferred = $.Deferred<Array<IProfile>>();
+    
+            this.twitterService.getProfilesDTP(profiles).then((html: string) => {
+               
+                this.twitterService.updateProfiles(html, profiles);
+                this.profileRepository.setProfiles(profiles);
+                
+                deferred.resolve(profiles);
+            });
+    
+            return deferred.promise();
+        }
+
         queryDTP(profiles: Array<IProfile>): void {
             this.dtpService.Query(profiles, window.location.hostname).then((result : QueryContext) => {
                 DTP['trace'](JSON.stringify(result, null, 2));
@@ -113,7 +130,7 @@ class  Twitter {
 
        tweetDTP (): void {
             let status = 'Digital Trust Protocol #DTP ID:' +  Profile.CurrentUser.owner.ID
-                         + ' \rProof:' + Profile.CurrentUser.owner.Proof.toBase64()
+                         + ' \rProof:' + Profile.CurrentUser.owner.Proof
                          + ' \rUserID:'+ Profile.CurrentUser.userId;
             let data = {
                 batch_mode:'off',
@@ -127,10 +144,31 @@ class  Twitter {
             });
         }
 
+        loadCurrentUserProfile() : void {
+            const initData = $("#init-data")[0];
+            const user = JSON.parse(initData['value']);
+    
+            const source = { 
+                userId: user.userId, 
+                screen_name: user.screenName,
+                alias: user.fullName,
+                formAuthenticityToken: user.formAuthenticityToken
+            }
+    
+            Profile.CurrentUser = this.profileRepository.ensureProfile(user.userId) as Profile;
+            Profile.CurrentUser.update(source);
+            if(Profile.CurrentUser.owner == null) 
+               this.updateProfiles([Profile.CurrentUser]);
+
+
+             Profile.CurrentUser.owner = new DTPIdentity( { ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId) });
+             console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
+        }
+
         ready (doc: Document): void {
             $(doc).ready( () =>{
 
-                ProfileController.loadCurrentUserProfile(this.settings, this.profileRepository);
+                this.loadCurrentUserProfile();
 
                 var tweets = this.getTweets();
 
@@ -179,6 +217,31 @@ class  Twitter {
         updateContent(): void {
             this.queryDTP(this.profileRepository.getSessionProfiles());
         }
+
+        loadProfiles(ids : Array<string>): Array<IProfile> {
+            let profiles = ids.map((id) => {  return this.profileRepository.ensureProfile(id); });
+            
+            this.updateProfiles(profiles);
+            
+            return profiles;
+        }
+
+        addListener() : void {
+            chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+                if (request.command === 'updateContent') {
+                    this.updateContent();
+                    return;
+                }
+
+                if (request.command === 'loadProfiles') {
+                    let profiles = this.loadProfiles(request.data.profileIDs);
+                    sendResponse({ profiles: profiles });
+                    return;
+                }
+
+            });
+        }
+
 }
 
 // Start application
@@ -192,12 +255,7 @@ settingsController.loadSettings( (settings: ISettings) =>{
 
     let twitter = new Twitter(settings, packageBuilder, subjectService, dtpService, twitterService, profileRepository);
 
-    // Update the content when trust changes on the Trustlist.html popup
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.command === 'updateContent') {
-            twitter.updateContent();
-        }
-    });
+    twitter.addListener();
     
     twitter.ready(document);
 });

@@ -26,7 +26,7 @@ class ProfileRepository {
             return null;
 
         profile = new Profile(JSON.parse(data));
-
+            
         this.profiles[id] = profile; // Save to quick cache
         return profile;
     }
@@ -35,7 +35,7 @@ class ProfileRepository {
         let profile = this.getProfileDirect(id);
         if(profile == null) 
             profile = this.getProfileByIndex(id);
-
+    
         return profile;
     }
 
@@ -47,6 +47,12 @@ class ProfileRepository {
         if(profile.owner) {
             this.setIndexKey(profile);
         }
+    }
+
+    setProfiles(profiles: Array<IProfile>): void {
+        profiles.forEach((profile) => {
+            this.setProfile(profile);
+        });
     }
 
     ensureProfile(id: string, source?: any): IProfile {

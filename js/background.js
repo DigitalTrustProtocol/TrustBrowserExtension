@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             else
                 SendMessageToDialog('showTarget', profileData, contentTabId);
         });
-        return;
+        return true;
     }
 
     // Waiting for the request of data from the Popup
@@ -24,14 +24,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // Response with the profile data to the popup
         sendResponse({ data: profileData, contentTabId: contentTabId });
         chrome.windows.update(popupWindow.id, {focused:true });
+        return true;
     }
 
     // Waiting for the request to update the client window after new trust has been issued.
     if (request.command === 'updateContent') {
         // Send message to the client window
-        chrome.tabs.sendMessage(request.contentTabId, request, function(result) {
+        chrome.tabs.sendMessage(request.tabId, request, function(result) {
             console.log(result);
         });
+        return true;
+    }
+
+    if (request.command) {
+        chrome.tabs.sendMessage(request.tabId, request, function(result) {
+            sendResponse(result);
+        });
+        return true;
     }
 
     return false;

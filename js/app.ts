@@ -11,8 +11,11 @@ import IProfile from './IProfile.js';
 import ProfileRepository = require('./ProfileRepository');
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import vis2 = require('vis');
+import Profile = require('./Profile.js');
+import Identicon = require('identicon.js');
 
-declare var Identicon: any;
+
+//declare var Identicon: any;
 declare var vis: any;
 
 class ExtensionpopupController {
@@ -111,18 +114,6 @@ class TrustListController {
 
     }
 
-    requestData(profile: string) {
-        console.log("RequestData send to background page");
-        chrome.runtime.sendMessage({ command: 'requestData', profile_name: profile }, (response) => {
-            console.log("RequestData response from background page");
-            console.log(response);
-            console.log('tabid', response.contentTabId)
-            this.contentTabId = response.contentTabId;
-            this.loadOnData(response.data);
-        });
-
-    }
-
     addListeners() {
         console.log("Adding Listener for calls from the background page.");
         chrome.runtime.onMessage.addListener(
@@ -141,26 +132,58 @@ class TrustListController {
             });
     }
 
-    loadOnData(source: any) {
-        //this.trustHandler = new TrustStrategy(profile.controller.queryContext, this.settings);
-        //this.trustHandler.BuildSubjects();
+    requestData(profile: string) {
+        console.log("RequestData send to background page");
+        chrome.runtime.sendMessage({ command: 'requestData', tabId: this.contentTabId, profile_name: profile }, (response) => {
+            console.log("RequestData response from background page");
+            console.log(response);
+            console.log('tabid', response.contentTabId)
+            this.contentTabId = response.contentTabId;
+            this.loadOnData(response.data);
+        });
+    }
 
-        //this.load(profile);
+    loadProfiles(ids: Array<string>) : JQueryPromise<IProfile> {
+        let deferred = $.Deferred<IProfile>();
+
+        console.log("RequestData send to background page");
+        chrome.runtime.sendMessage({ command: 'loadProfiles', tabId: this.contentTabId, profileIDs: ids }, (response) => {
+            console.log("RequestData response from background page");
+            console.log(response);
+            console.log('tabid', response.contentTabId)
+            deferred.resolve(response.data.profiles);
+        });
+
+        return deferred.promise();
+    }
+
+
+    
+
+    loadOnData(source: any) {
         this.network = this.buildNetwork(source);
     }
 
     buildNetwork(source: any) : any {
 
-        (<BinaryTrustResult>source.binaryTrustResult).profiles.forEach((profile) => {
+        // First load all the profiles in locally
+        let trustResult = <BinaryTrustResult>source.binaryTrustResult;
+        trustResult.profiles.forEach((profile) => {
             this.profileRepository.setProfile(profile);
         });
+        this.profileRepository.setProfile(source.selectedProfile);
+        this.profileRepository.setProfile(source.currentUser);
+
+        // Then process the claims agaist the profiles
+        let trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
+        trustStrategy.ProcessResult(trustResult.queryContext);
 
         var graph = {
             nodes: [],
             edges: []
         };
         
-        this.buildNodes(source.selectedProfile, source.currentUser, null, source.binaryTrustResult, graph);
+        this.buildNodes(source.selectedProfile, source.currentUser, null, graph);
         let options = this.buildOptions();
         let container = document.getElementById('networkContainer');
 
@@ -169,10 +192,17 @@ class TrustListController {
     }
 
 
-    buildNodes(profile: IProfile, currentUser: IProfile, claim: any, binaryTrustResult: BinaryTrustResult, graph: any) : void {
-        var node = {
+    buildNodes(profile: IProfile, currentUser: IProfile, claim: any, graph: any) : void {
+
+        if(!profile.biggerImage) {
+            let hash = Crypto.Hash160(profile.userId).toDTPAddress();
+            let icon = new Identicon(hash, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
+            profile.biggerImage = icon.toString();
+        }
+
+        let node = {
             id: profile.userId,
-            image: (profile.biggerImage) ? profile.biggerImage : 'chrome-extension://__MSG_@@extension_id__/img/Neutral24a.png',
+            image: profile.biggerImage,
             label: '*'+profile.alias+'*\n_@'+profile.screen_name+'_',
         }
         
@@ -188,26 +218,24 @@ class TrustListController {
         if(profile.userId == currentUser.userId)
             return; // Stop with oneself
 
-        if(!binaryTrustResult.queryContext)
+        if(!profile.binaryTrustResult)
             return;
 
-        binaryTrustResult.queryContext.results.claims.forEach((claim) => {
-            if(claim.type != PackageBuilder.BINARY_TRUST_DTP1)
-                return;
-            if(claim.subject.id != profile.userId) 
-                return;
+        for(let key in profile.binaryTrustResult.claims) {
+            let claim = profile.binaryTrustResult.claims[key];
+            // if(claim.type != PackageBuilder.BINARY_TRUST_DTP1)
+            //     return;
 
+            // if(claim.subject.id != profile.userId) 
+            //     return;
+
+            // There should always be a profile, even if it just been created by the TrustStrategy class
             let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
-            if(parentProfile == null)  {
-                console.log("Unknown issuer ID: "+ claim.issuer.id);
-                return; //
-            }
 
-            let edge = { from: parentProfile.userId, to: profile.userId };
-            graph.edges.push(edge);
+            graph.edges.push({ from: parentProfile.userId, to: profile.userId });
 
-            this.buildNodes(parentProfile, currentUser, claim, binaryTrustResult, graph);
-        });
+            this.buildNodes(parentProfile, currentUser, claim, graph);
+        }
     }
 
     buildOptions() : any {

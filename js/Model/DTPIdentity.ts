@@ -1,7 +1,7 @@
 class DTPIdentity {
     public ID: string;
-    public Proof: any;
-    public PlatformID: string;
+    public Proof: string;
+    public PlatformID: any;
 
     constructor(source: any) {
         this.ID = source.ID ;

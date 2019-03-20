@@ -21,7 +21,7 @@ class TrustStrategy  {
         this.profileRepository = profileRepository;
     }
 
-    ProcessResult(queryContext : QueryContext) : BinaryTrustResult {
+    ProcessResult(queryContext : QueryContext) : void {
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
             return;
 
@@ -36,7 +36,6 @@ class TrustStrategy  {
                 
             subjectIndex[claim.subject.id] = claim; // Subject is a DTP ID, value is the local ID
         });
-
 
         claims.forEach((claim) => {
             if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
@@ -57,19 +56,22 @@ class TrustStrategy  {
                 let data = { 
                     userId: subjectId, // Should be local id
                     screen_name: 'Unknown', 
-                    alias: claim.subject.id, // Should be DTP ID
+                    alias: '', // Should be DTP ID
                     //owner: new DTPIdentity({ID:claim.subject.id}) // Proof are missing, verify later if needed!
                  };
                 profile = new Profile(data);
-                //this.profileRepository.setProfile(profile);
+                this.profileRepository.setProfile(profile);
             }
 
             // Make sure that an owner is added if missing and a ID identity claim is available.
             if(!profile.owner && subjectId != claim.subject.id) {
                 profile.owner = new DTPIdentity({ID:claim.subject.id}); // Proof are missing, verify later if needed!
                 this.profileRepository.setProfile(profile);
-            }
+            } 
 
+            if(!profile.binaryTrustResult)
+                profile.binaryTrustResult = new BinaryTrustResult();
+                
             let trustResult = profile.binaryTrustResult as BinaryTrustResult;
 
             if(trustResult.time != checkTime) {
@@ -98,7 +100,9 @@ class TrustStrategy  {
             trustResult.state = trustResult.trust - trustResult.distrust;
         
             // Issuer is always DTP ID, add reference to the issuer profile.
-            trustResult.profiles.push(this.profileRepository.getProfileByIndex(claim.issuer.id));
+            let issuerProfile = this.profileRepository.getProfileByIndex(claim.issuer.id);
+            if(issuerProfile)
+                trustResult.profiles.push(issuerProfile);
         });
     }
 

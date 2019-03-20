@@ -1,21 +1,36 @@
 import DTPIdentity = require("./Model/DTPIdentity");
-
-declare var tce: any;
+import bitcoin = require('bitcoinjs-lib');
+import bitcoinMessage = require('bitcoinjs-message');
+import { Buffer } from 'buffer';
 
 class Crypto {
-    static Sign(keyPair: any, data: string) : string
+    static Sign(keyPair: any, message: string) : any
     {
-        return tce.bitcoin.message.sign(keyPair,   data);
+        return bitcoinMessage.sign(message, keyPair.privateKey, keyPair.compressed);
     }
 
-    static Verify(dtpIdentity: DTPIdentity, message): boolean
+    static Verify(dtpIdentity: DTPIdentity, message: string): boolean
     {
-        return tce.bitcoin.message.verify(dtpIdentity.ID, dtpIdentity.Proof, message);
+        return bitcoinMessage.verify(message, dtpIdentity.ID, dtpIdentity.Proof);
     }
     
-    static Hash160(text: string) : any {
-        return tce.bitcoin.crypto.hash160(new tce.buffer.Buffer(text, 'UTF8'));
+    static Hash160(data: any) : any {
+        if(typeof data === 'string')
+            data = new Buffer(data, 'UTF8');
+        return bitcoin.crypto.hash160(data);
+    }
+
+    static Hash256(data: any) : any {
+        if(typeof data === 'string')
+            data = new Buffer(data, 'UTF8');
+
+        return Crypto.Sha256(Crypto.Sha256(data));
+    }
+
+    static Sha256(data: any) : any {
+        if(typeof data === 'string')
+            data = new Buffer(data, 'UTF8');
+        return bitcoin.crypto.sha256(data);
     }
 }
-
 export = Crypto

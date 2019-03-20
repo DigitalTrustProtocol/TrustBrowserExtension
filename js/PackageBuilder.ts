@@ -1,7 +1,11 @@
-import './common.js';
 import { ModelPackage, Claim, IssuerIdentity, SubjectIdentity } from "../lib/dtpapi/model/models";
+import { Buffer } from 'buffer';
+import Crypto = require("./Crypto");
 
-declare var tce: any;
+Buffer.prototype.toJSON = function() {
+    return this.toString('base64');
+}
+
 class PackageBuilder {
    settings: any;
    static BINARY_TRUST_DTP1: string = "binary.trust.dtp1";
@@ -88,8 +92,10 @@ class PackageBuilder {
     }
 
     SignClaim (claim) : void {
-        //claim.issuer.signature = this.settings.keyPair.signCompact(id);
-        claim.issuer.signature = tce.bitcoin.message.sign(this.settings.keyPair, claim.id.base64ToBuffer());
+        let claimId = (typeof claim.id === 'string') ? claim.id : claim.id.toString('base64');
+        let buf = Crypto.Sign(this.settings.keyPair, claimId);
+        let sig = [...buf];
+        claim.issuer.signature = sig;
     }
 
     CalculateClaimId (claim : Claim) : void {
@@ -100,7 +106,7 @@ class PackageBuilder {
                 return;
 
             if(typeof value === 'string')
-                buffers.push(new tce.buffer.Buffer(value));
+                buffers.push(new Buffer(value));
             else
                 buffers.push(value);
         }
@@ -112,8 +118,8 @@ class PackageBuilder {
         
 
         function addInt32LE(value : number) {
-            let buf = new tce.buffer.Buffer(4);
-            buf.writeInt32LE(value);
+            let buf = new Buffer(4);
+            buf.writeInt32LE(value, 0, true);
             addBuffer(buf);
         }
        
@@ -149,8 +155,8 @@ class PackageBuilder {
         addInt32LE(claim.activate);
         addInt32LE(claim.expire);
 
-        let data = tce.buffer.Buffer.concat(buffers);
-        claim.id = tce.bitcoin.crypto.hash256(data); 
+        let data = Buffer.concat(buffers);
+        claim.id = Crypto.Hash256(data); 
     }
 }
 export = PackageBuilder
