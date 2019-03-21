@@ -3,6 +3,7 @@ import bitcoin = require('bitcoinjs-lib');
 import bitcoinMessage = require('bitcoinjs-message');
 import { Buffer } from 'buffer';
 
+
 class Crypto {
     static Sign(keyPair: any, message: string) : any
     {
@@ -32,5 +33,12 @@ class Crypto {
             data = new Buffer(data, 'UTF8');
         return bitcoin.crypto.sha256(data);
     }
+
+    static toDTPAddress = function (buf: Buffer, prefix?: number) : string {
+        prefix = prefix || 30; // dtp2K prefix is 5101629, 4 bytes Uint32LE
+        return bitcoin.address.toBase58Check(buf, prefix);
+    } 
+    
 }
+
 export = Crypto

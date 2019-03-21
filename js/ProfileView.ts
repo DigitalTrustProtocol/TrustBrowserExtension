@@ -1,3 +1,4 @@
+import './common.js';
 import ProfileController = require("./ProfileController");
 import Profile = require("./Profile");
 import IProfile from "./IProfile";
@@ -123,7 +124,7 @@ class ProfileView {
         let iconData = null;
         if(!profile.identiconData16) {
             //let hash = Crypto.Hash160(profile.userId).toBase64();
-            let hash = Crypto.Hash160(profile.userId).toDTPAddress();
+            let hash = Crypto.toDTPAddress(Crypto.Hash160(profile.userId));
             let icon = new Identicon(hash, {margin:0.1, size:16, format: 'svg'}); // Need min 15 chars
             profile.identiconData16 = icon.toString();
             //profile.time = Date.now();

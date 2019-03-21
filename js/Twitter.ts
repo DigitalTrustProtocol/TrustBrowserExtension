@@ -89,7 +89,7 @@ class  Twitter {
             let deferred = $.Deferred<Array<IProfile>>();
     
             this.twitterService.getProfilesDTP(profiles).then((html: string) => {
-               
+                
                 this.twitterService.updateProfiles(html, profiles);
                 this.profileRepository.setProfiles(profiles);
                 
@@ -161,7 +161,7 @@ class  Twitter {
                this.updateProfiles([Profile.CurrentUser]);
 
 
-             Profile.CurrentUser.owner = new DTPIdentity( { ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId) });
+             Profile.CurrentUser.owner = new DTPIdentity( { ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
              console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
         }
 

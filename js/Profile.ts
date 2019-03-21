@@ -37,7 +37,6 @@ class Profile implements IProfile {
         this.userId = source.userId;
         this.screen_name = (source.screen_name) ? source.screen_name : source.userId;
         this.alias = (source.alias) ? source.alias : source.userId;
-        //this.address = Crypto.Hash160(this.userId).toDTPAddress(); // TODO: used anymore?
         this.identiconData16 = source.identiconData16;
         this.scope = Profile.SimpleDomainFormat(window.location.hostname);
         this.formAuthenticityToken = (source.formAuthenticityToken) ? source.formAuthenticityToken: null;

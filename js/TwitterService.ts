@@ -39,8 +39,9 @@ class TwitterService {
     {
         let deferred = $.Deferred<string>();
 
-        let keywords = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
-        let path = '/search?l=&q=%23DTP%20ID%20Proof%20'+ keywords.join('%20OR%20') + '&src=typd';
+        let userIds = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
+        let froms = profiles.map((profile)=>{ return profile.screen_name;});
+        let path = '/search?f=tweets&q=ID%20Proof%20'+ userIds.join('%20OR%20') +'%20%23DTP%20' + froms.join('%20OR%20') +'&src=typd';
 
         this.getData(path, 'html').then((html: string) => {
             deferred.resolve(html);
@@ -54,21 +55,40 @@ class TwitterService {
         let count = 0;
 
         profiles.forEach((profile) => {
-            let $tweet = $document.find('div.tweet[data-user-id="22551796"]')
-            if($tweet.length == 0)
-                return;
+            let $tweets = $document.find('div.tweet[data-user-id="'+ profile.userId +'"]')
+            let done = false;
 
-            let owner = this.extractDTP($tweet.html());
+            $tweets.each((index, element) => {
+                if(done)
+                    return;
 
-            try {
-                if(Crypto.Verify(owner, profile.userId)) {
-                    profile.owner = owner;
-                    profile.biggerImage = $tweet.find('img.avatar').attr('src');
-                    count ++;
+                let $tweet = $(element);
+
+                let owner = this.extractDTP($tweet.html());
+                if(owner.PlatformID != profile.userId) {
+                    console.log("Invalid userID in tweet!");
+                    return;
                 }
-            } catch(error) {
-                DTP['trace'](error); // Catch it if Crypto.Verify fails!
-            }
+
+                try {
+                    if(Crypto.Verify(owner, profile.userId)) {
+                        if(profile.owner && profile.owner.ID != owner.ID)  
+                        {
+                            console.log("DTP Owner is not the same as tweeted")
+                            return;
+                        }
+                        profile.owner = owner;
+                        profile.biggerImage = $tweet.find('img.avatar').attr('src');
+                        count ++;
+                        done= true;
+                    }
+                } catch(error) {
+                    DTP['trace'](error); // Catch it if Crypto.Verify fails!
+                }
+    
+            });
+            
+            
         });
 
         return count;
@@ -91,8 +111,9 @@ class TwitterService {
 
         let id = text['findSubstring']('ID:', ' ', true, true);
         let proof = text['findSubstring']('Proof:', ' ', true, true);
+        let userId = text['findSubstring']('UserID:', ' ', true, true);
 
-        return new DTPIdentity({ ID: id, Proof: proof });
+        return new DTPIdentity({ ID: id, Proof: proof, PlatformID: userId });
     }
 
     getData(path: string, dataType: any): JQueryPromise<any> {

@@ -5,7 +5,6 @@ import Crypto = require("./Crypto");
 Buffer.prototype.toJSON = function() {
     return this.toString('base64');
 }
-
 class PackageBuilder {
    settings: any;
    static BINARY_TRUST_DTP1: string = "binary.trust.dtp1";

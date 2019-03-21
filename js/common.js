@@ -1,41 +1,9 @@
+
 var DTP = {};
 
 DTP.trace = function (message) {
     console.log(message);
 };
-
-// Code for reddit
-// function ParseTrustMe(a) {
-//     var user = null;
-//     if (a instanceof HTMLAnchorElement) {
-//         user = CreateTarget(a.text);
-
-//         if (a.search) {
-//             var pairs = a.search.substring(1).split('&');
-//             for (var i = 0; i < pairs.length; i++) {
-//                 var kv = pairs[i].split('=');
-//                 var val = decodeURIComponent(kv[1].replace(/\+/g, ' '));
-//                 user[kv[0].toLowerCase()] = val;
-//             }
-//         }
-//     }
-//     else if (a instanceof String) {
-//         user = CreateTarget(a);
-//     }
-//     var $proof = $("a[href*='&scope=reddit']:contains('Proof')").first();
-//     if ($proof.length > 0) {
-//         var href = $proof.attr("href").split("&");
-//         for (key in href) {
-//             var part = href[key];
-//             var p = part.split("=");
-//             user[p[0]] = p[1];
-//         }
-//     }
-
-//     user.address = GetTargetAddress(user);
-
-//     return user;
-// }
 
 // function GetTargetAddress(target) {
 //     var address = (target.id) ? GetAddress(target.id, target.sig, target.content) :
@@ -48,30 +16,25 @@ DTP.trace = function (message) {
 // }
 
 
-tce.buffer.Buffer.prototype.toJSON = function() {
-    return this.toString('base64');
-}
+// tce.buffer.Buffer.prototype.toJSON = function() {
+//     return this.toString('base64');
+// }
 
 
 
-tce.buffer.Buffer.prototype.base64ToBuffer = function () {
-    return this;
-}
+// tce.buffer.Buffer.prototype.base64ToBuffer = function () {
+//     return this;
+// }
 
 String.prototype.base64ToBuffer = function() {
     return new tce.buffer.Buffer(this.toString(), 'base64');
 }
 
 
-tce.buffer.Buffer.prototype.toAddress = function (prefix) {
-    prefix = prefix || 0;
-    return tce.bitcoin.address.toBase58Check(this, prefix);
-}
-
-tce.buffer.Buffer.prototype.toDTPAddress = function (prefix) {
-    prefix = prefix || 30; // dtp2K prefix is 5101629, 4 bytes Uint32LE
-    return tce.bitcoin.address.toBase58Check(this, prefix);
-}
+// tce.buffer.Buffer.prototype.toAddress = function (prefix) {
+//     prefix = prefix || 0;
+//     return tce.bitcoin.address.toBase58Check(this, prefix);
+// }
 
 
 String.prototype.toAddress = function() {
@@ -82,9 +45,9 @@ String.prototype.toDTPAddress = function() {
     return this.base64ToBuffer().toDTPAddress();
 }
 
-tce.buffer.Buffer.prototype.toBase64 = function () {
-    return this.toString('base64');
-}
+// tce.buffer.Buffer.prototype.toBase64 = function () {
+//     return this.toString('base64');
+// }
 
 String.prototype.toBase64 = function() {
     return this;

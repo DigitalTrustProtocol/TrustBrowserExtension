@@ -13,10 +13,10 @@ import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import vis2 = require('vis');
 import Profile = require('./Profile.js');
 import Identicon = require('identicon.js');
+import { Buffer } from 'buffer';
 
 
-//declare var Identicon: any;
-declare var vis: any;
+
 
 class ExtensionpopupController {
 
@@ -195,7 +195,7 @@ class TrustListController {
     buildNodes(profile: IProfile, currentUser: IProfile, claim: any, graph: any) : void {
 
         if(!profile.biggerImage) {
-            let hash = Crypto.Hash160(profile.userId).toDTPAddress();
+            let hash = Crypto.toDTPAddress(Crypto.Hash160(profile.userId));
             let icon = new Identicon(hash, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
             profile.biggerImage = icon.toString();
         }
