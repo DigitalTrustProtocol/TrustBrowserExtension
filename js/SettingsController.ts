@@ -2,11 +2,15 @@
 import ISettings from './Settings.interface';
 import Crypto = require('./Crypto');
 import bitcoin = require('bitcoinjs-lib');
+import localforage = require('localforage');
 
  class SettingsController {
-    settings: ISettings
-    constructor(){
+    settings: ISettings;
+    context: any;
 
+    constructor(context: any){
+        this.context = context;
+    
         // initialize settings with default value
          this.settings = {
             "password": '',
@@ -17,26 +21,45 @@ import bitcoin = require('bitcoinjs-lib');
             "twittertrust": 'noaction',
             "identicon" : ""
         } as ISettings;
+
+        Object.defineProperty(this.settings, 'keyPair', { enumerable: false, writable: true, value: null }); // No serialize to json!
+
     }
     saveSettings (settings: ISettings){
         if (settings.rememberme) {
-            settings.keyPair = undefined;
-            chrome.storage.local.set({ usersettings: settings }, () => {
-                this.buildKey(settings);
-                console.log('Settings saved');
+            //settings.keyPair = undefined;
+            // localforage.setItem('key', 'value', function (err) {
+            //     // if err is non-null, we got an error
+            //     localforage.getItem('key', function (err, value) {
+            //       // if err is non-null, we got an error. otherwise, value is the value
+            //     });
+            //   });
+            //this.buildKey(settings);
 
+            let obj = {};
+            obj[this.getCacheKey("Settings")] = settings;
+
+            chrome.storage.local.set(obj, () => {
+                console.log('Settings saved');
             });
         }
     }
 
     loadSettings (cb) {
-        chrome.storage.local.get('usersettings', (result) => {
-            console.log('storage',result.usersettings );
+        const key = this.getCacheKey("Settings");
+        chrome.storage.local.get(key, (result) => {
+            console.log('storage',result[key] );
             console.log('crmethod',this.settings );
-            let settings: ISettings = (result.usersettings) ? result.usersettings : this.settings;
+            let settings: ISettings = (result[key]) ? result[key] : this.settings;
+
+            Object.defineProperty(settings, 'keyPair', { enumerable: false, writable: true, value: null }); // No serialize to json!
             this.buildKey(settings);
             cb(settings);
         });
+    }
+
+    getCacheKey(key: string) {
+        return this.context.host+this.context.userId+key;
     }
 
    public buildKey(settings) {

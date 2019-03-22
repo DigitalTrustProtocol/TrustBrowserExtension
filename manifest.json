@@ -35,10 +35,9 @@
       "js": [
         "lib/jquery/jquery-2.0.3.min.js",
         "lib/bootstrap/dist/js/bootstrap.min.js",
-        "lib/bitcoinjs/bitcoin.js",
         "lib/Notify/notify.min.js",
         "js/common.js",
-        "js/twitter.bundle.js"
+        "main.bundle.js"
       ],
       "run_at": "document_end"
     }

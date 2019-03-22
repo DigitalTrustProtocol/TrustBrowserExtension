@@ -150,7 +150,7 @@ class ProfileView {
     
             var opt = {
                 command:'openDialog',
-                 url: 'trustlist.html',
+                 url: 'trustgraph.html',
                  data: dialogData 
              };
              opt['w'] = 800;

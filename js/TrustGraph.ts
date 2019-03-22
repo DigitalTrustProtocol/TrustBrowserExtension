@@ -7,54 +7,16 @@ import TrustStrategy = require('./TrustStrategy');
 import SubjectService = require('./SubjectService');
 import ISettings from './Settings.interface';
 import Crypto = require('./Crypto');
-import IProfile from './IProfile.js';
+import IProfile from './IProfile';
 import ProfileRepository = require('./ProfileRepository');
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import vis2 = require('vis');
-import Profile = require('./Profile.js');
+import Profile = require('./Profile');
 import Identicon = require('identicon.js');
 import { Buffer } from 'buffer';
+import ISiteInformation from './Model/SiteInformation.interface';
+import SiteManager = require('./SiteManager');
 
-
-
-
-class ExtensionpopupController {
-
-    settingsController: any = new SettingsController();
-    settings: ISettings;
-    showIcon: boolean = true;
-
-    constructor(private $scope: ng.IScope) {
-    }
-
-    init() {
-        this.settingsController.loadSettings((items: ISettings) => {
-            this.settings = items;
-
-            this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true : false;
-
-            this.$scope.$apply();
-
-        });
-    }
-    
-    modelChange(state?: string) {
-        if (state === 'identicon') {
-            var identicon = new Identicon(this.settings.address, { margin: 0.1, size: 64, format: 'svg' }).toString();
-            if (identicon.length > 0) {
-                this.settings.identicon = "data:image/svg+xml;base64," + identicon.toString();
-                this.showIcon = true;
-            }
-        }
-
-        if (this.settings.rememberme || state === 'rememberme') {
-            this.settingsController.saveSettings(this.settings);
-        }
-
-        this.settingsController.buildKey(this.settings);
-    }
-
-}
 
 class memoryStorage {
 
@@ -69,7 +31,7 @@ class memoryStorage {
     }
 }
 
-class TrustListController {
+class TrustGraphController {
     showContainer: boolean;
     history: any[];
     settingsController: any;
@@ -100,17 +62,19 @@ class TrustListController {
     init() {
         this.showContainer = false
         this.history = []
-        this.settingsController = new SettingsController();
-        this.settingsController.loadSettings((settings) => {
-            this.settings = settings;
-            this.profileRepository = new ProfileRepository(this.settings, new memoryStorage());
-            this.packageBuilder = new PackageBuilder(settings);
-            this.subjectService = new SubjectService(settings, this.packageBuilder);
-            this.dtpService = new DTPService(settings);
+        SiteManager.GetUserContext().then((userContext) => {
+            this.settingsController = new SettingsController(userContext);
+            this.settingsController.loadSettings((settings) => {
+                this.settings = settings;
+                this.profileRepository = new ProfileRepository(new memoryStorage());
+                this.packageBuilder = new PackageBuilder(settings);
+                this.subjectService = new SubjectService(settings, this.packageBuilder);
+                this.dtpService = new DTPService(settings);
 
-            this.addListeners();
-            this.requestData(null); // Default 
-        })
+                this.addListeners();
+                this.requestData(null); // Default 
+            });
+        });
 
     }
 
@@ -476,8 +440,5 @@ class TrustListController {
     // }
 }
 
-
-
 const app = angular.module("myApp", []);
-app.controller('TrustListController', ["$scope", TrustListController]) // bootstrap angular app here 
-app.controller('ExtensionpopupController', ["$scope", ExtensionpopupController]) // bootstrap angular app here 
+app.controller('TrustGraphController', ["$scope", TrustGraphController]) // bootstrap angular app here 

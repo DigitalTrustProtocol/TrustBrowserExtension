@@ -19,6 +19,7 @@ import Crypto = require('./Crypto');
 import DTPIdentity = require('./Model/DTPIdentity');
 import bitcoin = require('bitcoinjs-lib');
 import bitcoinMessage = require('bitcoinjs-message');
+import SiteManager = require('./SiteManager');
    
 class  Twitter {
        OwnerPrefix: string;
@@ -144,19 +145,19 @@ class  Twitter {
             });
         }
 
-        loadCurrentUserProfile() : void {
-            const initData = $("#init-data")[0];
-            const user = JSON.parse(initData['value']);
+        loadCurrentUserProfile(user: any) : void {
+            // const initData = $("#init-data")[0];
+            // const user = JSON.parse(initData['value']);
     
-            const source = { 
-                userId: user.userId, 
-                screen_name: user.screenName,
-                alias: user.fullName,
-                formAuthenticityToken: user.formAuthenticityToken
-            }
+            // const source = { 
+            //     userId: user.userId, 
+            //     screen_name: user.screenName,
+            //     alias: user.fullName,
+            //     formAuthenticityToken: user.formAuthenticityToken
+            // }
     
             Profile.CurrentUser = this.profileRepository.ensureProfile(user.userId) as Profile;
-            Profile.CurrentUser.update(source);
+            Profile.CurrentUser.update(user);
             if(Profile.CurrentUser.owner == null) 
                this.updateProfiles([Profile.CurrentUser]);
 
@@ -166,9 +167,8 @@ class  Twitter {
         }
 
         ready (doc: Document): void {
-            $(doc).ready( () =>{
-
-                this.loadCurrentUserProfile();
+            SiteManager.GetUserContext().then((userContext) =>{
+                this.loadCurrentUserProfile(userContext);
 
                 var tweets = this.getTweets();
 
@@ -239,23 +239,14 @@ class  Twitter {
                     return;
                 }
 
+                if (request.command === 'loadProfiles') {
+                    let profiles = this.loadProfiles(request.data.profileIDs);
+                    sendResponse({ profiles: profiles });
+                    return;
+                }
+
             });
         }
-
 }
+export = Twitter;
 
-// Start application
-const settingsController = new SettingsController();
-settingsController.loadSettings( (settings: ISettings) =>{
-    let packageBuilder = new PackageBuilder(settings);
-    let subjectService = new SubjectService(settings, packageBuilder);
-    let dtpService = new DTPService(settings);
-    let twitterService = new TwitterService(settings);
-    let profileRepository = new ProfileRepository(settings, localStorage);
-
-    let twitter = new Twitter(settings, packageBuilder, subjectService, dtpService, twitterService, profileRepository);
-
-    twitter.addListener();
-    
-    twitter.ready(document);
-});

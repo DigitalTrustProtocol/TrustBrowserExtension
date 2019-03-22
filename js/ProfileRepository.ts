@@ -1,19 +1,18 @@
+declare var DTP: any;
 /// TS_IGNORE
 import Profile = require('./Profile'); //declare var DTP: any;
 import DTPIdentity = require('./Model/DTPIdentity');
 import IProfile from './IProfile';
 class ProfileRepository {
-    settings: any;
     profiles: Array<IProfile> = [];
     index: Array<IProfile> = [];
     storage: any;
-    constructor(settings: any, storage: any) {
-        this.settings = settings;
+    constructor(storage: any) {
         this.storage = storage;
     }
 
     getCacheKey(id: string): string {
-        return 'Twitter' + this.settings.address + id;
+        return 'Twitter' + id;
     }
 
     getProfileDirect(id: string): IProfile {
@@ -64,10 +63,6 @@ class ProfileRepository {
             DTP['trace']('Profile ' + profile.userId + ' created');
         }
         return profile;
-    }
-
-    update(settings): void {
-        this.settings = settings;
     }
 
     getSessionProfiles(): Array<IProfile> {

@@ -5,8 +5,9 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 module.exports = {
   entry: {
-    main: './js/app.ts',
-    'js/twitter': './js/Twitter.ts',
+    main: './js/main.ts',
+    popup: './js/Extensionpopup.ts',
+    trustgraph: './js/TrustGraph.ts'
   },
   mode: 'development',
   devtool: 'cheap-module-source-map',
@@ -53,9 +54,9 @@ module.exports = {
   plugins: [
     new CleanWebpackPlugin(['dist']),
     new HtmlWebpackPlugin({  // Also generate a test.html
-      filename: './trustlist.html',
-      template: './trustlist.html',
-      chunks: ['main'],
+      filename: './trustgraph.html',
+      template: './trustgraph.html',
+      chunks: ['trustgraph'],
       minify: {
         removeComments: true,
         collapseWhitespace: true,
@@ -65,7 +66,7 @@ module.exports = {
     new HtmlWebpackPlugin({  // Also generate a test.html
       filename: './extensionpopup.html',
       template: './extensionpopup.html',
-      chunks: ['main'],
+      chunks: ['popup'],
       minify   : {
         html5                          : true,
         collapseWhitespace             : true,

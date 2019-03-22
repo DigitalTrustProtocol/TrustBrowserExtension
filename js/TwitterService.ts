@@ -7,12 +7,7 @@ import IProfile from './IProfile';
 import Crypto = require('./Crypto');
 
 class TwitterService {
-    settings: ISettings;
     public BaseUrl = 'https://twitter.com';
-    constructor(settings) {
-        this.settings = settings;
-    }
-
 
     getProfileDTP(profile: IProfile): JQueryPromise<DTPIdentity> {
         let deferred = $.Deferred<DTPIdentity>();
