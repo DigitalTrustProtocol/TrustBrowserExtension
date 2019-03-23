@@ -34,7 +34,7 @@ class TrustStrategy  {
             if(claim.type != PackageBuilder.ID_IDENTITY_DTP1)
                 return;
                 
-            subjectIndex[claim.subject.id] = claim; // Subject is a DTP ID, value is the local ID
+            subjectIndex[claim.subject.id] = claim.value; // Subject is a DTP ID, value is the local ID
         });
 
         claims.forEach((claim) => {

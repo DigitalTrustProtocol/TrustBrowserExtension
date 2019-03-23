@@ -238,15 +238,7 @@ class  Twitter {
                     sendResponse({ profiles: profiles });
                     return;
                 }
-
-                if (request.command === 'loadProfiles') {
-                    let profiles = this.loadProfiles(request.data.profileIDs);
-                    sendResponse({ profiles: profiles });
-                    return;
-                }
-
             });
         }
-}
+} 
 export = Twitter;
-

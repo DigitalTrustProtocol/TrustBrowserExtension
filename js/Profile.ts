@@ -4,6 +4,7 @@ import ProfileController = require("./ProfileController");
 import IProfile from "./IProfile";
 import { jsonIgnoreReplacer, jsonIgnore } from 'json-ignore';
 import BinaryTrustResult = require("./Model/BinaryTrustResult");
+import Decorators = require("./Decorators");
 
 class Profile implements IProfile {
     static CurrentUser : Profile = null;
@@ -55,4 +56,7 @@ class Profile implements IProfile {
 
 
 }
+
+//Decorators.typeCheck(Profile.prototype, "userId", "string");
+
 export = Profile

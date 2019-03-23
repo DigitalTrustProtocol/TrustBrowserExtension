@@ -35,20 +35,24 @@ class ProfileController {
         if(this.profile.owner) {
             deferred.resolve(this.profile);
         } else {
-            this.host.twitterService.getProfileDTP(this.profile.userId).then((owner: DTPIdentity) => {
-                if(owner != null) {
-                    try {
-                        if(Crypto.Verify(owner, this.profile.userId)) {
-                            this.profile.owner = owner;
-                            this.save();
-                            this.host.profileRepository.setIndexKey(this.profile); // Save an index to the profile
-                        }
-                    } catch(error) {
-                        DTP['trace'](error); // Catch it if Crypto.Verify fails!
-                    }
-                }
+            this.host.updateProfiles([this.profile]).then((profiles) => {
                 deferred.resolve(this.profile);
-            });
+                });
+
+            // this.host.twitterService.getProfileDTP(this.profile.userId).then((owner: DTPIdentity) => {
+            //     if(owner != null) {
+            //         try {
+            //             if(Crypto.Verify(owner, this.profile.userId)) {
+            //                 this.profile.owner = owner;
+            //                 this.save();
+            //                 this.host.profileRepository.setIndexKey(this.profile); // Save an index to the profile
+            //             }
+            //         } catch(error) {
+            //             DTP['trace'](error); // Catch it if Crypto.Verify fails!
+            //         }
+            //     }
+            //     deferred.resolve(this.profile);
+            // });
         }
 
         return deferred.promise();
@@ -104,9 +108,8 @@ class ProfileController {
     }
 
 
-    trustProfile (value, expire) {
-        //const self = this;
-        return this.buildAndSubmitBinaryTrust( this.profile, value, expire).then(function(result) {
+    trustProfile (value, expire): JQueryPromise<any> {
+        return this.buildAndSubmitBinaryTrust(this.profile, value, expire).then(function(result) {
             //self.controller.render();
             DTP['trace']('TrustProfile done!');
         });
@@ -162,20 +165,27 @@ class ProfileController {
     }
 
 
-    buildAndSubmitBinaryTrust (profile: IProfile, value: any, expire: number) {
+    buildAndSubmitBinaryTrust (profile: IProfile, value: any, expire: number): JQueryPromise<any>  {
         const self = this;
-        let trustPackage = this.host.subjectService.BuildBinaryClaim(profile, value, null, expire);
-        this.host.packageBuilder.SignPackage(trustPackage);
-        DTP['trace']("Updating trust");
-        return this.host.dtpService.PostPackage(trustPackage).then((trustResult) => {
-            DTP['trace']("Posting package code: "+trustResult.status+ ' - Action: '+ trustResult.statusText);
+        let deferred = $.Deferred<any>();
 
-            // Requery everything, as we have changed a trust
-            self.host.queryDTP(self.host.profileRepository.getSessionProfiles());
-
-        }).fail(function(trustResult){ 
-            DTP['trace']("Adding trust failed: " +trustResult.statusText);
-        });
+        this.update().then(() => {
+            let trustPackage = this.host.subjectService.BuildBinaryClaim(profile, value, null, expire);
+            this.host.packageBuilder.SignPackage(trustPackage);
+            DTP['trace']("Issuing trust");
+            DTP['trace'](JSON.stringify(trustPackage, undefined, 2));
+            this.host.dtpService.PostPackage(trustPackage).then((trustResult) => {
+                DTP['trace']("Posting package code: "+trustResult.status+ ' - Action: '+ trustResult.statusText);
+    
+                // Requery everything, as we have changed a trust
+                self.host.queryDTP(self.host.profileRepository.getSessionProfiles());
+                deferred.resolve(trustResult);
+            }).fail(function(trustResult){ 
+                DTP['trace']("Adding trust failed: " +trustResult.statusText);
+                deferred.fail();
+            });
+        })
+        return deferred.promise();
     }
 
 

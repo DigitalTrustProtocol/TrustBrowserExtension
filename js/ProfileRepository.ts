@@ -39,6 +39,10 @@ class ProfileRepository {
     }
 
     setProfile(profile: IProfile): void {
+
+        if (profile.userId && typeof profile.userId != 'string')
+            throw new Error(`profile.userId (string) cannot be set to object of type: ${typeof profile.userId}`);
+
         this.profiles[profile.userId] = profile;
         let data = JSON.stringify(profile);
         this.storage.setItem(this.getCacheKey(profile.userId), data);

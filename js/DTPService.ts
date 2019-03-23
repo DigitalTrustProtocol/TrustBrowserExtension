@@ -5,7 +5,6 @@ import { PackageApi, QueryApi } from '../lib/dtpapi/api/api';
 import { QueryContext } from '../lib/dtpapi/model/models';
 import IProfile from './IProfile';
 
-
 class DTPService  {
     settings: ISettings;
 
