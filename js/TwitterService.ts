@@ -1,4 +1,3 @@
-
 import Profile = require('./Profile');
 import ProfileView = require('./ProfileView');
 import ISettings from './Settings.interface';
@@ -73,17 +72,14 @@ class TwitterService {
                             return;
                         }
                         profile.owner = owner;
-                        profile.biggerImage = $tweet.find('img.avatar').attr('src');
+                        profile.avatarImage = $tweet.find('img.avatar').attr('src');
                         count ++;
                         done= true;
                     }
                 } catch(error) {
                     DTP['trace'](error); // Catch it if Crypto.Verify fails!
                 }
-    
             });
-            
-            
         });
 
         return count;

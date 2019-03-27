@@ -7,7 +7,7 @@ export default interface IProfile {
     userId: string;
     screen_name: string;
     alias: string;
-    biggerImage?: string;
+    avatarImage?: string;
     owner?: DTPIdentity;
 
     //address?: any;

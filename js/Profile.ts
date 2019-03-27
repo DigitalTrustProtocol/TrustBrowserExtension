@@ -13,7 +13,7 @@ class Profile implements IProfile {
     public alias: string;
     public owner: DTPIdentity;
     public userId: string;
-    public biggerImage: string;
+    public avatarImage: string;
     public identiconData16: string;
 
     //public address: any;

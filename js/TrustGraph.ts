@@ -32,25 +32,27 @@ class memoryStorage {
 }
 
 class TrustGraphController {
-    showContainer: boolean;
-    history: any[];
+    nodeProcessed: object = {};
     settingsController: any;
     settings: any;
     packageBuilder: any;
     subjectService: any;
     dtpService: any;
     contentTabId: number;
-    trustHandler: any;
-    subject: any;
-    binarytrusts: any;
-    trusted = [];
-    distrusted = [];
-    jsonVisible = false;
-    defaultScope;
-    json;
-    trustData: string;
+    //subject: any;
+    //binarytrusts: any;
+    //trusted = [];
+    //distrusted = [];
+    //jsonVisible = false;
+    //defaultScope;
+    //json;
+    //trustData: string;
     network: any;
     profileRepository: ProfileRepository;
+    currentUser: IProfile;
+    selectedProfile: IProfile;
+    modalData: any = {}
+
 
     //static $inject = [];
     //static $inject = ['$scope'];
@@ -60,8 +62,6 @@ class TrustGraphController {
     }
 
     init() {
-        this.showContainer = false
-        this.history = []
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsController = new SettingsController(userContext);
             this.settingsController.loadSettings((settings) => {
@@ -75,7 +75,6 @@ class TrustGraphController {
                 this.requestData(null); // Default 
             });
         });
-
     }
 
     addListeners() {
@@ -135,6 +134,8 @@ class TrustGraphController {
         trustResult.profiles.forEach((profile) => {
             this.profileRepository.setProfile(profile);
         });
+        this.currentUser = source.currentUser;
+        this.selectedProfile = source.selectedProfile;
         this.profileRepository.setProfile(source.selectedProfile);
         this.profileRepository.setProfile(source.currentUser);
 
@@ -147,37 +148,111 @@ class TrustGraphController {
             edges: []
         };
         
-        this.buildNodes(source.selectedProfile, source.currentUser, null, graph);
+        this.buildNodes(source.selectedProfile, source.currentUser, graph);
         let options = this.buildOptions();
         let container = document.getElementById('networkContainer');
 
-        let nn = new vis2.Network(container, graph, options);
-        return nn;
+        let nw = new vis2.Network(container, graph, options);
+
+        nw.on("select", (params) => {
+            if(params.nodes.length == 0)
+                this.hideModal();
+            else 
+                this.showModal(params.nodes[0]);
+        });
+
+        return nw;
+    }
+
+    showModal(profileId: any) : void {
+        //this.modalData.profile = this.profileRepository.getProfile(profileId);
+        this.modalData.profile = this.nodeProcessed[profileId];
+
+        // Default value!
+        this.modalData.score = {};
+        this.modalData.score.show = false;
+        this.modalData.isCurrentUser = false;
+
+        if(this.modalData.profile.userId == this.selectedProfile.userId) {
+            let score = this.selectedProfile.binaryTrustResult.trust - this.selectedProfile.binaryTrustResult.distrust;
+            if(score < 0)
+                this.modalData.status = { cssClass: "distrusted", text: "Distrusted", show: true};
+
+            if(score > 0)
+                this.modalData.status = { cssClass: "trusted", text: "Trusted", show: true};
+
+            this.modalData.score.show = true;
+        } else {
+            if(this.modalData.profile.userId == this.currentUser.userId)    {
+                    this.modalData.status = { cssClass: "", text: "Current user", show: true };
+                    this.modalData.isCurrentUser = true;
+                }
+            else        
+                this.modalData.status = { cssClass: "trusted", text: "Trusted", show: true};
+        }
+
+        this.modalData.button = {};
+
+        this.modalData.button.trust = {};
+        this.modalData.button.distrust = {};
+        this.modalData.button.untrust = {};
+        
+        if(!this.modalData.isCurrentUser) {
+            this.modalData.button.untrust.disabled = !this.modalData.profile.binaryTrustResult.direct;
+
+            if(this.modalData.profile.binaryTrustResult.direct) {
+                this.modalData.button.trust.disabled = true;
+                this.modalData.button.distrust.disabled = true;
+            }
+            else {
+                this.modalData.button.trust.disabled = false;
+                this.modalData.button.distrust.disabled = false;
+            }
+        }
+
+       
+        this.$scope.$apply();
+        // Show dtpbar
+        this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
+        //$("#networkModal").finish().show();
+        $("#networkModal").modal('show');
+    }
+
+    hideModal(): void {
+        if($('#networkModal').is(':visible'))
+            $("#networkModal").modal('hide');
+            //$("#networkModal").hide();
+
+        this.modalData = {};
     }
 
 
-    buildNodes(profile: IProfile, currentUser: IProfile, claim: any, graph: any) : void {
+    buildNodes(profile: IProfile, currentUser: IProfile, graph: any) : void {
 
-        if(!profile.biggerImage) {
+        if(this.nodeProcessed[profile.userId])
+            return; // Do not re-process the node
+
+        if(!profile.avatarImage) {
             let hash = Crypto.toDTPAddress(Crypto.Hash160(profile.userId));
             let icon = new Identicon(hash, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
-            profile.biggerImage = icon.toString();
+            profile.avatarImage = icon.toString();
         }
 
         let node = {
             id: profile.userId,
-            image: profile.biggerImage,
+            image: profile.avatarImage,
             label: '*'+profile.alias+'*\n_@'+profile.screen_name+'_',
         }
         
-        if(claim != null) {
-            let claimValue = (claim.value === "true" || claim.value === "1");
-            node["color"] = { 
-                border: (claimValue) ? 'green' : 'red'
-            };
-        }
+        // if(claim != null) {
+        //     let claimValue = (claim.value === "true" || claim.value === "1");
+        //     node["color"] = { 
+        //         border: (claimValue) ? 'green' : 'red'
+        //     };
+        // }
         
         graph.nodes.push(node)
+        this.nodeProcessed[profile.userId] = profile;
 
         if(profile.userId == currentUser.userId)
             return; // Stop with oneself
@@ -187,18 +262,24 @@ class TrustGraphController {
 
         for(let key in profile.binaryTrustResult.claims) {
             let claim = profile.binaryTrustResult.claims[key];
-            // if(claim.type != PackageBuilder.BINARY_TRUST_DTP1)
-            //     return;
 
-            // if(claim.subject.id != profile.userId) 
+            // if(claim.type != PackageBuilder.BINARY_TRUST_DTP1)
             //     return;
 
             // There should always be a profile, even if it just been created by the TrustStrategy class
             let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
 
-            graph.edges.push({ from: parentProfile.userId, to: profile.userId });
+            let color = (claim.value === "true" || claim.value === "1") ? 'green' :'red';
+            graph.edges.push({ 
+                from: parentProfile.userId, 
+                to: profile.userId, 
+                color:{
+                    color:color, 
+                    highlight: color 
+                } 
+            });
 
-            this.buildNodes(parentProfile, currentUser, claim, graph);
+            this.buildNodes(parentProfile, currentUser, graph);
         }
     }
 
@@ -236,7 +317,8 @@ class TrustGraphController {
                 arrows: { to: true },
                 shadow: true
 
-            }        
+            },
+            autoResize: true
         };
         return options;
     }
@@ -265,6 +347,53 @@ class TrustGraphController {
         // }
 
         return deferred.promise();
+    }
+
+    trustClick() {
+        this.buildAndSubmitBinaryTrust(this.selectedProfile, true, 0, this.selectedProfile.alias + " trusted");
+        return false;
+    };
+
+    distrustClick () {
+        this.buildAndSubmitBinaryTrust(this.selectedProfile, false, 0, this.selectedProfile.alias + " distrusted");
+        return false;
+    }
+
+    untrustClick() {
+        this.buildAndSubmitBinaryTrust(this.selectedProfile, undefined, 1, this.selectedProfile.alias + " untrusted");
+        return false;
+    }
+
+    buildAndSubmitBinaryTrust (profile: IProfile, value: boolean, expire: number, message: string): void {
+        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, null, expire);
+        this.packageBuilder.SignPackage(trustPackage);
+        this.dtpService.PostTrust(trustPackage).done((trustResult)=> {
+            //$.notify("Updating view",trustResult.status.toLowerCase());
+            console.log("Posting package is a "+trustResult.status.toLowerCase());
+
+            $["notify"](message, 'success');
+
+            var opt = {
+                command: 'updateContent',
+                contentTabId: this.contentTabId
+            }
+            chrome.runtime.sendMessage(opt);
+
+        }).fail((trustResult) => { 
+            $["notify"]("Adding trust failed: " +trustResult.message,"fail");
+        });
+    }
+
+
+    setToCenterOfParent(element, parent, ignoreWidth, ignoreHeight): void {
+        let parentWidth = $(parent).width();
+        let parentHeight = $(parent).height();  
+        let elementWidth = $(element).width();
+        let elementHeight = $(element).height();
+        if(!ignoreWidth)
+            $(element).css('left', parentWidth/2 - elementWidth/2);
+        if(!ignoreHeight)
+            $(element).css('top', parentHeight/2 - elementHeight/2);
     }
 
 
@@ -403,42 +532,9 @@ class TrustGraphController {
     // }
 
 
-    // trustClick(profile) {
-    //     this.buildAndSubmitBinaryTrust(profile, true, 0, profile.alias + " trusted");
-    //     return false;
-    // };
-
-    // distrustClick (profile) {
-    //     this.buildAndSubmitBinaryTrust(profile, false, 0, profile.alias + " distrusted");
-    //     return false;
-    // }
-
-    // untrustClick(profile) {
-    //     this.buildAndSubmitBinaryTrust(profile, undefined, 1, profile.alias + " untrusted");
-    //     return false;
-    // }
-
-    // buildAndSubmitBinaryTrust (profile, value, expire, message){
-
-    //     var package_ = this.subjectService.BuildBinaryClaim(profile, value, null, expire);
-    //     this.packageBuilder.SignPackage(package_);
-    //     this.dtpService.PostTrust(package_).done((trustResult)=> {
-    //         //$.notify("Updating view",trustResult.status.toLowerCase());
-    //         console.log("Posting package is a "+trustResult.status.toLowerCase());
-
-    //         $["notify"](message, 'success');
-
-    //         var opt = {
-    //             command: 'updateContent',
-    //             contentTabId: this.contentTabId
-    //         }
-    //         chrome.runtime.sendMessage(opt);
-
-    //     }).fail((trustResult) => { 
-    //         $["notify"]("Adding trust failed: " +trustResult.message,"fail");
-    //     });
-    // }
 }
+
+
 
 const app = angular.module("myApp", []);
 app.controller('TrustGraphController', ["$scope", TrustGraphController]) // bootstrap angular app here 
