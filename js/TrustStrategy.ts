@@ -39,7 +39,7 @@ class TrustStrategy  {
 
         claims.forEach((claim) => {
             if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
-                return;
+                return; // Ignore all cliams that is not BINARY_TRUST_DTP1
 
             let subjectId = subjectIndex[claim.subject.id];
             if(!subjectId) // Undefined
@@ -105,115 +105,5 @@ class TrustStrategy  {
                 trustResult.profiles.push(issuerProfile);
         });
     }
-
-    // BuildSubjects() {
-    //     if(!this.queryContext.results)
-    //         return;
-
-    //     if(!this.queryContext.results.claims)
-    //         return;
-
-    //     this.queryContext.results.claims.forEach((claim) => {
-    //         if(claim.type === PackageBuilder.BINARY_TRUST_DTP1) {
-    //             var list = this.subjects[claim.subject.id];
-
-    //             if(!list) {
-    //                 list = [];
-    //                 this.subjects[claim.subject.id] = list;
-    //             } 
-
-    //             list.push(claim);
-    //         }
-
-    //         if(claim.type === PackageBuilder.ALIAS_IDENTITY_DTP1) {
-    //             let list = this.alias[claim.subject.id];
-
-    //             if(!list) {
-    //                 list = [];
-    //                 this.alias[claim.subject.id] = list;
-    //             } 
-
-    //             list.push(claim);
-    //         }
-    //     });
-    // }
-
-
-    // CalculateBinaryTrust(subjectId, ownerId) : BinaryTrustResult {
-    //     let result = new BinaryTrustResult();
-
-    //     let subjectClaims = this.subjects[subjectId];
-    //     let ownerClaims = this.subjects[ownerId];
-    //     if(!subjectClaims && !ownerClaims)
-    //         return result;
-
-    //     let CalcTrust = (claims) => {
-    //         if(!claims) return;
-    //         claims.forEach((claim) => {
-    //             if(claim.type !== PackageBuilder.BINARY_TRUST_DTP1) 
-    //                 return;
-                
-    //             if(claim.value === "true" || claim.value === "1")
-    //                 result.trust++;
-    //             else
-    //                 result.distrust++;
-    //                             // IssuerAddress is base64
-    //             if(claim.issuer.id == this.settings.address)
-    //             {
-    //                 result.direct = true;
-    //                 result.directValue = claim.value;
-    //             }
-    //         });
-    //     }
-        
-    //     CalcTrust(subjectClaims);   
-    //     CalcTrust(ownerClaims); 
-
-    //     result.state = result.trust - result.distrust;
-
-    //     return result;
-    // }
- 
-    // CalculateBinaryTrust2 (subjectAddress, ownerAddress) {
-    //     //let self = this;
-    //     let result = {
-    //         networkScore : 0,
-    //         personalScore: 0,
-    //     };
-    //     //var binaryTrustCount = 0;
-        
-    //     let subjectTrusts = this.subjects[subjectAddress];
-    //     let ownerTrusts = this.subjects[ownerAddress];
-    //     if(!subjectTrusts && !ownerTrusts)
-    //         return result;
-
-    //     function CalcTrust(trusts, settings) {
-    //         if(!trusts) return;
-    //         for(const key in trusts) {
-    //             const trust = trusts[key];
-
-    //             if(trust.type != PackageBuilder.BINARY_TRUST_DTP1)
-    //                 continue;
-
-    //             //binaryTrustCount ++;
-
-    //             if(trust.issuer.address == settings.address) { // Its your trust!
-    //                 result.personalScore += (trust.claim) ? 1 : -1;
-    //             } else {
-    //                 result.networkScore += (trust.claim) ? 1 : -1;
-    //             }
-    //         }
-    //     }
-    //     CalcTrust(subjectTrusts, this.settings);   
-    //     CalcTrust(ownerTrusts, this.settings);
-        
-    //     if (result.personalScore != 0) {
-    //         result.networkScore = result.personalScore;
-    //     }
-
-    //     //result.trustPercent = Math.floor((result.networkScore * 100) / binaryTrustCount);
-
-    //     return result;
-    // }
 }
 export = TrustStrategy

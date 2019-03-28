@@ -70,6 +70,10 @@
 
         }
 
+        .trustSpinner24 {
+            background-image: url('chrome-extension://__MSG_@@extension_id__/img/Spinner24px.gif') !important;
+        }
+
     </style>
     <script src="lib/jquery/jquery-2.0.3.min.js"></script>
     <script src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
@@ -99,14 +103,15 @@
                         </div>
                     </span>
                 </div>
-                <div class="modal-footer" ng-hide="tc.modalData.isCurrentUser">
-                    <button type="button" class="btn btn-success active btn-sm" ng-click="tc.trustClick()" title="Already trusted" ng-disabled="tc.modalData.button.trust.disabled">
+                <div class="modal-footer" >
+                    <img src="{{tc.modalData.spinner}}" ng-show="tc.modalData.processing">
+                    <button type="button" class="btn btn-success active btn-sm" ng-click="tc.trustClick()" ng-attr-title="Trust {{ tc.modalData.profile.alias }}" ng-disabled="tc.modalData.button.trust.disabled">
                         Trust
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" title="Cancel your previous trust" ng-disabled="tc.modalData.button.untrust.disabled">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" ng-click="tc.untrustClick()" title="Cancel your previous trust" ng-disabled="tc.modalData.button.untrust.disabled">
                         Untrust
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" ng-attr-title="Distrust {{ tc.modalData.profile.alias }}" ng-disabled="tc.modalData.button.distrust.disabled">
+                    <button type="button" class="btn btn-outline-danger btn-sm" ng-click="tc.distrustClick()" ng-attr-title="Distrust {{ tc.modalData.profile.alias }}" ng-disabled="tc.modalData.button.distrust.disabled">
                         Distrust
                     </button>
                 </div>

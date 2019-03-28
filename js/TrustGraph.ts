@@ -16,6 +16,7 @@ import Identicon = require('identicon.js');
 import { Buffer } from 'buffer';
 import ISiteInformation from './Model/SiteInformation.interface';
 import SiteManager = require('./SiteManager');
+import { ModelPackage } from '../lib/dtpapi/model/models.js';
 
 
 class memoryStorage {
@@ -37,7 +38,7 @@ class TrustGraphController {
     settings: any;
     packageBuilder: any;
     subjectService: any;
-    dtpService: any;
+    dtpService: DTPService;
     contentTabId: number;
     //subject: any;
     //binarytrusts: any;
@@ -51,7 +52,8 @@ class TrustGraphController {
     profileRepository: ProfileRepository;
     currentUser: IProfile;
     selectedProfile: IProfile;
-    modalData: any = {}
+    modalData: any = {};
+    graph: any = {};
 
 
     //static $inject = [];
@@ -143,16 +145,18 @@ class TrustGraphController {
         let trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
         trustStrategy.ProcessResult(trustResult.queryContext);
 
-        var graph = {
+        let check = this.profileRepository.getProfile(source.selectedProfile.userId);
+
+        this.graph = {
             nodes: [],
-            edges: []
+            edges: new vis2.DataSet()
         };
         
-        this.buildNodes(source.selectedProfile, source.currentUser, graph);
+        this.buildNodes(source.selectedProfile, source.currentUser);
         let options = this.buildOptions();
         let container = document.getElementById('networkContainer');
 
-        let nw = new vis2.Network(container, graph, options);
+        let nw = new vis2.Network(container, this.graph, options);
 
         nw.on("select", (params) => {
             if(params.nodes.length == 0)
@@ -164,70 +168,8 @@ class TrustGraphController {
         return nw;
     }
 
-    showModal(profileId: any) : void {
-        //this.modalData.profile = this.profileRepository.getProfile(profileId);
-        this.modalData.profile = this.nodeProcessed[profileId];
 
-        // Default value!
-        this.modalData.score = {};
-        this.modalData.score.show = false;
-        this.modalData.isCurrentUser = false;
-
-        if(this.modalData.profile.userId == this.selectedProfile.userId) {
-            let score = this.selectedProfile.binaryTrustResult.trust - this.selectedProfile.binaryTrustResult.distrust;
-            if(score < 0)
-                this.modalData.status = { cssClass: "distrusted", text: "Distrusted", show: true};
-
-            if(score > 0)
-                this.modalData.status = { cssClass: "trusted", text: "Trusted", show: true};
-
-            this.modalData.score.show = true;
-        } else {
-            if(this.modalData.profile.userId == this.currentUser.userId)    {
-                    this.modalData.status = { cssClass: "", text: "Current user", show: true };
-                    this.modalData.isCurrentUser = true;
-                }
-            else        
-                this.modalData.status = { cssClass: "trusted", text: "Trusted", show: true};
-        }
-
-        this.modalData.button = {};
-
-        this.modalData.button.trust = {};
-        this.modalData.button.distrust = {};
-        this.modalData.button.untrust = {};
-        
-        if(!this.modalData.isCurrentUser) {
-            this.modalData.button.untrust.disabled = !this.modalData.profile.binaryTrustResult.direct;
-
-            if(this.modalData.profile.binaryTrustResult.direct) {
-                this.modalData.button.trust.disabled = true;
-                this.modalData.button.distrust.disabled = true;
-            }
-            else {
-                this.modalData.button.trust.disabled = false;
-                this.modalData.button.distrust.disabled = false;
-            }
-        }
-
-       
-        this.$scope.$apply();
-        // Show dtpbar
-        this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
-        //$("#networkModal").finish().show();
-        $("#networkModal").modal('show');
-    }
-
-    hideModal(): void {
-        if($('#networkModal').is(':visible'))
-            $("#networkModal").modal('hide');
-            //$("#networkModal").hide();
-
-        this.modalData = {};
-    }
-
-
-    buildNodes(profile: IProfile, currentUser: IProfile, graph: any) : void {
+    buildNodes(profile: IProfile, currentUser: IProfile) : void {
 
         if(this.nodeProcessed[profile.userId])
             return; // Do not re-process the node
@@ -244,14 +186,7 @@ class TrustGraphController {
             label: '*'+profile.alias+'*\n_@'+profile.screen_name+'_',
         }
         
-        // if(claim != null) {
-        //     let claimValue = (claim.value === "true" || claim.value === "1");
-        //     node["color"] = { 
-        //         border: (claimValue) ? 'green' : 'red'
-        //     };
-        // }
-        
-        graph.nodes.push(node)
+        this.graph.nodes.push(node)
         this.nodeProcessed[profile.userId] = profile;
 
         if(profile.userId == currentUser.userId)
@@ -269,19 +204,47 @@ class TrustGraphController {
             // There should always be a profile, even if it just been created by the TrustStrategy class
             let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
 
+            this.addEdge(parentProfile, profile, claim);
+
+            this.buildNodes(parentProfile, currentUser);
+        }
+    }
+
+    addEdge(from: IProfile, to:IProfile, claim: any) : void {
+        let color = (claim.value === "true" || claim.value === "1") ? 'green' :'red';
+        this.graph.edges.add({ 
+            id: from.userId+to.userId,
+            from: from.userId, 
+            to: to.userId, 
+            color:{
+                color:color, 
+                highlight: color 
+            } 
+        });
+    }
+
+    removeEdge(from: IProfile, to:IProfile) : void {
+        this.graph.edges.remove({ 
+            id: from.userId+to.userId
+        });
+    }
+
+    updateEdge(from: IProfile, to:IProfile, claim: any) : void {
             let color = (claim.value === "true" || claim.value === "1") ? 'green' :'red';
-            graph.edges.push({ 
-                from: parentProfile.userId, 
-                to: profile.userId, 
+            this.graph.edges.update({ 
+                id: from.userId+to.userId,
+                from: from.userId, 
+                to: to.userId, 
                 color:{
                     color:color, 
                     highlight: color 
                 } 
             });
 
-            this.buildNodes(parentProfile, currentUser, graph);
-        }
     }
+
+
+
 
     buildOptions() : any {
         var options = {
@@ -349,39 +312,139 @@ class TrustGraphController {
         return deferred.promise();
     }
 
+    showModal(profileId: any) : void {
+        this.modalData.profile = this.profileRepository.getProfile(profileId);
+        this.modalData.spinner = chrome.extension.getURL("../img/Spinner24px.gif");
+        this.modalData.processing = false;
+
+        // Default value!
+        this.modalData.score = {};
+        this.modalData.score.show = false;
+        this.modalData.isCurrentUser = false;
+
+        if(this.modalData.profile.userId == this.selectedProfile.userId) {
+            let score = this.selectedProfile.binaryTrustResult.trust - this.selectedProfile.binaryTrustResult.distrust;
+            if(score < 0)
+                this.modalData.status = { cssClass: "distrusted", text: "Distrusted", show: true};
+
+            if(score > 0)
+                this.modalData.status = { cssClass: "trusted", text: "Trusted", show: true};
+
+            this.modalData.score.show = true;
+        } else {
+            if(this.modalData.profile.userId == this.currentUser.userId)    {
+                    this.modalData.status = { cssClass: "", text: "Current user", show: true };
+                    this.modalData.isCurrentUser = true;
+                }
+            else        
+                this.modalData.status = { cssClass: "trusted", text: "Trusted", show: true};
+        }
+
+        this.modalData.button = {};
+
+        this.modalData.button.trust = {};
+        this.modalData.button.distrust = {};
+        this.modalData.button.untrust = {};
+        
+        if(!this.modalData.isCurrentUser) {
+    
+            this.disableButtons(false, !this.modalData.profile.binaryTrustResult.direct, false);
+
+            if(this.modalData.profile.binaryTrustResult.direct) {
+                let claim = this.modalData.profile.binaryTrustResult.claims[this.currentUser.owner.ID];
+                if(claim.value == "true" || claim.value == "1") 
+                    this.modalData.button.trust.disabled = true;
+                else
+                    this.modalData.button.distrust.disabled = true;
+            }
+        }
+
+       
+        this.$scope.$apply();
+        // Show dtpbar
+        this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
+        //$("#networkModal").finish().show();
+        $("#networkModal").modal('show');
+    }
+
+    disableButtons(trust: boolean, untrust: boolean, distrust: boolean) : void {
+        this.modalData.button.trust.disabled = trust;
+        this.modalData.button.untrust.disabled = untrust;
+        this.modalData.button.distrust.disabled = distrust;
+    }
+
+
+    hideModal(): void {
+        if($('#networkModal').is(':visible'))
+            $("#networkModal").modal('hide');
+            //$("#networkModal").hide();
+
+        this.modalData = {};
+    }
+
+
+
     trustClick() {
-        this.buildAndSubmitBinaryTrust(this.selectedProfile, true, 0, this.selectedProfile.alias + " trusted");
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, true, 0, this.modalData.profile.alias + " trusted");
         return false;
     };
 
     distrustClick () {
-        this.buildAndSubmitBinaryTrust(this.selectedProfile, false, 0, this.selectedProfile.alias + " distrusted");
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, false, 0, this.modalData.profile.alias + " distrusted");
         return false;
     }
 
     untrustClick() {
-        this.buildAndSubmitBinaryTrust(this.selectedProfile, undefined, 1, this.selectedProfile.alias + " untrusted");
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, undefined, 1, this.modalData.profile.alias + " untrusted");
+
         return false;
     }
 
-    buildAndSubmitBinaryTrust (profile: IProfile, value: boolean, expire: number, message: string): void {
+    buildAndSubmitBinaryTrust (profile: IProfile, value: boolean, expire: number, message: string): JQueryPromise<any> {
+        this.disableButtons(true, true, true);
+        this.modalData.processing = true;
+        //this.$scope.$apply();
         var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, null, expire);
         this.packageBuilder.SignPackage(trustPackage);
-        this.dtpService.PostTrust(trustPackage).done((trustResult)=> {
+        return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
             //$.notify("Updating view",trustResult.status.toLowerCase());
-            console.log("Posting package is a "+trustResult.status.toLowerCase());
+            console.log("Posting package is a "+trustResult.status);
 
             $["notify"](message, 'success');
+
+
+            this.updateNetwork(trustPackage);
 
             var opt = {
                 command: 'updateContent',
                 contentTabId: this.contentTabId
             }
             chrome.runtime.sendMessage(opt);
-
+            
+            this.hideModal(); 
         }).fail((trustResult) => { 
             $["notify"]("Adding trust failed: " +trustResult.message,"fail");
+            this.hideModal(); 
         });
+    }
+
+    updateNetwork(trustPackage: ModelPackage) : void {
+
+        for(let key in trustPackage.claims) {
+            let claim = trustPackage.claims[key];
+            let from = this.profileRepository.getProfile(claim.issuer.id);
+            let to = this.profileRepository.getProfile(claim.subject.id);
+
+            if(claim.expire == 1 || claim.value == undefined) {
+                this.removeEdge(from, to);
+                to.binaryTrustResult.claims[claim.issuer.id] = claim;
+            }
+            else {
+                this.updateEdge(from, to, claim);
+                to.binaryTrustResult.claims[claim.issuer.id] = claim;
+            }    
+
+        }
     }
 
 
@@ -395,6 +458,7 @@ class TrustGraphController {
         if(!ignoreHeight)
             $(element).css('top', parentHeight/2 - elementHeight/2);
     }
+
 
 
     // reset() {
@@ -485,28 +549,6 @@ class TrustGraphController {
     //     this.$scope.$apply();
     // }
 
-    // analyseClick (trust) {
-    //     this.history.push(this.subject);
-
-    //     let profile: any = {};
-    //     profile.address = trust.issuer.address;
-    //     profile.alias = trust.alias;
-    //     profile.screen_name = trust.alias;
-    //     profile.controller.queryContext = this.subject.controller.queryContext;
-    //     profile.scope = this.subject.scope;
-
-    //     this.load(profile);
-    // }
-
-
-    // historyBack () {
-    //     this.load(this.history.pop());
-    // }
-
-    // showHideJson()  {
-    //     this.jsonVisible = (this.jsonVisible) ? false: true;
-    // }
-
 
     // getIdenticoinData (address, size) {
     //     if(!size) size = 64;
@@ -538,3 +580,12 @@ class TrustGraphController {
 
 const app = angular.module("myApp", []);
 app.controller('TrustGraphController', ["$scope", TrustGraphController]) // bootstrap angular app here 
+app.config( [
+    '$compileProvider',
+    function( $compileProvider )
+    {   
+        //$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
+        $compileProvider.imgSrcSanitizationWhitelist(/^\s*(https?|local|data|chrome-extension):/);
+        // Angular before v1.2 uses $compileProvider.urlSanitizationWhitelist(...)
+    }
+]);

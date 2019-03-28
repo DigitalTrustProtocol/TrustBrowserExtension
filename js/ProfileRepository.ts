@@ -15,6 +15,10 @@ class ProfileRepository {
         return 'Twitter' + id;
     }
 
+    getIndexCacheKey(id: string): string {
+        return 'TwitterIndex' + id;
+    }
+
     getProfileDirect(id: string): IProfile {
         let profile: IProfile = this.profiles[id]; // Quick cache
         if (profile)
@@ -80,7 +84,7 @@ class ProfileRepository {
         if (profile)
             return profile;
 
-        let data = this.storage.getItem(this.getCacheKey(key));
+        let data = this.storage.getItem("I"+this.getIndexCacheKey(key));
         if (!data) 
             return null;
 
@@ -104,7 +108,7 @@ class ProfileRepository {
     setIndexKey(profile: IProfile): void {
         this.index[profile.owner.ID] = profile;
         profile.owner.PlatformID = profile.userId;
-        this.storage.setItem(this.getCacheKey(profile.owner.ID), JSON.stringify(profile.owner));
+        this.storage.setItem(this.getIndexCacheKey(profile.owner.ID), JSON.stringify(profile.owner));
     }
 
 
