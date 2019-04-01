@@ -62,7 +62,7 @@ class PackageBuilder {
         if(typeof scope != 'string')
             scope = JSON.stringify(scope);
 
-        if(!value)
+        if(value == undefined || value == null)
             value = "";
         
         var stringValue = (typeof value === 'string') ? value : JSON.stringify(value);

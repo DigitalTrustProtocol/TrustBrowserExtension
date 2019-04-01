@@ -25,6 +25,10 @@ class BinaryTrustResult {
         this.time = 0;
         this.queryContext = null;
     }
+
+    public calculateState() {
+    }
+
 }
 
 export = BinaryTrustResult

@@ -51,18 +51,6 @@
             background-color: whitesmoke;
         }
 
-        .dtp-bar {
-            /* display: none;
-            z-index: 1000;
-            position: absolute;
-            overflow: hidden;
-            border: 2px solid black;
-            white-space: nowrap;
-            font-family: sans-serif;
-            background: white;
-            color: #333; */
-        }
-
         .dtp-avatarImg {
             border: black;
             border-width: 2px;
@@ -103,15 +91,15 @@
                         </div>
                     </span>
                 </div>
-                <div class="modal-footer" >
+                <div class="modal-footer" data-ng-show="tc.modalData.button.show" >
                     <img src="{{tc.modalData.spinner}}" ng-show="tc.modalData.processing">
-                    <button type="button" class="btn btn-success active btn-sm" ng-click="tc.trustClick()" ng-attr-title="Trust {{ tc.modalData.profile.alias }}" ng-disabled="tc.modalData.button.trust.disabled">
+                    <button type="button" ng-class="tc.modalData.button.trust.cssClass" ng-click="tc.trustClick()" ng-attr-title="{{tc.modalData.button.trust.title}}" ng-disabled="tc.modalData.button.trust.disabled">
                         Trust
                     </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" ng-click="tc.untrustClick()" title="Cancel your previous trust" ng-disabled="tc.modalData.button.untrust.disabled">
+                    <button type="button" ng-class="tc.modalData.button.untrust.cssClass" ng-click="tc.untrustClick()" ng-attr-title="{{tc.modalData.button.untrust.title}}" ng-disabled="tc.modalData.button.untrust.disabled">
                         Untrust
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" ng-click="tc.distrustClick()" ng-attr-title="Distrust {{ tc.modalData.profile.alias }}" ng-disabled="tc.modalData.button.distrust.disabled">
+                    <button type="button" ng-class="tc.modalData.button.distrust.cssClass" ng-click="tc.distrustClick()" ng-attr-title="{{tc.modalData.button.distrust.title}}" ng-disabled="tc.modalData.button.distrust.disabled">
                         Distrust
                     </button>
                 </div>

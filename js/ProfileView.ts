@@ -142,10 +142,10 @@ class ProfileView {
             //let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
 
             let dialogData = {
+                scope: Profile.CurrentUser.scope,
                 currentUser: Profile.CurrentUser,
                 selectedProfile: selectedProfile,
                 binaryTrustResult: selectedProfile.binaryTrustResult
-                
             };
     
             var opt = {

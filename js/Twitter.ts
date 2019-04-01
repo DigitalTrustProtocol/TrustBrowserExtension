@@ -100,8 +100,8 @@ class Twitter {
         return deferred.promise();
     }
 
-    queryDTP(profiles: Array<IProfile>): void {
-        this.dtpService.Query(profiles, window.location.hostname).then((result: QueryContext) => {
+    queryDTP(profiles: Array<IProfile>): JQueryPromise<QueryContext> {
+        return this.dtpService.Query(profiles, window.location.hostname).done((result: QueryContext) => {
             DTP['trace'](JSON.stringify(result, null, 2));
 
             // Process the result
@@ -123,9 +123,7 @@ class Twitter {
                 }
                 //profile.controller.save(); // Why?
             }
-        }).fail(() => {
-            console.log("Error in queryDTP");
-            // TODO: Write a error handler
+            
         });
     }
 
@@ -206,8 +204,8 @@ class Twitter {
         });
     }
 
-    updateContent(): void {
-        this.queryDTP(this.profileRepository.getSessionProfiles());
+    updateContent(): JQueryPromise<QueryContext> {
+        return this.queryDTP(this.profileRepository.getSessionProfiles());
     }
 
     loadProfiles(ids: Array<string>): Array<IProfile> {
@@ -221,15 +219,22 @@ class Twitter {
     addListener(): void {
         chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (request.command === 'updateContent') {
-                this.updateContent();
-                return;
+                this.updateContent().done((queryContext) => {
+                    let data = new BinaryTrustResult();
+                    data.queryContext = queryContext;
+                    sendResponse({ data });
+                })
+                
+                return true;
             }
 
             if (request.command === 'loadProfiles') {
                 let profiles = this.loadProfiles(request.data.profileIDs);
                 sendResponse({ profiles: profiles });
-                return;
+                return true;
             }
+            
+            return false;
         });
     }
 }

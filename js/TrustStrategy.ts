@@ -21,7 +21,37 @@ class TrustStrategy  {
         this.profileRepository = profileRepository;
     }
 
-    ProcessResult(queryContext : QueryContext) : void {
+    public calculateBinaryTrustResult(trustResult: BinaryTrustResult) {
+        trustResult.direct = false;
+        trustResult.trust = 0;
+        trustResult.distrust = 0;
+        trustResult.state = 0;
+
+        for(let key in trustResult.claims) {
+            let claim = trustResult.claims[key];
+
+            this.processClaim(trustResult, claim);
+        }
+    }
+
+    private processClaim(trustResult: BinaryTrustResult, claim: Claim) {
+        if(claim.value === "true" || claim.value === "1")
+            trustResult.trust++;
+        
+        if(claim.value === "false" || claim.value === "0")
+            trustResult.distrust++;
+
+        // IssuerAddress is base64
+        if(claim.issuer.id == this.settings.address)
+        {
+            trustResult.direct = true;
+            trustResult.directValue = claim.value;
+        }
+
+        trustResult.state = trustResult.trust - trustResult.distrust;
+    }
+
+    public ProcessResult(queryContext : QueryContext) : void {
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
             return;
 
@@ -86,19 +116,8 @@ class TrustStrategy  {
 
             trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
 
-            if(claim.value === "true" || claim.value === "1")
-                trustResult.trust++;
-            else
-                trustResult.distrust++;
-                            // IssuerAddress is base64
-            if(claim.issuer.id == this.settings.address)
-            {
-                trustResult.direct = true;
-                trustResult.directValue = claim.value;
-            }
-
-            trustResult.state = trustResult.trust - trustResult.distrust;
-        
+            this.processClaim(trustResult, claim);
+       
             // Issuer is always DTP ID, add reference to the issuer profile.
             let issuerProfile = this.profileRepository.getProfileByIndex(claim.issuer.id);
             if(issuerProfile)
