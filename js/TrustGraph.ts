@@ -17,7 +17,8 @@ import { Buffer } from 'buffer';
 import ISiteInformation from './Model/SiteInformation.interface';
 import SiteManager = require('./SiteManager');
 import { ModelPackage, QueryContext } from '../lib/dtpapi/model/models.js';
-import TrustGraphModal = require('./Model/TrustGraphModal');
+import ProfileModal = require('./Model/ProfileModal');
+import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
 
 
 class memoryStorage {
@@ -34,7 +35,6 @@ class memoryStorage {
 }
 
 class TrustGraphController {
-    nodeProcessed: object = {};
     settingsController: any;
     settings: any;
     packageBuilder: any;
@@ -45,9 +45,10 @@ class TrustGraphController {
     profileRepository: ProfileRepository;
     currentUser: IProfile;
     selectedProfile: IProfile;
-    modalData: TrustGraphModal;
-    graph: any = {};
+    modalData: ProfileModal;
     source: any;
+
+    dataAdapter: TrustGraphDataAdapter;
 
     constructor(private $scope: ng.IScope) {
 
@@ -115,14 +116,12 @@ class TrustGraphController {
         return deferred.promise();
     }
 
+    private loadOnData(source: any) : void {
 
-    
-
-    loadOnData(source: any) {
         this.network = this.buildNetwork(source);
     }
 
-    buildNetwork(source: any) : any {
+    private buildNetwork(source: any) : any {
 
         this.source = source;
         // First load all the profiles in locally
@@ -137,20 +136,13 @@ class TrustGraphController {
 
         // Then process the claims agaist the profiles
         let trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
-        trustStrategy.ProcessResult(trustResult.queryContext);
+        this.dataAdapter = new TrustGraphDataAdapter(this.selectedProfile, this.currentUser, trustStrategy, this.profileRepository);
+        this.dataAdapter.load(source.binaryTrustResult.queryContext);
 
-        let check = this.profileRepository.getProfile(this.selectedProfile.userId);
-
-        this.graph = {
-            nodes: [],
-            edges: new vis2.DataSet()
-        };
-        
-        this.buildNodes(this.selectedProfile, this.currentUser);
         let options = this.buildOptions();
         let container = document.getElementById('networkContainer');
 
-        let nw = new vis2.Network(container, this.graph, options);
+        let nw = new vis2.Network(container, this.dataAdapter.getGraph(), options);
 
         nw.on("select", (params) => {
             if(params.nodes.length == 0)
@@ -163,85 +155,9 @@ class TrustGraphController {
     }
 
 
-    buildNodes(profile: IProfile, currentUser: IProfile) : void {
 
-        if(this.nodeProcessed[profile.userId])
-            return; // Do not re-process the node
-
-        if(!profile.avatarImage) {
-            let hash = Crypto.toDTPAddress(Crypto.Hash160(profile.userId));
-            let icon = new Identicon(hash, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
-            profile.avatarImage = icon.toString();
-        }
-
-        let node = {
-            id: profile.userId,
-            image: profile.avatarImage,
-            label: '*'+profile.alias+'*\n_@'+profile.screen_name+'_',
-        }
-        
-        this.graph.nodes.push(node)
-        this.nodeProcessed[profile.userId] = profile;
-
-        if(profile.userId == currentUser.userId)
-            return; // Stop with oneself
-
-        if(!profile.binaryTrustResult)
-            return;
-
-        for(let key in profile.binaryTrustResult.claims) {
-            let claim = profile.binaryTrustResult.claims[key];
-
-            // if(claim.type != PackageBuilder.BINARY_TRUST_DTP1)
-            //     return;
-
-            // There should always be a profile, even if it just been created by the TrustStrategy class
-            let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
-
-            this.addEdge(parentProfile, profile, claim);
-
-            this.buildNodes(parentProfile, currentUser);
-        }
-    }
-
-    addEdge(from: IProfile, to:IProfile, claim: any) : void {
-        let color = (claim.value === "true" || claim.value === "1") ? 'green' :'red';
-        this.graph.edges.add({ 
-            id: from.userId+to.userId,
-            from: from.userId, 
-            to: to.userId, 
-            color:{
-                color:color, 
-                highlight: color 
-            } 
-        });
-    }
-
-    removeEdge(from: IProfile, to:IProfile) : void {
-        this.graph.edges.remove({ 
-            id: from.userId+to.userId
-        });
-    }
-
-    updateEdge(from: IProfile, to:IProfile, claim: any) : void {
-
-            let color = (claim.value === "true" || claim.value === "1") ? 'green' : (claim.value == undefined || claim.value == "") ? 'gray': 'red';
-            this.graph.edges.update({ 
-                id: from.userId+to.userId,
-                from: from.userId, 
-                to: to.userId, 
-                color:{
-                    color:color, 
-                    highlight: color 
-                } 
-            });
-
-    }
-
-
-
-
-    buildOptions() : any {
+    
+    private buildOptions() : any {
         var options = {
             layout: {
                 hierarchical: {
@@ -281,35 +197,9 @@ class TrustGraphController {
         return options;
     }
 
-
-    update() : JQueryPromise<IProfile> {
-        let deferred = $.Deferred<IProfile>();
-
-        // if(this.profile.owner) {
-        //     deferred.resolve(this.profile);
-        // } else {
-        //     this.host.twitterService.getProfileDTP(this.profile.userId).then((owner: DTPIdentity) => {
-        //         if(owner != null) {
-        //             try {
-        //                 if(Crypto.Verify(owner, this.profile.userId)) {
-        //                     this.profile.owner = owner;
-        //                     this.save();
-        //                     this.host.profileRepository.setIndexKey(owner.ID, this.profile); // Save an index to the profile
-        //                 }
-        //             } catch(error) {
-        //                 DTP['trace'](error); // Catch it if Crypto.Verify fails!
-        //             }
-        //         }
-        //         deferred.resolve(this.profile);
-        //     });
-        // }
-
-        return deferred.promise();
-    }
-
     showModal(profileId: any) : void {
         let profile = this.profileRepository.getProfile(profileId);
-        this.modalData = new TrustGraphModal(profile, this.selectedProfile, this.currentUser);
+        this.modalData = new ProfileModal(profile, this.selectedProfile, this.currentUser);
         
         this.$scope.$apply();
         // Show dtpbar
@@ -366,56 +256,22 @@ class TrustGraphController {
     }
 
     updateNetwork(trustPackage: ModelPackage) : void {
-        // let profiles = [];
-        // profiles.push(this.currentUser);
-        // profiles.push(this.selectedProfile);
-        // let scope = "twitter.com";
-        // this.dtpService.Query(profiles, scope).done((result: QueryContext) => {
-        //     let source = {
-        //         currentUser: this.currentUser,
-        //         selectedProfile: this.selectedProfile,
-        //         binaryTrustResult: new BinaryTrustResult()
-        //     };
-        //     source.binaryTrustResult.queryContext = result;
-
-        //     this.loadOnData(source);
-        // });
-
 
         for(let key in trustPackage.claims) {
             let claim = trustPackage.claims[key];
-            let from = this.profileRepository.getProfile(claim.issuer.id);
-            let to = this.profileRepository.getProfile(claim.subject.id);
+            this.dataAdapter.updateWithClaim(claim);
 
-            this.updateEdge(from, to, claim);
-            
-            to.binaryTrustResult.claims[claim.issuer.id] = claim;
-
-            let th = new TrustStrategy(this.settings, this.profileRepository);
-            th.calculateBinaryTrustResult(to.binaryTrustResult);
-
-
-            var opt = {
+            var message = {
                 command: 'updateContent',
                 tabId: this.contentTabId
             }
-            chrome.runtime.sendMessage(opt, (response) => {
-                console.log('tabid', response.tabId)
-                this.contentTabId = response.tabId;
-                console.log(response.data);
-                //this.loadOnData(response.data);
+            chrome.runtime.sendMessage(message, (response) => {
+                // console.log('tabid', response.tabId)
+                // this.contentTabId = response.tabId;
+                // console.log(response.data);
             });
-    
-            // if(claim.expire == 1 || claim.value == undefined) {
-            //     this.removeEdge(from, to);
-            //     to.binaryTrustResult.claims[claim.issuer.id] = claim;
-            // }
-            // else {
-            // }    
-
         }
     }
-
 
     setToCenterOfParent(element, parent, ignoreWidth, ignoreHeight): void {
         let parentWidth = $(parent).width();
@@ -427,11 +283,6 @@ class TrustGraphController {
         if(!ignoreHeight)
             $(element).css('top', parentHeight/2 - elementHeight/2);
     }
-
-    // getIdenticoinData (address, size) {
-    //     if(!size) size = 64;
-    //     return new Identicon(address, {margin:0.1, size:size, format: 'svg'}).toString();
-    // };
 }
 
 
@@ -444,6 +295,5 @@ app.config( [
     {   
         //$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
         $compileProvider.imgSrcSanitizationWhitelist(/^\s*(https?|local|data|chrome-extension):/);
-        // Angular before v1.2 uses $compileProvider.urlSanitizationWhitelist(...)
     }
 ]);

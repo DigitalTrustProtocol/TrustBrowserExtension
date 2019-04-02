@@ -6,9 +6,10 @@ import ProfileRepository = require('./ProfileRepository');
 import Profile = require('./Profile');
 import IProfile from './IProfile';
 import DTPIdentity = require('./Model/DTPIdentity');
+import ITrustStrategy from './Interfaces/ITrustStrategy';
 
 
-class TrustStrategy  {
+class TrustStrategy implements ITrustStrategy {
     settings: ISettings;
     subjects: any[];
     alias: any[];
@@ -21,7 +22,7 @@ class TrustStrategy  {
         this.profileRepository = profileRepository;
     }
 
-    public calculateBinaryTrustResult(trustResult: BinaryTrustResult) {
+    public calculateBinaryTrustResult(trustResult: BinaryTrustResult) : void {
         trustResult.direct = false;
         trustResult.trust = 0;
         trustResult.distrust = 0;

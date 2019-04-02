@@ -18,7 +18,7 @@ class TrustGraphButtonModel {
     public cssClass: string;
 }
 
-class TrustGraphModal
+class ProfileModal
 {
     
 
@@ -161,4 +161,4 @@ class TrustGraphModal
         this.button.untrust.cssClass = "btn btn-outline-secondary btn-sm";
     }
 }
-export = TrustGraphModal 
+export = ProfileModal
