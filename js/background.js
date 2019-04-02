@@ -4,6 +4,37 @@ var popupWindow = null;
 var profileData = null;
 var contentTabId = null;
 
+
+// /**
+//  * Promise wrapper for chrome.tabs.sendMessage
+//  * @param tabId
+//  * @param item
+//  * @returns {Promise<any>}
+//  */
+// function sendMessagePromise(tabId, item) {
+//     return new Promise((resolve, reject) => {
+//         chrome.tabs.sendMessage(tabId, {item}, response => {
+//             if(response.complete) {
+//                 resolve();
+//             } else {
+//                 reject('Something wrong');
+//             }
+//         });
+//     });
+// }
+// waiting for tasks from background
+// chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+//     const item = msg.item;
+
+//     // ..process your "item"
+
+//     sendResponse({complete: true}); // telling that CS has finished its job
+
+//     // return true from the event listener to indicate you wish to send a response asynchronously
+//     // (this will keep the message channel open to the other end until sendResponse is called).
+//     return true;
+// });
+
 // background.js
 // Notice the `async` keyword.
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {

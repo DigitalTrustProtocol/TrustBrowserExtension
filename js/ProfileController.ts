@@ -212,33 +212,35 @@ class ProfileController {
                 $(button).addClass('trustSpinner24');
                 let tweetContainer = ProfileController.getTweetContainer(button);
                 //let screen_name = $(tweetContainer).attr("data-screen-name");
+                
                 let userId = $(tweetContainer).attr("data-user-id");
-                let profile = profileRepository.ensureProfile(userId);
-                profile.controller.selectedElement = tweetContainer;
+                profileRepository.ensureProfile(userId).then(profile => {
+                    profile.controller.selectedElement = tweetContainer;
 
-                this.loadProfile(userId, profileRepository).then(function(profile: IProfile) {
-                    if(button['classList'].contains('trust')) {
-                        profile.controller.trust().then(RemoveSpinner);
+                    this.loadProfile(userId, profileRepository).then(function(profile: IProfile) {
+                        if(button['classList'].contains('trust')) {
+                            profile.controller.trust().then(RemoveSpinner);
+                        }
+
+                        if(button['classList'].contains('distrust')) {
+                            profile.controller.distrust().then(RemoveSpinner);
+                        }
+
+                        if(button['classList'].contains('untrust')) {
+                            profile.controller.untrust().then(RemoveSpinner);
+                        }
+
+                        if(button['classList'].contains('follow')) {
+                            profile.controller.follow();
+                            RemoveSpinner();
+                        }
+
+                    });
+
+                    function RemoveSpinner() {
+                        $(button).removeClass('trustSpinner24');
                     }
-
-                    if(button['classList'].contains('distrust')) {
-                        profile.controller.distrust().then(RemoveSpinner);
-                    }
-
-                    if(button['classList'].contains('untrust')) {
-                        profile.controller.untrust().then(RemoveSpinner);
-                    }
-
-                    if(button['classList'].contains('follow')) {
-                        profile.controller.follow();
-                        RemoveSpinner();
-                    }
-
                 });
-
-                function RemoveSpinner() {
-                    $(button).removeClass('trustSpinner24');
-                }
             });
 
     }
@@ -248,10 +250,11 @@ class ProfileController {
     }
 
   static loadProfile(id: string, profileRepository : ProfileRepository) : JQueryPromise<IProfile> {
-        let profile = profileRepository.getProfile(id);
-        if(profile != null)
-            return profile.controller.update();
-        return null;
+        return profileRepository.getProfile(id).then(profile => {
+            if(profile != null)
+                return profile.controller.update();
+            return null;
+        });
     }
 }
 

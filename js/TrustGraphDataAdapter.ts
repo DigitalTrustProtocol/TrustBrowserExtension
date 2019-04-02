@@ -60,27 +60,29 @@ class TrustGraphDataAdapter {
         }
 
         for(let key in profile.binaryTrustResult.claims) {
-            let claim = profile.binaryTrustResult.claims[key];
+            let claim = profile.binaryTrustResult.claims[key]; // is Key the same as claim.issuer.ID?
 
-            // There should always be a profile, even if it just been created by the TrustStrategy class
-            let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
+            // issuer is always a DTP ID
+            this.profileRepository.getProfileByIndex(claim.issuer.id).then(parentProfile => {
+                // There should always be a profile, even if it just been created by the TrustStrategy class
+                this.addEdge(parentProfile, profile, claim);
 
-            this.addEdge(parentProfile, profile, claim);
-
-            this.buildNodes(parentProfile);
+                this.buildNodes(parentProfile);
+            });
         }
     }
 
 
     public updateWithClaim(claim : Claim) : void {
-        let from = this.profileRepository.getProfile(claim.issuer.id);
-        let to = this.profileRepository.getProfile(claim.subject.id);
-
-        to.binaryTrustResult.claims[claim.issuer.id] = claim;
-        this.trustStrategy.calculateBinaryTrustResult(to.binaryTrustResult);
-
-        this.updateNode(from); // Make sure that "from" profile node exist in graph
-        this.updateEdge(from, to, claim);
+        this.profileRepository.getProfile(claim.issuer.id).then(from => {
+            this.profileRepository.getProfile(claim.subject.id).then(to => {
+                to.binaryTrustResult.claims[claim.issuer.id] = claim;
+                this.trustStrategy.calculateBinaryTrustResult(to.binaryTrustResult);
+        
+                this.updateNode(from); // Make sure that "from" profile node exist in graph
+                this.updateEdge(from, to, claim);
+            });
+        });
     }
 
    

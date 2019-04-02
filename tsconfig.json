@@ -3,8 +3,9 @@
         "outDir": "./dist/js",
         "allowJs": true,
         "target": "es5",
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true
+        //"emitDecoratorMetadata": true,
+        //"experimentalDecorators": true,
+        //"allowSyntheticDefaultImports": true
     },
     "include": [
         "./js/**/*"

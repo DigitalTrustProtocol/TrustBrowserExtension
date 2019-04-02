@@ -6,8 +6,8 @@ import IProfile from './IProfile';
 class ProfileRepository {
     profiles: Array<IProfile> = [];
     index: Array<IProfile> = [];
-    storage: any;
-    constructor(storage: any) {
+    storage: LocalForage;
+    constructor(storage: LocalForage) {
         this.storage = storage;
     }
 
@@ -19,27 +19,39 @@ class ProfileRepository {
         return 'TwitterIndex' + id;
     }
 
-    getProfileDirect(id: string): IProfile {
+    getProfileDirect(id: string): JQueryPromise<IProfile> {
+        let deferred = $.Deferred<IProfile>();
         let profile: IProfile = this.profiles[id]; // Quick cache
-        if (profile)
-            return profile;
+        if (profile) 
+            return deferred.resolve(profile).promise();
 
-        let data = this.storage.getItem(this.getCacheKey(id));
-        if (!data) 
-            return null;
+        this.storage.getItem(this.getCacheKey(id)).then(data => {
+            if (!data) 
+                return deferred.resolve(null);
 
-        profile = new Profile(JSON.parse(data));
+            profile = (typeof data === "string") ? new Profile(JSON.parse(data)) : data as IProfile;
             
-        this.profiles[id] = profile; // Save to quick cache
-        return profile;
+            this.profiles[id] = profile; // Save to quick cache
+            return profile;
+        });
+
+        return deferred.promise();
     }
 
-    getProfile(id: string): IProfile {
-        let profile = this.getProfileDirect(id);
-        if(profile == null) 
-            profile = this.getProfileByIndex(id);
+    getProfile(id: string): JQueryPromise<IProfile> {
+        let deferred = $.Deferred<IProfile>();
+
+        this.getProfileDirect(id).then(profile => {
+
+            if(profile == null) 
+                this.getProfileByIndex(id).then(profile => {
+                    deferred.resolve(profile);
+                });
+            else
+                deferred.resolve(profile);
+        });
     
-        return profile;
+        return deferred.promise();
     }
 
     setProfile(profile: IProfile): void {
@@ -62,15 +74,20 @@ class ProfileRepository {
         });
     }
 
-    ensureProfile(id: string, source?: any): IProfile {
-        let profile : IProfile = this.getProfile(id);
-        if (!profile) {
-            const data = (source) ? source : { userId: id};
-            profile = new Profile(data);
-            this.setProfile(profile);
-            DTP['trace']('Profile ' + profile.userId + ' created');
-        }
-        return profile;
+    ensureProfile(id: string, source?: any): JQueryPromise<IProfile> {
+        let deferred = $.Deferred<IProfile>();
+
+        this.getProfile(id).then(profile => {
+            if (!profile) {
+                const data = (source) ? source : { userId: id};
+                profile = new Profile(data);
+                this.setProfile(profile);
+                DTP['trace']('Profile ' + profile.userId + ' created');
+            }
+            deferred.resolve(profile);
+        });
+
+        return deferred.promise();
     }
 
     getSessionProfiles(): Array<IProfile> {
@@ -78,37 +95,42 @@ class ProfileRepository {
     }
 
     // Get Profile by a index key
-    getProfileByIndex(key: string) : IProfile
+    getProfileByIndex(key: string) : JQueryPromise<IProfile>
     {
+        let deferred = $.Deferred<IProfile>();
+
         let profile: IProfile = this.index[key]; // Quick cache
         if (profile)
-            return profile;
+            return deferred.resolve(profile).promise();
 
-        let data = this.storage.getItem("I"+this.getIndexCacheKey(key));
-        if (!data) 
-            return null;
+        this.storage.getItem("I"+this.getIndexCacheKey(key)).then(data => {
+            if (!data) 
+                return deferred.resolve(null);
+    
+            let identity = (typeof data === "string") ? new DTPIdentity(JSON.parse(data)) : data as DTPIdentity;
+            if(!identity || !identity.PlatformID) 
+                return deferred.resolve(null);
 
-        let identity: DTPIdentity = JSON.parse(data);
-        if(!identity || !identity.PlatformID) 
-            return null;
+            this.getProfile(identity.PlatformID).then(profile => {
+                if (!profile)
+                    return null;
 
-        profile = this.getProfile(identity.PlatformID); 
-        if (!profile)
-            return null;
+                if(profile.owner && profile.owner.ID != identity.ID)
+                    return null; // More checks may be needed!
 
-        if(profile.owner && profile.owner.ID != identity.ID)
-            return null; // More checks may be needed!
+                this.index[key] = profile;
+                return deferred.resolve(profile);
+            });
+        });
 
-        this.index[key] = profile;
-        
-        return profile;
+        return deferred.promise();
     }
 
     // Only store the profile id
-    setIndexKey(profile: IProfile): void {
+    setIndexKey(profile: IProfile): Promise<DTPIdentity> {
         this.index[profile.owner.ID] = profile;
         profile.owner.PlatformID = profile.userId;
-        this.storage.setItem(this.getIndexCacheKey(profile.owner.ID), JSON.stringify(profile.owner));
+        return this.storage.setItem(this.getIndexCacheKey(profile.owner.ID), profile.owner);
     }
 
 

@@ -19,20 +19,20 @@ import SiteManager = require('./SiteManager');
 import { ModelPackage, QueryContext } from '../lib/dtpapi/model/models.js';
 import ProfileModal = require('./Model/ProfileModal');
 import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
+import * as localforage from 'localforage';
 
+// class memoryStorage {
 
-class memoryStorage {
+//     private cache : Array<any> = [];
 
-    private cache : Array<any> = [];
+//     setItem(key: string, data: any) {
+//         this.cache[key] = data;
+//     }
 
-    setItem(key: string, data: any) {
-        this.cache[key] = data;
-    }
-
-    getItem(key: string) : any {
-        return this.cache[key];
-    }
-}
+//     getItem(key: string) : any {
+//         return this.cache[key];
+//     }
+// }
 
 class TrustGraphController {
     settingsController: any;
@@ -51,15 +51,21 @@ class TrustGraphController {
     dataAdapter: TrustGraphDataAdapter;
 
     constructor(private $scope: ng.IScope) {
-
     }
 
     init() {
+        localforage.config({
+            driver      : localforage.LOCALSTORAGE,
+            name        : 'DTP',
+            storeName   : 'DTP1', // Should be alphanumeric, with underscores.
+            description : 'DTP Client browser extension'
+        });
+    
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsController = new SettingsController(userContext);
             this.settingsController.loadSettings((settings) => {
                 this.settings = settings;
-                this.profileRepository = new ProfileRepository(new memoryStorage());
+                this.profileRepository = new ProfileRepository(localforage);
                 this.packageBuilder = new PackageBuilder(settings);
                 this.subjectService = new SubjectService(settings, this.packageBuilder);
                 this.dtpService = new DTPService(settings);
@@ -198,14 +204,15 @@ class TrustGraphController {
     }
 
     showModal(profileId: any) : void {
-        let profile = this.profileRepository.getProfile(profileId);
-        this.modalData = new ProfileModal(profile, this.selectedProfile, this.currentUser);
+        this.profileRepository.getProfile(profileId).then(profile => {
+            this.modalData = new ProfileModal(profile, this.selectedProfile, this.currentUser);
         
-        this.$scope.$apply();
-        // Show dtpbar
-        this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
-        //$("#networkModal").finish().show();
-        $("#networkModal").modal('show');
+            this.$scope.$apply();
+            // Show dtpbar
+            this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
+            //$("#networkModal").finish().show();
+            $("#networkModal").modal('show');
+        });
     }
 
     hideModal(): void {

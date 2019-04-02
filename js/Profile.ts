@@ -7,7 +7,7 @@ import BinaryTrustResult = require("./Model/BinaryTrustResult");
 import Decorators = require("./Decorators");
 
 class Profile implements IProfile {
-    static CurrentUser : Profile = null;
+    static CurrentUser : IProfile = null;
 
     public screen_name: string;
     public alias: string;

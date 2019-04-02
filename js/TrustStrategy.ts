@@ -52,9 +52,11 @@ class TrustStrategy implements ITrustStrategy {
         trustResult.state = trustResult.trust - trustResult.distrust;
     }
 
-    public ProcessResult(queryContext : QueryContext) : void {
+    public ProcessResult(queryContext : QueryContext) : JQueryPromise<{}> {
+        let resultDeferred = $.Deferred();
+
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
-            return;
+            return resultDeferred.resolve().promise();
 
         const checkTime = Math.round(Date.now()/1000.0);
         
@@ -68,62 +70,81 @@ class TrustStrategy implements ITrustStrategy {
             subjectIndex[claim.subject.id] = claim.value; // Subject is a DTP ID, value is the local ID
         });
 
+        let tasks = [];
+
         claims.forEach((claim) => {
             if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
                 return; // Ignore all cliams that is not BINARY_TRUST_DTP1
+
+            let deferred = $.Deferred();
+            tasks.push(deferred.promise());
 
             let subjectId = subjectIndex[claim.subject.id];
             if(!subjectId) // Undefined
                 subjectId = claim.subject.id;
 
-            let profile = this.profileRepository.getProfile(subjectId); // Id can be user id or a DTP id
-            if(profile == null) {
-                if(subjectId == claim.subject.id)
-                    return; // The profile do not exist! No data on who the claim is about.
+            this.profileRepository.getProfile(subjectId).then(profile => {
 
-                
-                // Create a new profile, but do not load its DTP data
-                // The profile should not be a subject as they are all known!(?)
-                let data = { 
-                    userId: subjectId, // Should be local id
-                    screen_name: 'Unknown', 
-                    alias: '', // Should be DTP ID
-                    //owner: new DTPIdentity({ID:claim.subject.id}) // Proof are missing, verify later if needed!
-                 };
-                profile = new Profile(data);
-                this.profileRepository.setProfile(profile);
-            }
+                // Id can be user id or a DTP id
+                if(profile == null) {
+                    if(subjectId == claim.subject.id)
+                        return deferred.resolve(); // The profile do not exist! No data on who the claim is about.
 
-            // Make sure that an owner is added if missing and a ID identity claim is available.
-            if(!profile.owner && subjectId != claim.subject.id) {
-                profile.owner = new DTPIdentity({ID:claim.subject.id}); // Proof are missing, verify later if needed!
-                this.profileRepository.setProfile(profile);
-            } 
+                    
+                    // Create a new profile, but do not load its DTP data
+                    // The profile should not be a subject as they are all known!(?)
+                    let data = { 
+                        userId: subjectId, // Should be local id
+                        screen_name: 'Unknown', 
+                        alias: '', // Should be DTP ID
+                        //owner: new DTPIdentity({ID:claim.subject.id}) // Proof are missing, verify later if needed!
+                    };
+                    profile = new Profile(data);
+                    this.profileRepository.setProfile(profile);
+                }
 
-            if(!profile.binaryTrustResult)
-                profile.binaryTrustResult = new BinaryTrustResult();
-                
-            let trustResult = profile.binaryTrustResult as BinaryTrustResult;
+                // Make sure that an owner is added if missing and a ID identity claim is available.
+                if(!profile.owner && subjectId != claim.subject.id) {
+                    profile.owner = new DTPIdentity({ID:claim.subject.id}); // Proof are missing, verify later if needed!
+                    this.profileRepository.setProfile(profile);
+                } 
 
-            if(trustResult.time != checkTime) {
-                trustResult.Clean(); // Reset the trustResult
-                trustResult.time = checkTime; // Set check time
-                trustResult.queryContext = queryContext;
-            }
+                if(!profile.binaryTrustResult)
+                    profile.binaryTrustResult = new BinaryTrustResult();
+                    
+                let trustResult = profile.binaryTrustResult as BinaryTrustResult;
 
-            const exists = (claim.issuer.id in trustResult.claims);
-            if(exists)
-                return; // There are already one claim for the subject
+                if(trustResult.time != checkTime) {
+                    trustResult.Clean(); // Reset the trustResult
+                    trustResult.time = checkTime; // Set check time
+                    trustResult.queryContext = queryContext;
+                }
 
-            trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
+                const exists = (claim.issuer.id in trustResult.claims);
+                if(exists)
+                    return deferred.resolve(); // There are already one claim for the subject
 
-            this.processClaim(trustResult, claim);
-       
-            // Issuer is always DTP ID, add reference to the issuer profile.
-            let issuerProfile = this.profileRepository.getProfileByIndex(claim.issuer.id);
-            if(issuerProfile)
-                trustResult.profiles.push(issuerProfile);
+                trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
+
+                this.processClaim(trustResult, claim);
+        
+                // Issuer is always DTP ID, add reference to the issuer profile.
+                //let issuerProfile = 
+                this.profileRepository.getProfileByIndex(claim.issuer.id).then(issuerProfile => {
+                    if(issuerProfile)
+                        trustResult.profiles.push(issuerProfile);
+
+                    deferred.resolve();
+                });
+            }); 
+
         });
+
+        $.when(tasks).then(() => {
+            resultDeferred.resolve();
+        });
+
+        return resultDeferred.promise();
     }
 }
 export = TrustStrategy

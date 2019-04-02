@@ -20,6 +20,7 @@ import DTPIdentity = require('./Model/DTPIdentity');
 import bitcoin = require('bitcoinjs-lib');
 import bitcoinMessage = require('bitcoinjs-message');
 import SiteManager = require('./SiteManager');
+import localForage from "localforage";
 
 class Twitter {
     OwnerPrefix: string;
@@ -49,36 +50,38 @@ class Twitter {
         console.log('twitter class init', this.settings)
     }
 
+
     processElement(element: HTMLElement): void { // Element = dom element
         var userID = element.attributes["data-user-id"].value;
 
-        let profile = this.profileRepository.ensureProfile(userID);
+        this.profileRepository.ensureProfile(userID).then(profile => {
+            profile.screen_name = element.attributes["data-screen-name"].value;
+            profile.alias = element.attributes["data-name"].value;
+            profile.avatarImage = $(element).find('img.avatar').attr('src');
+            
+            var youFollow = (element.attributes["data-you-follow"].value == "true");
+            Object.defineProperty(profile, 'youFollow', { enumerable: false, value: youFollow, }); // No serialize to json!
 
-        profile.screen_name = element.attributes["data-screen-name"].value;
-        profile.alias = element.attributes["data-name"].value;
-        profile.avatarImage = $(element).find('img.avatar').attr('src');
-        
-        var youFollow = (element.attributes["data-you-follow"].value == "true");
-        Object.defineProperty(profile, 'youFollow', { enumerable: false, value: youFollow, }); // No serialize to json!
+            var followsYou = (element.attributes["data-follows-you"].value == "true");
+            Object.defineProperty(profile, 'followsYou', { enumerable: false, value: youFollow, }); // No serialize to json!
 
-        var followsYou = (element.attributes["data-follows-you"].value == "true");
-        Object.defineProperty(profile, 'followsYou', { enumerable: false, value: youFollow, }); // No serialize to json!
+            console.log('screen_name: ' + profile.screen_name + ' - ' + profile.alias);
 
-        console.log('screen_name: ' + profile.screen_name + ' - ' + profile.alias);
+            //ProfileController.addTo(profile, this, element);
+            if (!profile.controller) {
+                profile.controller = new ProfileController(profile, new ProfileView(), this);
+            }
+            profile.controller.domElements.push(element);
 
-        //ProfileController.addTo(profile, this, element);
-        if (!profile.controller) {
-            profile.controller = new ProfileController(profile, new ProfileView(), this);
-        }
-        profile.controller.domElements.push(element);
+            $(element).data("dtp_profile", profile);
 
-        $(element).data("dtp_profile", profile);
+            // Add profile to query on server
+            this.profilesToQuery[profile.userId] = profile;
 
-        // Add profile to query on server
-        this.profilesToQuery[profile.userId] = profile;
+            //if(profile.controller.queryContext) // Only render if there is a result!
+            //    profile.controller.render(element);
+        });
 
-        //if(profile.controller.queryContext) // Only render if there is a result!
-        //    profile.controller.render(element);
     }
 
     getTweets(): JQLite {
@@ -106,23 +109,23 @@ class Twitter {
 
             // Process the result
             let th = new TrustStrategy(this.settings, this.profileRepository);
-            th.ProcessResult(result);
-
-            for (let key in profiles) {
-                if (!profiles.hasOwnProperty(key))
-                    continue;
-                try {
-                    let profile = profiles[key] as IProfile;
-                    if (!profile.controller)
+            th.ProcessResult(result).then(() => {
+                for (let key in profiles) {
+                    if (!profiles.hasOwnProperty(key))
                         continue;
-                    profile.controller.twitterUserAction();
-                    profile.controller.render();
+                    try {
+                        let profile = profiles[key] as IProfile;
+                        if (!profile.controller)
+                            continue;
+                        profile.controller.twitterUserAction();
+                        profile.controller.render();
 
-                } catch (error) {
-                    console.log(error);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                    //profile.controller.save(); // Why?
                 }
-                //profile.controller.save(); // Why?
-            }
+            });
             
         });
     }
@@ -143,32 +146,32 @@ class Twitter {
         });
     }
 
-    loadCurrentUserProfile(user: any): void {
-        Profile.CurrentUser = this.profileRepository.ensureProfile(user.userId) as Profile;
-        Profile.CurrentUser.update(user);
-        Profile.CurrentUser.avatarImage = $('img.DashboardProfileCard-avatarImage').attr('src');
-
-
-        if (Profile.CurrentUser.owner == null)
-            this.updateProfiles([Profile.CurrentUser]);
-
-        Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
-        console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
+    loadCurrentUserProfile(user: any): JQueryPromise<void> {
+        return this.profileRepository.ensureProfile(user.userId).then(profile => {
+            Profile.CurrentUser = profile;
+            Profile.CurrentUser.update(user);
+            Profile.CurrentUser.avatarImage = $('img.DashboardProfileCard-avatarImage').attr('src');
+    
+            if (Profile.CurrentUser.owner == null)
+                this.updateProfiles([Profile.CurrentUser]);
+    
+            Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
+            console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
+        }).promise();
     }
 
     ready(doc: Document): void {
         SiteManager.GetUserContext().then((userContext) => {
-            this.loadCurrentUserProfile(userContext);
+            this.loadCurrentUserProfile(userContext).then(() => {
+                var tweets = this.getTweets();
 
-            var tweets = this.getTweets();
-
-            tweets.each((i: number, element: HTMLElement) => {
-                this.processElement(element);
+                tweets.each((i: number, element: HTMLElement) => {
+                    this.processElement(element);
+                });
+    
+                ProfileController.bindEvents(doc, this.profileRepository);
+                ProfileView.createTweetDTPButton();
             });
-
-            ProfileController.bindEvents(doc, this.profileRepository);
-            ProfileView.createTweetDTPButton();
-
         });
 
         $(doc).on('DOMNodeInserted', (e) => {
@@ -208,13 +211,13 @@ class Twitter {
         return this.queryDTP(this.profileRepository.getSessionProfiles());
     }
 
-    loadProfiles(ids: Array<string>): Array<IProfile> {
-        let profiles = ids.map((id) => { return this.profileRepository.ensureProfile(id); });
+    // loadProfiles(ids: Array<string>): Array<IProfile> {
+    //     let profiles = ids.map((id) => { return this.profileRepository.ensureProfile(id); });
 
-        this.updateProfiles(profiles);
+    //     this.updateProfiles(profiles);
 
-        return profiles;
-    }
+    //     return profiles;
+    // }
 
     addListener(): void {
         chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -228,11 +231,11 @@ class Twitter {
                 return true;
             }
 
-            if (request.command === 'loadProfiles') {
-                let profiles = this.loadProfiles(request.data.profileIDs);
-                sendResponse({ profiles: profiles });
-                return true;
-            }
+            // if (request.command === 'loadProfiles') {
+            //     let profiles = this.loadProfiles(request.data.profileIDs);
+            //     sendResponse({ profiles: profiles });
+            //     return true;
+            // }
             
             return false;
         });
