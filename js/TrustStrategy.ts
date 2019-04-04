@@ -35,7 +35,7 @@ class TrustStrategy implements ITrustStrategy {
         }
     }
 
-    private processClaim(trustResult: BinaryTrustResult, claim: Claim) {
+    private processClaim(trustResult: BinaryTrustResult, claim: Claim) : void {
         if(claim.value === "true" || claim.value === "1")
             trustResult.trust++;
         
@@ -52,7 +52,7 @@ class TrustStrategy implements ITrustStrategy {
         trustResult.state = trustResult.trust - trustResult.distrust;
     }
 
-    public ProcessResult(queryContext : QueryContext) : JQueryPromise<{}> {
+    public ProcessResult(queryContext : QueryContext, profiles: Array<IProfile>) : JQueryPromise<{}> {
         let resultDeferred = $.Deferred();
 
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
@@ -77,7 +77,7 @@ class TrustStrategy implements ITrustStrategy {
                 return; // Ignore all cliams that is not BINARY_TRUST_DTP1
 
             let deferred = $.Deferred();
-            tasks.push(deferred.promise());
+            tasks.push(deferred);
 
             let subjectId = subjectIndex[claim.subject.id];
             if(!subjectId) // Undefined
@@ -140,9 +140,11 @@ class TrustStrategy implements ITrustStrategy {
 
         });
 
-        $.when(tasks).then(() => {
+        function resultDeferredDone() {
             resultDeferred.resolve();
-        });
+        }
+
+        $.when(tasks).done(resultDeferredDone);
 
         return resultDeferred.promise();
     }

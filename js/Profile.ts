@@ -5,6 +5,9 @@ import IProfile from "./IProfile";
 import { jsonIgnoreReplacer, jsonIgnore } from 'json-ignore';
 import BinaryTrustResult = require("./Model/BinaryTrustResult");
 import Decorators = require("./Decorators");
+import { ProfileStateEnum } from "./Model/ProfileStateEnum";
+
+
 
 class Profile implements IProfile {
     static CurrentUser : IProfile = null;
@@ -22,26 +25,41 @@ class Profile implements IProfile {
     public formAuthenticityToken: string;
     public binaryTrustResult : BinaryTrustResult;
 
+    public state: ProfileStateEnum = ProfileStateEnum.None; 
+
     constructor(source: any) { 
         Object.defineProperty(this, 'address', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'scope', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'controller', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'formAuthenticityToken', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'binaryTrustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'state', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
         this.binaryTrustResult = new BinaryTrustResult()
 
         this.update(source);
     }
 
-    update(source: any) : void {
-        this.userId = source.userId;
-        this.screen_name = (source.screen_name) ? source.screen_name : source.userId;
-        this.alias = (source.alias) ? source.alias : source.userId;
-        this.identiconData16 = source.identiconData16;
-        this.scope = Profile.SimpleDomainFormat(window.location.hostname);
-        this.formAuthenticityToken = (source.formAuthenticityToken) ? source.formAuthenticityToken: null;
-        this.owner = source.owner;
+    public update(source: IProfile) : void {
+        this.state = ProfileStateEnum.None;
+
+        this.updateProperty("userId", source.userId);
+        this.updateProperty("screen_name", source.screen_name, source.userId);
+        this.updateProperty("alias", source.alias);
+        this.updateProperty("identiconData16", source.identiconData16);
+        this.updateProperty("formAuthenticityToken", source.formAuthenticityToken);
+        this.updateProperty("owner", source.owner);
+        //this.scope = Profile.SimpleDomainFormat(window.location.hostname);
+    }
+
+    private updateProperty(name: string, value: any, defaultValue?: any) : void {
+        if(value == undefined && defaultValue == undefined)
+            return;
+
+        if(this[name] != value) {
+            this[name] = (value != undefined) ? value: defaultValue;
+            this.state = ProfileStateEnum.Changed;
+        }
     }
 
     static SimpleDomainFormat(host: string) : string {

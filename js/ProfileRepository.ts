@@ -32,7 +32,7 @@ class ProfileRepository {
             profile = (typeof data === "string") ? new Profile(JSON.parse(data)) : data as IProfile;
             
             this.profiles[id] = profile; // Save to quick cache
-            return profile;
+            deferred.resolve(profile);
         });
 
         return deferred.promise();
@@ -54,18 +54,22 @@ class ProfileRepository {
         return deferred.promise();
     }
 
-    setProfile(profile: IProfile): void {
+    setProfile(profile: IProfile): JQueryPromise<IProfile> {
+        let deferred = $.Deferred<IProfile>();
 
         if (profile.userId && typeof profile.userId != 'string')
             throw new Error(`profile.userId (string) cannot be set to object of type: ${typeof profile.userId}`);
 
         this.profiles[profile.userId] = profile;
         let data = JSON.stringify(profile);
-        this.storage.setItem(this.getCacheKey(profile.userId), data);
 
-        if(profile.owner) {
-            this.setIndexKey(profile);
-        }
+        this.storage.setItem(this.getCacheKey(profile.userId), data).then(() => {
+            if(profile.owner) {
+                this.setIndexKey(profile).then(() => deferred.resolve(profile));
+            } else
+                deferred.resolve(profile);
+        });
+        return deferred.promise();
     }
 
     setProfiles(profiles: Array<IProfile>): void {
@@ -113,13 +117,13 @@ class ProfileRepository {
 
             this.getProfile(identity.PlatformID).then(profile => {
                 if (!profile)
-                    return null;
+                    return deferred.resolve(null);
 
                 if(profile.owner && profile.owner.ID != identity.ID)
-                    return null; // More checks may be needed!
+                    return deferred.resolve(null); // More checks may be needed!
 
                 this.index[key] = profile;
-                return deferred.resolve(profile);
+                     deferred.resolve(profile);
             });
         });
 

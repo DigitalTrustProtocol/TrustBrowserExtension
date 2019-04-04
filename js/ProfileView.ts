@@ -4,12 +4,22 @@ import Profile = require("./Profile");
 import IProfile from "./IProfile";
 import Identicon = require('identicon.js');
 import Crypto = require("./Crypto");
+import BinaryTrustResult = require('./Model/BinaryTrustResult.js');
 
 //declare var Identicon: any;
 class ProfileView {
     public controller: ProfileController;
     Anchor: string;
     fullNameGroup: string;
+
+    static Item = ({ url, img, title }) => `
+        <a href="${url}" class="list-group-item">
+        <div class="image">
+            <img src="${img}" />
+        </div>
+        <p class="list-group-item-text">${title}</p>
+        </a>
+    `;
 
     //constructor(controller?: ProfileController) {
     constructor() {
@@ -19,24 +29,73 @@ class ProfileView {
         this.fullNameGroup = '.FullNameGroup';
     }
 
-    renderElement (element) {
+    public render(binaryTrustResult: BinaryTrustResult, element: HTMLElement): void {
+        // Build template
+        const $element = $(element);
+        let $bar = $element.data('dtp_bar') as JQuery;
+        if (!$bar) {
+            let $anchor = $element.find(this.Anchor);
+            $bar = $('span') as JQuery;
+            $anchor.after($bar);
+            $bar.$fullNameGroup = $element.find(this.fullNameGroup);
+            $bar.$fullNameGroup.prepend(this.createIdenticon(this.controller.profile));
+        }
+
+        // Create html
+        let html = this.createBar(binaryTrustResult);
+        $bar.html(html); // Replace with new html
+    }
+
+    private createBar(binaryTrustResult: BinaryTrustResult): string {
+        return "";
+    }
+
+
+
+    createButton(text, iconClass, type, count) {
+        let html = `<div class="ProfileTweet-action ProfileTweet-action" style="min-width:40px">
+                        <button class="ProfileTweet-actionButton u-textUserColorHover js-actionButton" type="button">
+                            <div class="IconContainer js-tooltip" >
+                                <span class="Icon Icon--medium">
+                                    <a class="trustIcon ${type} js-tooltip ${iconClass}" data-original-title="${text}" title="${text}"></a>
+                                </span>
+                                <span class="u-hiddenVisually">${text}</span>
+                            </div>
+                            <span class="ProfileTweet-actionCount">
+                                <span class="ProfileTweet-actionCountForPresentation" aria-hidden="true">${count}</span>
+                            </span>
+                        </button>
+                    </div>`;
+
+        return html;
+        // let $html = $(html);
+        // return {
+        //     $html: $html,
+        //     $a: $("a", $html),
+        //     $span: $('.ProfileTweet-actionCountForPresentation', $html)
+        // }
+    }
+
+
+
+    renderElement(element) {
         const $element = $(element);
         let bar = $element.data('dtp_bar');
-        if(!bar) {
+        if (!bar) {
             let $anchor = $element.find(this.Anchor);
 
-            if($anchor.find('.trustIcon').length > 0)
+            if ($anchor.find('.trustIcon').length > 0)
                 return;
 
             bar = {
                 trust: this.createButton("Trust", "trustIconPassive", "trust", undefined),
                 distrust: this.createButton("Distrust", "distrustIconPassive", "distrust", undefined),
-                untrust:this.createButton("Untrust", "untrustIconPassive", "untrust", undefined),
+                untrust: this.createButton("Untrust", "untrustIconPassive", "untrust", undefined),
             }
 
             bar.$fullNameGroup = $element.find(this.fullNameGroup);
             bar.$fullNameGroup.prepend(this.createIdenticon(this.controller.profile));
-           
+
             $anchor.after(bar.untrust.$html);
             $anchor.after(bar.distrust.$html);
             $anchor.after(bar.trust.$html);
@@ -44,12 +103,12 @@ class ProfileView {
 
             $element.data('dtp_bar', bar);
 
-            
+
             // let $followButton = $("<li class='follow-link js-actionFollow' data-nav='follow' role='presentation'>"+
             //                      "<button type='button' class='dropdown-link' role='menuitem'>Follow <span class='username u-dir u-textTruncate' dir='ltr'>@<b>zerohedge</b></span></button>"+
             //                      "</li>");
-            
-            
+
+
             //$followButton.insertAfter($element.find("li.mute-user-item"));
         }
 
@@ -58,7 +117,7 @@ class ProfileView {
         bar.distrust.$a.removeClass("distrustIconActive").addClass("trustIconPassive");
         bar.distrust.$span.text('');
 
-        if(!this.controller.profile.binaryTrustResult)
+        if (!this.controller.profile.binaryTrustResult)
             return;
         let result = this.controller.profile.binaryTrustResult;
 
@@ -66,21 +125,21 @@ class ProfileView {
             bar.trust.$a.removeClass("trustIconPassive").addClass("trustIconActive");
             bar.trust.$span.text(result.trust);
 
-        } 
+        }
 
-        if (result.state < 0 ) {
+        if (result.state < 0) {
 
-            if(this.controller.host.settings.twitterdistrust == "hidecontent") {
+            if (this.controller.host.settings.twitterdistrust == "hidecontent") {
                 bar.distrust.$a.removeClass("trustIconPassive").addClass("distrustIconActive");
                 bar.distrust.$span.text(result.distrust);
                 $element.find('.js-tweet-text-container').hide();
                 $element.find('.QuoteTweet-container').hide();
                 $element.find('.AdaptiveMediaOuterContainer').hide();
                 $element.find('.card2').hide();
-                
+
             }
-            if(this.controller.host.settings.twitterdistrust == "automute") {
-                 $element.hide(); // Hide the tweet!
+            if (this.controller.host.settings.twitterdistrust == "automute") {
+                $element.hide(); // Hide the tweet!
             }
         }
         else {
@@ -92,50 +151,50 @@ class ProfileView {
         if (result.direct) {
             bar.untrust.$html.show();
         }
-    } 
+    }
 
     static createTweetDTPButton() {
         let $editButton = $('.ProfileNav-list .edit-button');
-        if($editButton.length == 0)
+        if ($editButton.length == 0)
             return;
 
         let $tweetDTP = $editButton.parent().find('button.tweet-dtp');
-        if($tweetDTP.length > 0)
+        if ($tweetDTP.length > 0)
             return;
-       
+
         $tweetDTP = $(
-            '<button type="button" class="EdgeButton EdgeButton--tertiary dtpUserAction-Button tweet-dtp">'+
-            '<span class="button-text">Tweet DTP</span>'+
+            '<button type="button" class="EdgeButton EdgeButton--tertiary dtpUserAction-Button tweet-dtp">' +
+            '<span class="button-text">Tweet DTP</span>' +
             '</button>'
         );
-        
+
         $editButton.before($tweetDTP);
     }
-    
-   static showMessage(message) {
+
+    static showMessage(message) {
         let pop = $('#message-drawer');
         pop.find('.message-text').text(message);
-        pop.attr("style", "").removeClass('hidden').delay(3000).fadeOut(1000, function() {
+        pop.attr("style", "").removeClass('hidden').delay(3000).fadeOut(1000, function () {
             pop.addClass('hidden').attr("style", "top: -40px;");
         });
     }
 
     createIdenticon(profile: IProfile) {
         let iconData = null;
-        if(!profile.identiconData16) {
+        if (!profile.identiconData16) {
             //let hash = Crypto.Hash160(profile.userId).toBase64();
             let hash = Crypto.toDTPAddress(Crypto.Hash160(profile.userId));
-            let icon = new Identicon(hash, {margin:0.1, size:16, format: 'svg'}); // Need min 15 chars
+            let icon = new Identicon(hash, { margin: 0.1, size: 16, format: 'svg' }); // Need min 15 chars
             profile.identiconData16 = icon.toString();
             //profile.time = Date.now();
-            profile.controller.save();
+            //profile.controller.save();
         }
         iconData = profile.identiconData16;
 
-        let $icon = $('<a title="'+profile.screen_name+'" href="javascript:void 0"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
+        let $icon = $('<a title="' + profile.screen_name + '" href="javascript:void 0"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
         $icon.data("dtp_profile", profile);
 
-        $icon.click(function() {
+        $icon.click(function () {
             let selectedProfile = $(this).data('dtp_profile');
 
             //let p = selectedProfile.
@@ -147,29 +206,29 @@ class ProfileView {
                 selectedProfile: selectedProfile,
                 binaryTrustResult: selectedProfile.binaryTrustResult
             };
-    
+
             var opt = {
-                command:'openDialog',
-                 url: 'trustgraph.html',
-                 data: dialogData 
-             };
-             opt['w'] = 800;
-             opt['h'] = 800;
-             var wLeft = window.screenLeft ? window.screenLeft : window.screenX;
-             var wTop = window.screenTop ? window.screenTop : window.screenY;
-    
-             opt['left'] = Math.floor(wLeft + (window.innerWidth / 2) - (opt['w'] / 2));
-             opt['top'] = Math.floor(wTop + (window.innerHeight / 2) - (opt['h'] / 2));
-             
-             chrome.runtime.sendMessage(opt);
-             return false;
-         });
+                command: 'openDialog',
+                url: 'trustgraph.html',
+                data: dialogData
+            };
+            opt['w'] = 800;
+            opt['h'] = 800;
+            var wLeft = window.screenLeft ? window.screenLeft : window.screenX;
+            var wTop = window.screenTop ? window.screenTop : window.screenY;
+
+            opt['left'] = Math.floor(wLeft + (window.innerWidth / 2) - (opt['w'] / 2));
+            opt['top'] = Math.floor(wTop + (window.innerHeight / 2) - (opt['h'] / 2));
+
+            chrome.runtime.sendMessage(opt);
+            return false;
+        });
         return $icon;
     }
 
-    createFollowButton($selectedTweet : JQuery) : JQuery {
+    createFollowButton($selectedTweet: JQuery): JQuery {
         let $button = $selectedTweet.find('button.dtp-follow > span:first');
-        if($button.length == 0)  {
+        if ($button.length == 0) {
 
             let user_id = $selectedTweet.data("user-id");
             let html = `<div class="user-actions not-following not-muting" data-screen-name="${this.controller.profile.screen_name}" data-user-id="${user_id}">
@@ -185,7 +244,7 @@ class ProfileView {
                         </button>
                     </span>
                     </div>`;
-                //            <span class="u-hiddenVisually">Follow <span class="username u-dir u-textTruncate" dir="ltr">@<b>${this.profile.screen_name}</b></span></span>
+            //            <span class="u-hiddenVisually">Follow <span class="username u-dir u-textTruncate" dir="ltr">@<b>${this.profile.screen_name}</b></span></span>
 
 
             let $card = $(html).hide();
@@ -197,25 +256,5 @@ class ProfileView {
 
 
 
-   createButton (text, iconClass, type, count) {
-        let number = count || "";
-        let html = '<div class="ProfileTweet-action ProfileTweet-action" style="min-width:40px">'+
-        '<button class="ProfileTweet-actionButton u-textUserColorHover js-actionButton" type="button" >' +
-        '<div class="IconContainer js-tooltip" >'+
-        '<span class="Icon Icon--medium"><a class="trustIcon '+ type +' js-tooltip '+  iconClass +'" data-original-title="'+text+'" title="'+text+'"></a></span>' +
-        '<span class="u-hiddenVisually">'+text+'</span>'+
-        '</div>'+
-        '<span class="ProfileTweet-actionCount">'+
-        '<span class="ProfileTweet-actionCountForPresentation" aria-hidden="true">'+ number +'</span>'+
-        '</span>'+
-        '</button></div>';
-
-        let $html = $(html);
-        return {
-            $html: $html,
-            $a: $("a", $html),
-            $span: $('.ProfileTweet-actionCountForPresentation', $html)
-        }
-    }
 }
 export = ProfileView
