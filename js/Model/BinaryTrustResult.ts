@@ -1,4 +1,4 @@
-import { QueryContext } from "../../lib/dtpapi/model/models";
+import { QueryContext, Claim } from "../../lib/dtpapi/model/models";
 import IProfile from "../IProfile";
 
 class BinaryTrustResult {
@@ -7,7 +7,7 @@ class BinaryTrustResult {
     public trust : number =  0;
     public distrust: number = 0;
     public state: number = 0;
-    public claims: Array<any> = [];
+    public claims: Array<Claim> = [];
     public time: number = 0;
     public queryContext: QueryContext;
     public profiles: Array<IProfile> = []

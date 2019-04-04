@@ -66,10 +66,16 @@ class Twitter {
     getController(userId: string) : ProfileController {
         let controller = this.controllers[userId] as ProfileController;
         if(!controller) {
-            controller = new ProfileController(userId, this.profileView, this.profileRepository);
+            controller = new ProfileController(userId, this.profileView, this.profileRepository, this.updateProfiles, this.trustSubmitted, this.dtpService, this.subjectService, this.packageBuilder);
             this.controllers[controller.profile.userId] = controller;
         }
         return controller;
+    }
+
+    trustSubmitted(result : any) : void {
+        this.queryDTP(this.controllers).done((queryContext) => {
+            console.log("Trust reload completed");
+        });
     }
 
     createProfile(element: HTMLElement) : IProfile {
@@ -112,7 +118,6 @@ class Twitter {
         if(controllers == null || controllers.length == 0)
             return $.Deferred<QueryContext>().resolve(null).promise();
 
-
         let profiles = [];
         for(let key in controllers) {
             if (!controllers.hasOwnProperty(key))
@@ -133,8 +138,10 @@ class Twitter {
             }
             
             // Process the result
-            // let th = new TrustStrategy(this.settings, this.profileRepository);
-            // th.ProcessResult(result, profiles).then(() => {
+             let th = new TrustStrategy(this.settings, this.profileRepository);
+             th.ProcessResult(result, controllers);
+             
+             
             //     for (let key in profiles) {
             //         if (!profiles.hasOwnProperty(key))
             //             continue;
@@ -150,7 +157,7 @@ class Twitter {
             //         }
             //         //profile.controller.save(); // Why?
             //     }
-            // });
+            
         });
     }
 

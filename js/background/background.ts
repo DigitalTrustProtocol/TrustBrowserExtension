@@ -1,10 +1,22 @@
+import { StorageServer } from "./StorageServer";
+import { MessageHandler } from "../Shared/MessageHandler";
 
 var popupTab = null;
 var popupWindow = null;
 var profileData = null;
 var contentTabId = null;
 
+/* Listen to the runtime.onInstalled event to initialize an extension on installation. Use this event to set a state or for one-time initialization */
+// chrome.runtime.onInstalled.addListener(function() {
 
+//   });
+
+let messageHandler = new MessageHandler();
+let storageServer = new StorageServer(messageHandler);
+storageServer.ready().then(() => {
+
+
+});
 // /**
 //  * Promise wrapper for chrome.tabs.sendMessage
 //  * @param tabId
@@ -47,7 +59,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             if(!window)
                 OpenDialog(request, contentTabId);
             else
-                SendMessageToDialog('showTarget', profileData, contentTabId);
+                SendMessageToDialog('showTarget', profileData, contentTabId, null);
         });
         return true;
     }
@@ -73,18 +85,18 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     //     return true;
     // }
 
-    if (request.command) {
+    // if (request.command) {
 
-        sendMessage2(request.tabId, request).then(result => {
-            sendResponse(result);
-        });
-        return true;
+    //     sendMessage2(request.tabId, request).then(result => {
+    //         sendResponse(result);
+    //     });
+    //     return true;
 
-        // chrome.tabs.sendMessage(request.tabId, request, function(result) {
+    //     // chrome.tabs.sendMessage(request.tabId, request, function(result) {
 
-        //     return result;
-        // });
-    }
+    //     //     return result;
+    //     // });
+    // }
 
     return false;
 });
@@ -94,11 +106,11 @@ async function requestData() {
     return { data: profileData, contentTabId: contentTabId };
 }
 
-async function sendMessage2(tabId, request) {
-    chrome.tabs.sendMessage(request.tabId, request, function(result) {
-        return result;
-    });
-}
+// async function sendMessage2(tabId, request) {
+//     chrome.tabs.sendMessage(request.tabId, request, function(result) {
+//         return result;
+//     });
+// }
 
 
 function OpenDialog(request, contentTabId)

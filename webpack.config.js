@@ -7,7 +7,8 @@ module.exports = {
   entry: {
     main: './js/main.ts',
     popup: './js/Extensionpopup.ts',
-    trustgraph: './js/TrustGraph.ts'
+    trustgraph: './js/TrustGraph.ts',
+    background: path.join(__dirname, './js/background/background.ts'),
   },
   mode: 'development',
   devtool: 'cheap-module-source-map',
@@ -48,7 +49,7 @@ module.exports = {
     extensions: [ '.ts', '.js' ]
   },
   output: {
-    filename: "[name].bundle.js",
+    filename: "[name].js",
     path: path.resolve(__dirname, 'dist')
   },
   plugins: [
@@ -87,7 +88,7 @@ module.exports = {
       {from:'img',to:'./img'},
       {from:'fonts',to:'./fonts'},
       {from:'lib',to:'./lib'},
-      {from:'js/background.js',to:'./js/'},
+      //{from:'js/background.js',to:'./js/'},
       {from:'js/common.js',to:'./js/'},
       {from:'typings',to:'./typings'},
       {from:'manifest.json',to:'./manifest.json'}

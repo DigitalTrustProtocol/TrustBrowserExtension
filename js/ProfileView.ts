@@ -7,19 +7,80 @@ import Crypto = require("./Crypto");
 import BinaryTrustResult = require('./Model/BinaryTrustResult.js');
 
 //declare var Identicon: any;
+class ProfileViewButtonModel {
+    public disabled: boolean = false;
+    public text: string = ""; 
+    public title: string= "";
+    public iconClass: string = "";
+    public typeClass: string = "";
+    public countText: string = ""; 
+    public countTitle: string = "";
+
+    constructor(name: string, active: boolean = false, direct: boolean = false, count: number = 0) {
+        let type = name.toLocaleLowerCase();
+        this.text = name;
+        this.title = name;
+        this.typeClass = type;
+        this.iconClass = active ? `${type}IconActive` : `${type}IconPassive`;
+        this.countTitle = direct ? `${name}ed directly`: `${name}ed by ${count} others`;
+        if(direct) 
+            this.countText = active ? "!" : "";
+        else
+            this.countText = count > 0 ? `${count}` : "";
+    }
+}
+
+class ProfileViewModel {
+    public buttons: Array<ProfileViewButtonModel>  = [];
+    private controller: ProfileController;
+    /**
+     *
+     */
+    constructor(controller: ProfileController) {
+        this.controller = controller;
+    }
+
+    public setup() : void {
+        if(this.controller.trustResult && this.controller.trustResult.claims.length > 0) 
+            this.setupWithData();
+        else 
+            this.setupEmpty();
+    }
+
+    private setupWithData() : void {
+        let btr = this.controller.trustResult;
+        
+        if(btr.state > 0) {
+            this.buttons.push(new ProfileViewButtonModel("Trust", true, btr.direct, btr.trust));
+            this.buttons.push(new ProfileViewButtonModel("Distrust", false, btr.direct, btr.distrust));
+        }
+        
+        if(btr.state < 0) {
+            this.buttons.push(new ProfileViewButtonModel("Trust", false, btr.direct, btr.trust));
+            this.buttons.push(new ProfileViewButtonModel("Distrust", true, btr.direct, btr.distrust));
+        }
+
+        if(btr.state == 0) {
+            this.buttons.push(new ProfileViewButtonModel("Trust", false, btr.direct, btr.trust));
+            this.buttons.push(new ProfileViewButtonModel("Distrust", false, btr.direct, btr.distrust));
+        }
+
+        if(btr.direct)
+            this.buttons.push(new ProfileViewButtonModel("Untrust", false));
+
+    }
+
+
+
+    private setupEmpty() : void {
+        this.buttons.push(new ProfileViewButtonModel("Trust"));
+        this.buttons.push(new ProfileViewButtonModel("Distrust"));
+    }
+}
+
 class ProfileView {
-    public controller: ProfileController;
     Anchor: string;
     fullNameGroup: string;
-
-    static Item = ({ url, img, title }) => `
-        <a href="${url}" class="list-group-item">
-        <div class="image">
-            <img src="${img}" />
-        </div>
-        <p class="list-group-item-text">${title}</p>
-        </a>
-    `;
 
     //constructor(controller?: ProfileController) {
     constructor() {
@@ -29,8 +90,7 @@ class ProfileView {
         this.fullNameGroup = '.FullNameGroup';
     }
 
-    public render(binaryTrustResult: BinaryTrustResult, element: HTMLElement): void {
-        // Build template
+    public render(controller: ProfileController, element: HTMLElement): void {
         const $element = $(element);
         let $bar = $element.data('dtp_bar') as JQuery;
         if (!$bar) {
@@ -38,31 +98,33 @@ class ProfileView {
             $bar = $('span') as JQuery;
             $anchor.after($bar);
             $bar.$fullNameGroup = $element.find(this.fullNameGroup);
-            $bar.$fullNameGroup.prepend(this.createIdenticon(this.controller.profile));
+            $bar.$fullNameGroup.prepend(this.createIdenticon(controller.profile));
         }
 
-        // Create html
-        let html = this.createBar(binaryTrustResult);
+        let html = this.createBar(controller);
         $bar.html(html); // Replace with new html
     }
 
-    private createBar(binaryTrustResult: BinaryTrustResult): string {
-        return "";
+    private createBar(controller: ProfileController): string {
+        // Create model
+        let model = new ProfileViewModel(controller);
+        model.setup();
+        let html = model.buttons.map(this.renderButton).join('');
+        return  html;
     }
 
 
-
-    createButton(text, iconClass, type, count) {
+    private renderButton(button: ProfileViewButtonModel) {
         let html = `<div class="ProfileTweet-action ProfileTweet-action" style="min-width:40px">
                         <button class="ProfileTweet-actionButton u-textUserColorHover js-actionButton" type="button">
                             <div class="IconContainer js-tooltip" >
                                 <span class="Icon Icon--medium">
-                                    <a class="trustIcon ${type} js-tooltip ${iconClass}" data-original-title="${text}" title="${text}"></a>
+                                    <a class="trustIcon ${button.typeClass} js-tooltip ${button.iconClass}" data-original-title="${button.title}" title="${button.title}"></a>
                                 </span>
-                                <span class="u-hiddenVisually">${text}</span>
+                                <span class="u-hiddenVisually">${button.text}</span>
                             </div>
                             <span class="ProfileTweet-actionCount">
-                                <span class="ProfileTweet-actionCountForPresentation" aria-hidden="true">${count}</span>
+                                <span class="ProfileTweet-actionCountForPresentation" aria-hidden="true">${button.countText}</span>
                             </span>
                         </button>
                     </div>`;
@@ -78,80 +140,80 @@ class ProfileView {
 
 
 
-    renderElement(element) {
-        const $element = $(element);
-        let bar = $element.data('dtp_bar');
-        if (!bar) {
-            let $anchor = $element.find(this.Anchor);
+    // renderElement(element) {
+    //     const $element = $(element);
+    //     let bar = $element.data('dtp_bar');
+    //     if (!bar) {
+    //         let $anchor = $element.find(this.Anchor);
 
-            if ($anchor.find('.trustIcon').length > 0)
-                return;
+    //         if ($anchor.find('.trustIcon').length > 0)
+    //             return;
 
-            bar = {
-                trust: this.createButton("Trust", "trustIconPassive", "trust", undefined),
-                distrust: this.createButton("Distrust", "distrustIconPassive", "distrust", undefined),
-                untrust: this.createButton("Untrust", "untrustIconPassive", "untrust", undefined),
-            }
+    //         bar = {
+    //             trust: this.createButton("Trust", "trustIconPassive", "trust", undefined),
+    //             distrust: this.createButton("Distrust", "distrustIconPassive", "distrust", undefined),
+    //             untrust: this.createButton("Untrust", "untrustIconPassive", "untrust", undefined),
+    //         }
 
-            bar.$fullNameGroup = $element.find(this.fullNameGroup);
-            bar.$fullNameGroup.prepend(this.createIdenticon(this.controller.profile));
+    //         bar.$fullNameGroup = $element.find(this.fullNameGroup);
+    //         bar.$fullNameGroup.prepend(this.createIdenticon(this.controller.profile));
 
-            $anchor.after(bar.untrust.$html);
-            $anchor.after(bar.distrust.$html);
-            $anchor.after(bar.trust.$html);
-            bar.untrust.$html.hide();
+    //         $anchor.after(bar.untrust.$html);
+    //         $anchor.after(bar.distrust.$html);
+    //         $anchor.after(bar.trust.$html);
+    //         bar.untrust.$html.hide();
 
-            $element.data('dtp_bar', bar);
-
-
-            // let $followButton = $("<li class='follow-link js-actionFollow' data-nav='follow' role='presentation'>"+
-            //                      "<button type='button' class='dropdown-link' role='menuitem'>Follow <span class='username u-dir u-textTruncate' dir='ltr'>@<b>zerohedge</b></span></button>"+
-            //                      "</li>");
+    //         $element.data('dtp_bar', bar);
 
 
-            //$followButton.insertAfter($element.find("li.mute-user-item"));
-        }
+    //         // let $followButton = $("<li class='follow-link js-actionFollow' data-nav='follow' role='presentation'>"+
+    //         //                      "<button type='button' class='dropdown-link' role='menuitem'>Follow <span class='username u-dir u-textTruncate' dir='ltr'>@<b>zerohedge</b></span></button>"+
+    //         //                      "</li>");
 
-        bar.trust.$a.removeClass("trustIconActive").addClass("trustIconPassive");
-        bar.trust.$span.text('');
-        bar.distrust.$a.removeClass("distrustIconActive").addClass("trustIconPassive");
-        bar.distrust.$span.text('');
 
-        if (!this.controller.profile.binaryTrustResult)
-            return;
-        let result = this.controller.profile.binaryTrustResult;
+    //         //$followButton.insertAfter($element.find("li.mute-user-item"));
+    //     }
 
-        if (result.state > 0) {
-            bar.trust.$a.removeClass("trustIconPassive").addClass("trustIconActive");
-            bar.trust.$span.text(result.trust);
+    //     bar.trust.$a.removeClass("trustIconActive").addClass("trustIconPassive");
+    //     bar.trust.$span.text('');
+    //     bar.distrust.$a.removeClass("distrustIconActive").addClass("trustIconPassive");
+    //     bar.distrust.$span.text('');
 
-        }
+    //     if (!this.controller.profile.binaryTrustResult)
+    //         return;
+    //     let result = this.controller.profile.binaryTrustResult;
 
-        if (result.state < 0) {
+    //     if (result.state > 0) {
+    //         bar.trust.$a.removeClass("trustIconPassive").addClass("trustIconActive");
+    //         bar.trust.$span.text(result.trust);
 
-            if (this.controller.host.settings.twitterdistrust == "hidecontent") {
-                bar.distrust.$a.removeClass("trustIconPassive").addClass("distrustIconActive");
-                bar.distrust.$span.text(result.distrust);
-                $element.find('.js-tweet-text-container').hide();
-                $element.find('.QuoteTweet-container').hide();
-                $element.find('.AdaptiveMediaOuterContainer').hide();
-                $element.find('.card2').hide();
+    //     }
 
-            }
-            if (this.controller.host.settings.twitterdistrust == "automute") {
-                $element.hide(); // Hide the tweet!
-            }
-        }
-        else {
-            $element.find('.js-tweet-text-container').show();
-            $element.find('.QuoteTweet-container').show();
-            $element.find('.AdaptiveMediaOuterContainer').show();
-        }
+    //     if (result.state < 0) {
 
-        if (result.direct) {
-            bar.untrust.$html.show();
-        }
-    }
+    //         if (this.controller.host.settings.twitterdistrust == "hidecontent") {
+    //             bar.distrust.$a.removeClass("trustIconPassive").addClass("distrustIconActive");
+    //             bar.distrust.$span.text(result.distrust);
+    //             $element.find('.js-tweet-text-container').hide();
+    //             $element.find('.QuoteTweet-container').hide();
+    //             $element.find('.AdaptiveMediaOuterContainer').hide();
+    //             $element.find('.card2').hide();
+
+    //         }
+    //         if (this.controller.host.settings.twitterdistrust == "automute") {
+    //             $element.hide(); // Hide the tweet!
+    //         }
+    //     }
+    //     else {
+    //         $element.find('.js-tweet-text-container').show();
+    //         $element.find('.QuoteTweet-container').show();
+    //         $element.find('.AdaptiveMediaOuterContainer').show();
+    //     }
+
+    //     if (result.direct) {
+    //         bar.untrust.$html.show();
+    //     }
+    // }
 
     static createTweetDTPButton() {
         let $editButton = $('.ProfileNav-list .edit-button');
@@ -226,12 +288,12 @@ class ProfileView {
         return $icon;
     }
 
-    createFollowButton($selectedTweet: JQuery): JQuery {
+    createFollowButton($selectedTweet: JQuery, profile: IProfile): JQuery {
         let $button = $selectedTweet.find('button.dtp-follow > span:first');
         if ($button.length == 0) {
 
             let user_id = $selectedTweet.data("user-id");
-            let html = `<div class="user-actions not-following not-muting" data-screen-name="${this.controller.profile.screen_name}" data-user-id="${user_id}">
+            let html = `<div class="user-actions not-following not-muting" data-screen-name="${profile.screen_name}" data-user-id="${profile.userId}">
                         <span class="user-actions-follow-button js-follow-btn follow-button">
                         <button type="button" class="
                         EdgeButton

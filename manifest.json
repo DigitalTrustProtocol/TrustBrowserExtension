@@ -24,7 +24,7 @@
     "https://trust.dance/"
   ],
   "background": {
-    "scripts": ["js/background.js"]
+    "scripts": ["background.js"]
   },
   "content_scripts": [
     {
@@ -37,7 +37,7 @@
         "lib/bootstrap/dist/js/bootstrap.min.js",
         "lib/Notify/notify.min.js",
         "js/common.js",
-        "main.bundle.js"
+        "main.js"
       ],
       "run_at": "document_end"
     }

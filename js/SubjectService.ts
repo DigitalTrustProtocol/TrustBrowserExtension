@@ -5,6 +5,7 @@ import { Claim } from '../lib/dtpapi/model/Claim';
 import Crypto = require("./Crypto");
 import Profile = require('./Profile');
 import { ModelPackage } from '../lib/dtpapi/model/models';
+import IProfile from './IProfile';
 
 class SubjectService  {
     SCRIPT: string;
@@ -77,7 +78,7 @@ class SubjectService  {
         return !input || !input.trim();
     }
 
-    BuildBinaryClaim (profile: Profile, value: string, note: string, expire: number) : ModelPackage {
+    BuildBinaryClaim (profile: IProfile, value: string, note: string, expire: number) : ModelPackage {
         let claim: Claim = null;
         if(profile.userId) {
             claim = this.packageBuilder.CreateBinaryClaim(

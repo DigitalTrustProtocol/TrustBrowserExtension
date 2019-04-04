@@ -7,6 +7,7 @@ import Profile = require('./Profile');
 import IProfile from './IProfile';
 import DTPIdentity = require('./Model/DTPIdentity');
 import ITrustStrategy from './Interfaces/ITrustStrategy';
+import ProfileController = require('./ProfileController');
 
 
 class TrustStrategy implements ITrustStrategy {
@@ -52,14 +53,10 @@ class TrustStrategy implements ITrustStrategy {
         trustResult.state = trustResult.trust - trustResult.distrust;
     }
 
-    public ProcessResult(queryContext : QueryContext, profiles: Array<IProfile>) : JQueryPromise<{}> {
-        let resultDeferred = $.Deferred();
-
+    public ProcessResult(queryContext : QueryContext, controllers: Array<ProfileController>) : void {
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
-            return resultDeferred.resolve().promise();
+            return;
 
-        const checkTime = Math.round(Date.now()/1000.0);
-        
         let claims = queryContext.results.claims;
         let subjectIndex: Array<string> = [];
 
@@ -76,77 +73,85 @@ class TrustStrategy implements ITrustStrategy {
             if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
                 return; // Ignore all cliams that is not BINARY_TRUST_DTP1
 
-            let deferred = $.Deferred();
-            tasks.push(deferred);
-
             let subjectId = subjectIndex[claim.subject.id];
             if(!subjectId) // Undefined
                 subjectId = claim.subject.id;
 
-            this.profileRepository.getProfile(subjectId).then(profile => {
+            let controller = controllers[subjectId];
+            if(!controller) {
+                console.log("Controller not found!! subject id: "+subjectId);
+                return;
+            }
 
-                // Id can be user id or a DTP id
-                if(profile == null) {
-                    if(subjectId == claim.subject.id)
-                        return deferred.resolve(); // The profile do not exist! No data on who the claim is about.
+            let profile = controller.profile;
 
-                    
-                    // Create a new profile, but do not load its DTP data
-                    // The profile should not be a subject as they are all known!(?)
-                    let data = { 
-                        userId: subjectId, // Should be local id
-                        screen_name: 'Unknown', 
-                        alias: '', // Should be DTP ID
-                        //owner: new DTPIdentity({ID:claim.subject.id}) // Proof are missing, verify later if needed!
-                    };
-                    profile = new Profile(data);
-                    this.profileRepository.setProfile(profile);
-                }
+            // // Id can be user id or a DTP id
+            // if(profile == null) {
+            //     if(subjectId == claim.subject.id)
+            //         return; // The profile do not exist! No data on who the claim is about.
 
-                // Make sure that an owner is added if missing and a ID identity claim is available.
-                if(!profile.owner && subjectId != claim.subject.id) {
-                    profile.owner = new DTPIdentity({ID:claim.subject.id}); // Proof are missing, verify later if needed!
-                    this.profileRepository.setProfile(profile);
-                } 
+                       
+            //     // Create a new profile, but do not load its DTP data
+            //     // The profile should not be a subject as they are all known!(?)
+            //     let data = { 
+            //         userId: subjectId, // Should be local id
+            //         screen_name: 'Unknown', 
+            //         alias: '', // Should be DTP ID
+            //         //owner: new DTPIdentity({ID:claim.subject.id}) // Proof are missing, verify later if needed!
+            //     };
+            //     profile = new Profile(data);
+            //     this.profileRepository.setProfile(profile);
+            // }
 
-                if(!profile.binaryTrustResult)
-                    profile.binaryTrustResult = new BinaryTrustResult();
-                    
-                let trustResult = profile.binaryTrustResult as BinaryTrustResult;
+            // Make sure that an owner is added if missing and a ID identity claim is available.
+            if(!profile.owner && subjectId != claim.subject.id) {
+                profile.owner = new DTPIdentity({ID:claim.subject.id}); // Proof are missing, verify later if needed!
+                this.profileRepository.setProfile(profile);
+            } 
 
-                if(trustResult.time != checkTime) {
-                    trustResult.Clean(); // Reset the trustResult
-                    trustResult.time = checkTime; // Set check time
-                    trustResult.queryContext = queryContext;
-                }
+            //if(!controller.trustResult)
+             let trustResult = new BinaryTrustResult();
+                
+            //let trustResult = controller.trustResult as BinaryTrustResult;
 
-                const exists = (claim.issuer.id in trustResult.claims);
-                if(exists)
-                    return deferred.resolve(); // There are already one claim for the subject
 
-                trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
+            // if(trustResult.time != checkTime) {
+            //     trustResult.Clean(); // Reset the trustResult
+            //     //trustResult.time = checkTime; // Set check time
+            //     trustResult.queryContext = queryContext;
+            // }
 
-                this.processClaim(trustResult, claim);
-        
-                // Issuer is always DTP ID, add reference to the issuer profile.
-                //let issuerProfile = 
-                this.profileRepository.getProfileByIndex(claim.issuer.id).then(issuerProfile => {
-                    if(issuerProfile)
-                        trustResult.profiles.push(issuerProfile);
 
-                    deferred.resolve();
-                });
-            }); 
+            // const exists = (claim.issuer.id in trustResult.claims);
+            // if(exists)
+            //     return; // There are already one claim for the subject
+
+            trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
+
+            this.processClaim(trustResult, claim);
+    
+            // let deferred = $.Deferred();
+            // tasks.push(deferred);
+
+            // Issuer is always DTP ID, add reference to the issuer profile.
+            //let issuerProfile = 
+            // 
+            // this.profileRepository.getProfileByIndex(claim.issuer.id).then(issuerProfile => {
+            //     if(issuerProfile)
+            //         trustResult.profiles.push(issuerProfile);
+
+            //     deferred.resolve();
+            // });
 
         });
 
-        function resultDeferredDone() {
-            resultDeferred.resolve();
-        }
+        // function resultDeferredDone() {
+        //     resultDeferred.resolve();
+        // }
 
-        $.when(tasks).done(resultDeferredDone);
+        // $.when(tasks).done(resultDeferredDone);
 
-        return resultDeferred.promise();
+        //return resultDeferred.promise();
     }
 }
 export = TrustStrategy

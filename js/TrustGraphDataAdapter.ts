@@ -35,9 +35,9 @@ class TrustGraphDataAdapter {
     }
 
     public load(queryContext: QueryContext) : void {
-        this.trustStrategy.ProcessResult(queryContext, null).then(() => {
-            this.rebuild();
-        })
+        // this.trustStrategy.ProcessResult(queryContext, null).then(() => {
+        //     this.rebuild();
+        // })
         
     }
 

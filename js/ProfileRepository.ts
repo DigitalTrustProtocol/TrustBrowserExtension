@@ -3,11 +3,12 @@ declare var DTP: any;
 import Profile = require('./Profile'); //declare var DTP: any;
 import DTPIdentity = require('./Model/DTPIdentity');
 import IProfile from './IProfile';
+import IStorage from './Interfaces/IStorage';
 class ProfileRepository {
     profiles: Array<IProfile> = [];
     index: Array<IProfile> = [];
-    storage: LocalForage;
-    constructor(storage: LocalForage) {
+    storage: IStorage;
+    constructor(storage: IStorage) {
         this.storage = storage;
     }
 

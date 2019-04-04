@@ -10,61 +10,59 @@ import IProfile from './IProfile';
 import Profile = require('./Profile');
 import ISettings from './Settings.interface';
 import { ProfileStateEnum } from './Model/ProfileStateEnum';
+import DTPService = require('./DTPService');
+import SubjectService = require('./SubjectService');
+import PackageBuilder = require('./PackageBuilder');
 
 class ProfileController {
     profile: IProfile;
     view: ProfileView;
     host: any;
-    domElements: any[];
+    domElements: Array<HTMLElement> = [];
     queueElements: Array<HTMLElement> = [];
     blocked: boolean;
     following: boolean = false;
     profileRepository: ProfileRepository;
     queried: boolean;
+    trustResult : BinaryTrustResult;
+    changed: boolean = true;
+    updateProfilesCallBack: any;
+    dtpService: DTPService;
+    subjectService: SubjectService;
+    packageBuilder: PackageBuilder;
+    trustSubmittedCallBack: any;
 
 
-
-
-    constructor(userId: string, view: any, profileRepository: ProfileRepository) {
+    constructor(userId: string, view: any, profileRepository: ProfileRepository, updateProfilesCallBack: any, trustSubmittedCallBack: any, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder) {
         this.profile = new Profile({ userId: userId });
         this.view = view;
-        this.view.controller = this;
         this.profileRepository = profileRepository;
-        //this.host = host;
-        this.domElements = [];
+        this.updateProfilesCallBack = updateProfilesCallBack;
+        this.dtpService = dtpService;
+        this.subjectService = subjectService;
+        this.packageBuilder = packageBuilder;
+        this.trustSubmittedCallBack = trustSubmittedCallBack;
     }
 
     // Update data for the profile
-    update(): JQueryPromise<IProfile> {
+    private loadProfileFromHost(): JQueryPromise<IProfile> {
         let deferred = $.Deferred<IProfile>();
 
         if (this.profile.owner) {
             deferred.resolve(this.profile);
         } else {
-            this.host.updateProfiles([this.profile]).then((profiles) => {
+            if(!this.updateProfilesCallBack)
+                deferred.resolve(this.profile);
+            
+            this.updateProfilesCallBack([this.profile]).then((profiles) => {
                 deferred.resolve(this.profile);
             });
-
-            // this.host.twitterService.getProfileDTP(this.profile.userId).then((owner: DTPIdentity) => {
-            //     if(owner != null) {
-            //         try {
-            //             if(Crypto.Verify(owner, this.profile.userId)) {
-            //                 this.profile.owner = owner;
-            //                 this.save();
-            //                 this.host.profileRepository.setIndexKey(this.profile); // Save an index to the profile
-            //             }
-            //         } catch(error) {
-            //             DTP['trace'](error); // Catch it if Crypto.Verify fails!
-            //         }
-            //     }
-            //     deferred.resolve(this.profile);
-            // });
         }
 
         return deferred.promise();
     }
 
-    updateProfile(source: IProfile): JQueryPromise<IProfile> {
+    public updateProfile(source: IProfile): JQueryPromise<IProfile> {
         this.profile.update(source);
         if (this.profile.state == ProfileStateEnum.Changed) {
             return this.profileRepository.setProfile(this.profile);
@@ -83,13 +81,37 @@ class ProfileController {
         return this.profileRepository.setProfile(this.profile);
     }
 
+    public updateTrustResult(source: BinaryTrustResult) : boolean {
+        let changed = false;
+        if(this.trustResult) {
+            // Comparer
+            changed = this.trustResult.claims.length != source.claims.length ? true : changed;
+            changed = this.trustResult.direct != source.direct ? true : changed;
+            changed = this.trustResult.directValue != source.directValue ? true : changed;
+            changed = this.trustResult.distrust != source.distrust ? true : changed;
+            changed = this.trustResult.trust != source.trust ? true : changed;
+            changed = this.trustResult.state != source.state ? true : changed;
+        }
+        
+        if(changed) {
+            this.trustResult = source;
+            this.changed = true;
+        }
+        return this.changed;
+    }
+
+
     // Render all elements
     public renderAll() : void {
+        if(!this.changed) // If data have not change, no need for a rerender!
+            return;
+
         for (let key in this.domElements) {
             let element = this.domElements[key] as HTMLElement;
-            this.view.renderElement(element);
+            this.view.render(this, element);
         }
         this.render(); // Pickup all queue elements as well
+        this.changed = false; // Now reset the changed property
     }
 
     // Render new elements
@@ -97,7 +119,7 @@ class ProfileController {
         for (let key in this.queueElements) {
             let element = this.queueElements[key] as HTMLElement;
             this.domElements.push(element);
-            this.view.renderElement(element);
+            this.view.render(this, element);
         }
         this.queueElements = [];
     }
@@ -105,18 +127,18 @@ class ProfileController {
     trust() {
         console.log('Trust clicked');
         DTP['trace']("Trust " + this.profile.screen_name);
-        return this.trustProfile("true", 0);
+        return this.trustProfile("trust","true", 0);
     }
 
     distrust() {
         DTP['trace']("Distrust " + this.profile.screen_name);
 
-        return this.trustProfile("false", 0);
+        return this.trustProfile("distrust", "false", 0);
     }
 
     untrust() {
         DTP['trace']("Untrust " + this.profile.screen_name);
-        return this.trustProfile("", 1);
+        return this.trustProfile("untrust","", 1);
     }
 
     follow() {
@@ -130,16 +152,28 @@ class ProfileController {
         if (follow || this.following)
             return;
 
-        var $button = this.view.createFollowButton($selectedTweet);
+        var $button = this.view.createFollowButton($selectedTweet, this.profile);
 
         $button.click();
     }
 
 
-    trustProfile(value, expire): JQueryPromise<any> {
+    trustProfile(name: string, value: any, expire: number): JQueryPromise<any> {
         return this.buildAndSubmitBinaryTrust(this.profile, value, expire).then(function (result) {
             //self.controller.render();
+            // Requery everything, as we have changed a trust
+        
             DTP['trace']('TrustProfile done!');
+
+            if(this.trustSubmittedCallBack)
+                this.trustSubmittedCallBack({
+                    name: name,
+                    value: value,
+                    expire: expire,
+                    controller: this
+                });
+
+            return result;
         });
     }
 
@@ -197,18 +231,16 @@ class ProfileController {
         const self = this;
         let deferred = $.Deferred<any>();
 
-        this.update().then(() => {
-            let trustPackage = this.host.subjectService.BuildBinaryClaim(profile, value, null, expire);
-            this.host.packageBuilder.SignPackage(trustPackage);
+        this.loadProfileFromHost().then(() => {
+            let trustPackage = this.subjectService.BuildBinaryClaim(profile, value, null, expire);
+            this.packageBuilder.SignPackage(trustPackage);
             DTP['trace']("Issuing trust");
             DTP['trace'](JSON.stringify(trustPackage, undefined, 2));
-            this.host.dtpService.PostPackage(trustPackage).then((trustResult) => {
+            this.dtpService.PostPackage(trustPackage).then((trustResult) => {
                 DTP['trace']("Posting package code: " + trustResult.status + ' - Action: ' + trustResult.statusText);
-
-                // Requery everything, as we have changed a trust
-                self.host.queryDTP(self.host.profileRepository.getSessionProfiles());
+              
                 deferred.resolve(trustResult);
-            }).fail(function (trustResult) {
+            }, (trustResult) => {
                 DTP['trace']("Adding trust failed: " + trustResult.statusText);
                 deferred.fail();
             });
