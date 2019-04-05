@@ -1,3 +1,5 @@
+import { browser } from "webextension-polyfill-ts";
+
 class SiteManager {
     static dtpUserContext: any;
 
@@ -17,11 +19,11 @@ class SiteManager {
                 formAuthenticityToken: user.formAuthenticityToken,
                 host: window.location.hostname
             }
-            chrome.storage.local.set({ context: source }, null);
+            browser.storage.local.set({ context: source });
             SiteManager.dtpUserContext = source;
             deferred.resolve(source);
         } else {
-            chrome.storage.local.get("context", (result) => {
+            browser.storage.local.get("context").then((result) => {
                 let context = result.context ||
                     {
                         userId: '',

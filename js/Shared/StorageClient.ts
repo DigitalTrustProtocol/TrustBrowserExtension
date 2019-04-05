@@ -11,16 +11,16 @@ export class StorageClient implements IStorage {
     }
 
     public getItem<T>(key: string, callback?: (err: any, value: T) => void): Promise<T> {
-        let param = StorageServer.command("getItem", key);
-        return this.messageHandler.send(StorageServer.action, param, result => {
+        let param = StorageServer.action("getItem", key);
+        return this.messageHandler.send(StorageServer.handlerName, param, result => {
             if(callback)
                 callback(null, result);
         });     
     }
 
     public setItem<T>(key: string, value: T, callback?: (err: any, value: T) => void): Promise<T> {
-        let param = StorageServer.command("setItem", key, value);
-        return this.messageHandler.send(StorageServer.action, param, result => {
+        let param = StorageServer.action("setItem", key, value);
+        return this.messageHandler.send(StorageServer.handlerName, param, result => {
             if(callback)
                 callback(null, result);
         });     

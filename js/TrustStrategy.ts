@@ -68,6 +68,7 @@ class TrustStrategy implements ITrustStrategy {
         });
 
         let tasks = [];
+        let results = {};
 
         claims.forEach((claim) => {
             if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
@@ -109,9 +110,16 @@ class TrustStrategy implements ITrustStrategy {
                 this.profileRepository.setProfile(profile);
             } 
 
+
             //if(!controller.trustResult)
-             let trustResult = new BinaryTrustResult();
-                
+            let trustResult = results[subjectId];
+            if(!trustResult) {
+                trustResult = new BinaryTrustResult();
+                trustResult["controllerId"] = subjectId;
+                results[subjectId] = trustResult;
+            } 
+
+            
             //let trustResult = controller.trustResult as BinaryTrustResult;
 
 
@@ -144,6 +152,24 @@ class TrustStrategy implements ITrustStrategy {
             // });
 
         });
+
+        for(let subjectId in controllers) {
+            if (!controllers.hasOwnProperty(subjectId))
+                continue;
+
+            let controller = controllers[subjectId] as ProfileController;
+            let result = results[subjectId] as BinaryTrustResult;
+
+            if(result) {
+                result.claims = Object.keys(result.claims).map((key) => { return (result.claims.hasOwnProperty(key)) ? result.claims[key] : undefined; });
+                controller.updateTrustResult(result);
+            } else {
+                controller.updateTrustResult(new BinaryTrustResult()); // Clean out the trust result
+            }
+
+
+        }
+
 
         // function resultDeferredDone() {
         //     resultDeferred.resolve();

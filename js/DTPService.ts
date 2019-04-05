@@ -25,6 +25,7 @@ class DTPService  {
             return deferred.promise();
         }
         this.queryApi.basePath = this.settings.infoserver;
+        DTP['trace'](JSON.stringify(query, null, 2));
         return this.queryApi.resolvePost(query);
     }
 

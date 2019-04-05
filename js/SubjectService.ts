@@ -78,7 +78,7 @@ class SubjectService  {
         return !input || !input.trim();
     }
 
-    BuildBinaryClaim (profile: IProfile, value: string, note: string, expire: number) : ModelPackage {
+    BuildBinaryClaim (profile: IProfile, value: string, note: string, scope: string, expire: number) : ModelPackage {
         let claim: Claim = null;
         if(profile.userId) {
             claim = this.packageBuilder.CreateBinaryClaim(
@@ -86,7 +86,7 @@ class SubjectService  {
             this.SCRIPT, 
             profile.userId, 
             value, 
-            profile.scope,
+            scope,
             0,
             expire,
             note);
@@ -100,7 +100,7 @@ class SubjectService  {
                 this.SCRIPT, 
                 profile.owner.ID, 
                 value, 
-                profile.scope,
+                scope,
                 0,
                 expire,
                 note);
@@ -112,7 +112,7 @@ class SubjectService  {
                     this.SCRIPT, 
                     profile.owner.ID,
                     profile.userId,
-                    profile.scope,
+                    scope,
                     0,
                     expire);
 

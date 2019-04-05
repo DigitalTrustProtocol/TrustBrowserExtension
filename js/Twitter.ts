@@ -18,6 +18,7 @@ import DTPIdentity = require('./Model/DTPIdentity');
 import bitcoin = require('bitcoinjs-lib');
 import bitcoinMessage = require('bitcoinjs-message');
 import SiteManager = require('./SiteManager');
+import { TrustGraphPopupClient } from './Shared/TrustGraphPopupClient';
 
 class Twitter {
     OwnerPrefix: string;
@@ -32,10 +33,11 @@ class Twitter {
     profilesToQuery: Array<IProfile> = [];
 
     controllers = {};
-    profileView: ProfileView = new ProfileView();
+    profileView: ProfileView;
+    trustGraphPopupClient: TrustGraphPopupClient;
 
 
-    constructor(settings, packageBuilder, subjectService, dtpService: DTPService, twitterService, profileRepository: ProfileRepository) {
+    constructor(settings, packageBuilder, subjectService, dtpService: DTPService, twitterService, profileRepository: ProfileRepository, trustGraphPopupClient: TrustGraphPopupClient) {
 
         this.OwnerPrefix = "[#owner_]";
         this.settings = settings;
@@ -45,7 +47,9 @@ class Twitter {
         this.dtpService = dtpService;
         this.twitterService = twitterService;
         this.profileRepository = profileRepository;
+        this.trustGraphPopupClient = trustGraphPopupClient;
         this.waiting = false;
+        this.profileView = new ProfileView(this.trustGraphPopupClient);
 
         console.log('twitter class init', this.settings)
     }
@@ -57,7 +61,7 @@ class Twitter {
         let source = this.createProfile(element);
         let controller = this.getController(source.userId);
         controller.addElement(element);
-        
+
         controller.updateProfile(source);
 
         return controller;
@@ -66,7 +70,9 @@ class Twitter {
     getController(userId: string) : ProfileController {
         let controller = this.controllers[userId] as ProfileController;
         if(!controller) {
-            controller = new ProfileController(userId, this.profileView, this.profileRepository, this.updateProfiles, this.trustSubmitted, this.dtpService, this.subjectService, this.packageBuilder);
+            controller = new ProfileController(userId, this.profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, "twitter.com");
+            controller.updateProfilesCallBack = (profiles) => { return this.updateProfiles(profiles) };
+            controller.trustSubmittedCallBack = (result) => { this.trustSubmitted(result); };
             this.controllers[controller.profile.userId] = controller;
         }
         return controller;
@@ -84,7 +90,7 @@ class Twitter {
         profile.screen_name = element.attributes["data-screen-name"].value;
         profile.alias = element.attributes["data-name"].value;
         profile.avatarImage = $(element).find('img.avatar').attr('src');
-        
+
         // var youFollow = (element.attributes["data-you-follow"].value == "true");
         // Object.defineProperty(profile, 'youFollow', { enumerable: false, value: youFollow, }); // No serialize to json!
 
@@ -123,43 +129,35 @@ class Twitter {
             if (!controllers.hasOwnProperty(key))
                 continue;
             let controller = controllers[key] as ProfileController;
-            profiles.push(controller.profile);
+            if(controller.profile.userId == "160139307")
+                profiles.push(controller.profile);
         }
 
         return this.dtpService.Query(profiles, window.location.hostname).done((result: QueryContext) => {
             DTP['trace'](JSON.stringify(result, null, 2));
 
-            for(let key in controllers) {
-                if (!controllers.hasOwnProperty(key))
-                    continue;
-                let controller = controllers[key] as ProfileController;
-                controller.queried = true;
-
-            }
-            
             // Process the result
              let th = new TrustStrategy(this.settings, this.profileRepository);
              th.ProcessResult(result, controllers);
-             
-             
-            //     for (let key in profiles) {
-            //         if (!profiles.hasOwnProperty(key))
-            //             continue;
-            //         try {
-            //             let profile = profiles[key] as IProfile;
-            //             if (!profile.controller)
-            //                 continue;
-            //             profile.controller.twitterUserAction();
-            //             profile.controller.render();
 
-            //         } catch (error) {
-            //             console.log(error);
-            //         }
-            //         //profile.controller.save(); // Why?
-            //     }
-            
+             for(let key in controllers) {
+                if (!controllers.hasOwnProperty(key))
+                    continue;
+                let controller = controllers[key] as ProfileController;
+
+                if(controller.profile.userId == "160139307") {
+
+                    controller.queried = true;
+                    if(controller.changed) {
+                        controller.renderAll();
+                        this.twitterUserAction(controller);
+                    }
+                }
+            }
         });
     }
+
+
 
     tweetDTP(): void {
         let status = 'Digital Trust Protocol #DTP ID:' + Profile.CurrentUser.owner.ID
@@ -177,15 +175,97 @@ class Twitter {
         });
     }
 
+
+    twitterUserAction(controller: ProfileController) {
+        if (!controller.trustResult || controller.trustResult.state == 0) {
+            this.displayAll(controller);
+            return;
+        }
+            
+
+        if (controller.domElements.length == 0)
+            return;
+
+
+        // if (location.href.indexOf(controller.profile.screen_name) >= 0)
+        //     return; // Ignore the profile page for now
+
+        if (controller.trustResult.state > 0) {
+            if (this.settings.twittertrust == "autofollow") {
+                this.follow(controller);
+            }
+
+            this.displayAll(controller);
+
+            return;
+        }
+
+
+        if (controller.trustResult.state < 0) {
+
+            let $selectedTweet = $(controller.domElements[0]);
+
+            if (this.settings.twitterdistrust == "hidecontent") {
+                for(let key in controller.domElements) {
+                    let element = controller.domElements[key];
+                    let $element = $(element);
+                    $element.find('.js-tweet-text-container').hide();
+                    $element.find('.QuoteTweet-container').hide();
+                    $element.find('.AdaptiveMediaOuterContainer').hide();
+                    $element.find('.card2').hide();
+                }
+            }
+
+            if (this.settings.twitterdistrust == "automute") {
+                $selectedTweet.find("li.mute-user-item").trigger("click");
+            }
+
+            if (this.settings.twitterdistrust == "autoblock") {
+                $selectedTweet.find("li.block-link").trigger("click");
+                $("body").removeClass("modal-enabled");
+                $(document).find("#block-dialog").hide();
+                $(document).find("button.block-button").trigger("click");
+                $(document).find("span.Icon--close").trigger("click");
+            }
+        }
+    }
+
+    private displayAll(controller: ProfileController) {
+        for(let key in controller.domElements) {
+            let element = controller.domElements[key];
+            let $element = $(element);
+            $element.find('.js-tweet-text-container').show();
+            $element.find('.QuoteTweet-container').show();
+            $element.find('.AdaptiveMediaOuterContainer').show();
+            $element.find('.card2').show();
+        }
+    }
+
+    private follow(controller: ProfileController) : void {
+        DTP['trace']("Follow " + controller.profile.screen_name);
+        if (controller.domElements.length == 0)
+            return;
+
+        let $selectedTweet = $(controller.domElements[0]);
+
+        let follow = $selectedTweet.data("you-follow");
+        if (follow || controller.following)
+            return;
+
+        var $button = controller.view.createFollowButton($selectedTweet, controller.profile);
+        $button.click();
+    }
+
+
     loadCurrentUserProfile(user: any): JQueryPromise<void> {
         return this.profileRepository.ensureProfile(user.userId).then(profile => {
             Profile.CurrentUser = profile;
             Profile.CurrentUser.update(user);
             Profile.CurrentUser.avatarImage = $('img.DashboardProfileCard-avatarImage').attr('src');
-    
+
             if (Profile.CurrentUser.owner == null)
                 this.updateProfiles([Profile.CurrentUser]);
-    
+
             Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
             console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
         }).promise();
@@ -219,71 +299,45 @@ class Twitter {
         $(doc).on('DOMNodeInserted', (e: JQueryEventObject) => {
             let controllers = [];
             let self = this;
-    
+
             let classObj = e.target["attributes"]['class'];
             if (!classObj)
                 return;
-    
+
             let permaTweets = $(e.target).find('.tweet.permalink-tweet');
             permaTweets.each((i: number, element: HTMLElement) => {
                 let controller = self.processElement(element);
-                if(!controller.queried)
+                if(!controller.trustResult)
                     controllers[controller.profile.userId] = controller;
+                else
+                    controller.render();
             });
-    
+
             let tweets = $(e.target).find('.tweet.js-stream-tweet');
             tweets.each((i: number, element: HTMLElement) => {
                 let controller = self.processElement(element);
-                if(!controller.queried)
+                if(!controller.trustResult)
                     controllers[controller.profile.userId] = controller;
+                else
+                    controller.render();
             });
-            
+
             self.queryDTP(controllers).then(() => {
                 //deferred.resolve();
             });
         });
     }
 
-    ready(doc: Document): void {
-        this.loadPage().then((controllers) => {
+    ready(doc: Document): JQueryPromise<void> {
+        return this.loadPage().then((controllers) => {
             this.queryDTP(controllers).done((queryContext) => {
                 console.log("Page load completed");
             });
             this.attatchNodeInserted(doc);
-        });
 
-        $(doc).on('click', '.tweet-dtp', (event) => {
-            this.tweetDTP();
-        });
-    }
-
-    // loadProfiles(ids: Array<string>): Array<IProfile> {
-    //     let profiles = ids.map((id) => { return this.profileRepository.ensureProfile(id); });
-
-    //     this.updateProfiles(profiles);
-
-    //     return profiles;
-    // }
-
-    addListener(): void {
-        chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-            if (request.command === 'updateContent') {
-                this.queryDTP(this.controllers).done((queryContext) => {
-                    let data = new BinaryTrustResult();
-                    data.queryContext = queryContext;
-                    sendResponse({ data });
-                })
-                
-                return true;
-            }
-
-            // if (request.command === 'loadProfiles') {
-            //     let profiles = this.loadProfiles(request.data.profileIDs);
-            //     sendResponse({ profiles: profiles });
-            //     return true;
-            // }
-            
-            return false;
+            $(doc).on('click', '.tweet-dtp', (event) => {
+                this.tweetDTP();
+            });
         });
     }
 }

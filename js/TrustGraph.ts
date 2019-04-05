@@ -20,19 +20,9 @@ import { ModelPackage, QueryContext } from '../lib/dtpapi/model/models.js';
 import ProfileModal = require('./Model/ProfileModal');
 import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
 import * as localforage from 'localforage';
-
-// class memoryStorage {
-
-//     private cache : Array<any> = [];
-
-//     setItem(key: string, data: any) {
-//         this.cache[key] = data;
-//     }
-
-//     getItem(key: string) : any {
-//         return this.cache[key];
-//     }
-// }
+import { MessageHandler } from './Shared/MessageHandler';
+import { TrustGraphPopupClient } from './Shared/TrustGraphPopupClient';
+import { StorageClient } from './Shared/StorageClient';
 
 class TrustGraphController {
     settingsController: any;
@@ -49,81 +39,34 @@ class TrustGraphController {
     source: any;
 
     dataAdapter: TrustGraphDataAdapter;
+    messageHandler: MessageHandler;
+    storageClient: StorageClient; 
+    trustGraphPopupClient: TrustGraphPopupClient;
 
     constructor(private $scope: ng.IScope) {
     }
 
     init() {
-        localforage.config({
-            driver      : localforage.LOCALSTORAGE,
-            name        : 'DTP',
-            storeName   : 'DTP1', // Should be alphanumeric, with underscores.
-            description : 'DTP Client browser extension'
-        });
-    
+        this.messageHandler = new MessageHandler();
+        this.storageClient = new StorageClient(this.messageHandler);
+        this.trustGraphPopupClient = new TrustGraphPopupClient(this.messageHandler);
+   
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsController = new SettingsController(userContext);
             this.settingsController.loadSettings((settings) => {
                 this.settings = settings;
-                this.profileRepository = new ProfileRepository(localforage);
+                this.profileRepository = new ProfileRepository(this.storageClient);
                 this.packageBuilder = new PackageBuilder(settings);
                 this.subjectService = new SubjectService(settings, this.packageBuilder);
                 this.dtpService = new DTPService(settings);
 
-                this.addListeners();
-                this.requestData(null); // Default 
+                this.trustGraphPopupClient.showSubject = (params, sender) => { this.contentTabId = params.contentTabId; this.loadOnData(params.data); };
+                this.trustGraphPopupClient.requestData().then((params) => { this.loadOnData(params.data); });
             });
         });
-    }
-
-    addListeners() {
-        console.log("Adding Listener for calls from the background page.");
-        chrome.runtime.onMessage.addListener(
-            (request, sender, sendResponse) => {
-                console.log("Listener request from background page");
-                console.log(request);
-
-                if (request.command == "showTarget") {
-                    this.contentTabId = request.contentTabId;
-
-                    this.loadOnData(request.data);
-
-                    if (sendResponse)
-                        sendResponse({ result: "ok" });
-                    return true;
-                }
-
-                return false;
-            });
-    }
-
-    requestData(profile: string) {
-        console.log("RequestData send to background page");
-        chrome.runtime.sendMessage({ command: 'requestData', tabId: this.contentTabId, profile_name: profile }, (response) => {
-            console.log("RequestData response from background page");
-            console.log(response);
-            console.log('tabid', response.contentTabId)
-            this.contentTabId = response.contentTabId;
-            this.loadOnData(response.data);
-        });
-    }
-
-    loadProfiles(ids: Array<string>) : JQueryPromise<IProfile> {
-        let deferred = $.Deferred<IProfile>();
-
-        console.log("RequestData send to background page");
-        chrome.runtime.sendMessage({ command: 'loadProfiles', tabId: this.contentTabId, profileIDs: ids }, (response) => {
-            console.log("RequestData response from background page");
-            console.log(response);
-            console.log('tabid', response.contentTabId)
-            deferred.resolve(response.data.profiles);
-        });
-
-        return deferred.promise();
     }
 
     private loadOnData(source: any) : void {
-
         this.network = this.buildNetwork(source);
     }
 
@@ -268,15 +211,7 @@ class TrustGraphController {
             let claim = trustPackage.claims[key];
             this.dataAdapter.updateWithClaim(claim);
 
-            var message = {
-                command: 'updateContent',
-                tabId: this.contentTabId
-            }
-            chrome.runtime.sendMessage(message, (response) => {
-                // console.log('tabid', response.tabId)
-                // this.contentTabId = response.tabId;
-                // console.log(response.data);
-            });
+            this.trustGraphPopupClient.sendUpdateContentMessage(this.contentTabId);
         }
     }
 

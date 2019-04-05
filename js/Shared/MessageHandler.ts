@@ -27,21 +27,21 @@ export class MessageHandler {
         this.callbacksMap = {};
         //browser.runtime.onMessage.addListener(this.handleMessage);
         browser.runtime.onMessage.addListener((request, sender) => {
-            const callback = this.callbacksMap[request.action];
+            const callback = this.callbacksMap[request.handler];
             if(callback) 
                     return callback(request.params, sender);
         });
     }
    
     private handleMessage(request, sender) : void | Promise<any> {
-        const callback = this.callbacksMap[request.action];
+        const callback = this.callbacksMap[request.handler];
         if(callback) 
                 return callback(request.params, sender);
     }
 
     public send(name: string, params?: any, callback?: (value: any) => any) : Promise<any> {
         const data = {
-            action: name,
+            handler: name,
             params
         };
         const promise = browser.runtime.sendMessage(data);

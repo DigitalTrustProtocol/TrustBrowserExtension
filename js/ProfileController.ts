@@ -18,30 +18,30 @@ class ProfileController {
     profile: IProfile;
     view: ProfileView;
     host: any;
-    domElements: Array<HTMLElement> = [];
+    public domElements: Array<HTMLElement> = [];
     queueElements: Array<HTMLElement> = [];
-    blocked: boolean;
+    //blocked: boolean;
     following: boolean = false;
     profileRepository: ProfileRepository;
     queried: boolean;
     trustResult : BinaryTrustResult;
     changed: boolean = true;
-    updateProfilesCallBack: any;
+    public updateProfilesCallBack = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
     dtpService: DTPService;
     subjectService: SubjectService;
     packageBuilder: PackageBuilder;
     trustSubmittedCallBack: any;
+    scope: string;
 
 
-    constructor(userId: string, view: any, profileRepository: ProfileRepository, updateProfilesCallBack: any, trustSubmittedCallBack: any, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder) {
+    constructor(userId: string, view: any, profileRepository: ProfileRepository, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder, scope: string) {
         this.profile = new Profile({ userId: userId });
         this.view = view;
         this.profileRepository = profileRepository;
-        this.updateProfilesCallBack = updateProfilesCallBack;
         this.dtpService = dtpService;
         this.subjectService = subjectService;
         this.packageBuilder = packageBuilder;
-        this.trustSubmittedCallBack = trustSubmittedCallBack;
+        this.scope = scope;
     }
 
     // Update data for the profile
@@ -93,10 +93,11 @@ class ProfileController {
             changed = this.trustResult.state != source.state ? true : changed;
         }
         
-        if(changed) {
+        if(changed || !this.trustResult) {
             this.trustResult = source;
             this.changed = true;
         }
+
         return this.changed;
     }
 
@@ -124,6 +125,8 @@ class ProfileController {
         this.queueElements = [];
     }
 
+
+
     trust() {
         console.log('Trust clicked');
         DTP['trace']("Trust " + this.profile.screen_name);
@@ -141,98 +144,32 @@ class ProfileController {
         return this.trustProfile("untrust","", 1);
     }
 
-    follow() {
-        DTP['trace']("Follow " + this.profile.screen_name);
-        if (this.domElements.length == 0)
-            return;
 
-        let $selectedTweet = $(this.domElements[0]);
-
-        let follow = $selectedTweet.data("you-follow");
-        if (follow || this.following)
-            return;
-
-        var $button = this.view.createFollowButton($selectedTweet, this.profile);
-
-        $button.click();
-    }
 
 
     trustProfile(name: string, value: any, expire: number): JQueryPromise<any> {
-        return this.buildAndSubmitBinaryTrust(this.profile, value, expire).then(function (result) {
-            //self.controller.render();
-            // Requery everything, as we have changed a trust
-        
+        return this.buildAndSubmitBinaryTrust(this.profile, value, this.scope, expire).then((result) => {
             DTP['trace']('TrustProfile done!');
 
             if(this.trustSubmittedCallBack)
-                this.trustSubmittedCallBack({
-                    name: name,
-                    value: value,
-                    expire: expire,
-                    controller: this
-                });
+                // this.trustSubmittedCallBack({
+                //     name: name,
+                //     value: value,
+                //     expire: expire,
+                //     controller: this
+                // });
+                this.trustSubmittedCallBack(result);
 
             return result;
         });
     }
 
-    twitterUserAction() {
-        if (!this.profile.binaryTrustResult)
-            return;
-
-        if (location.href.indexOf(this.profile.screen_name) >= 0)
-            return; // Ignore the profile page for now
-
-        if (this.profile.binaryTrustResult.state > 0) {
-            if (this.host.settings.twittertrust == "autofollow") {
-                this.follow();
-            }
-            return;
-        }
-
-
-        if (this.profile.binaryTrustResult.state < 0) {
-
-            if (this.blocked || this.domElements.length == 0)
-                return;
-
-            let $selectedTweet = $(this.domElements[0]);
-
-            if (this.host.settings.twitterdistrust == "automute") {
-                $selectedTweet.find("li.mute-user-item").trigger("click");
-            }
-
-            if (this.host.settings.twitterdistrust == "autoblock") {
-                $selectedTweet.find("li.block-link").trigger("click");
-                $("body").removeClass("modal-enabled");
-                $(document).find("#block-dialog").hide();
-                $(document).find("button.block-button").trigger("click");
-                $(document).find("span.Icon--close").trigger("click");
-            }
-
-            this.blocked = true;
-
-            // $selectedTweet.trigger("uiBlockAction", {
-            //     screenName: self.profile.screen_name, 
-            //     userId: self.profile.userId,
-            //     tweetId: tweet_id,
-            //     scribeContext: {component: "block_dialog", element: "tweet"}
-            // });
-
-        }
-
-
-
-    }
-
-
-    buildAndSubmitBinaryTrust(profile: IProfile, value: any, expire: number): JQueryPromise<any> {
+    buildAndSubmitBinaryTrust(profile: IProfile, value: any, scope:string, expire: number): JQueryPromise<any> {
         const self = this;
         let deferred = $.Deferred<any>();
 
         this.loadProfileFromHost().then(() => {
-            let trustPackage = this.subjectService.BuildBinaryClaim(profile, value, null, expire);
+            let trustPackage = this.subjectService.BuildBinaryClaim(profile, value, null, scope, expire);
             this.packageBuilder.SignPackage(trustPackage);
             DTP['trace']("Issuing trust");
             DTP['trace'](JSON.stringify(trustPackage, undefined, 2));
@@ -291,10 +228,10 @@ class ProfileController {
                 this.untrust().then(RemoveSpinner);
             }
 
-            if (classList.contains('follow')) {
-                this.follow();
-                RemoveSpinner();
-            }
+            // if (classList.contains('follow')) {
+            //     this.follow();
+            //     RemoveSpinner();
+            // }
 
             //});
 

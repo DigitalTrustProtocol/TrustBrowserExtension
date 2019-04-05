@@ -5,6 +5,7 @@ import IProfile from "./IProfile";
 import Identicon = require('identicon.js');
 import Crypto = require("./Crypto");
 import BinaryTrustResult = require('./Model/BinaryTrustResult.js');
+import { TrustGraphPopupClient } from './Shared/TrustGraphPopupClient.js';
 
 //declare var Identicon: any;
 class ProfileViewButtonModel {
@@ -81,13 +82,15 @@ class ProfileViewModel {
 class ProfileView {
     Anchor: string;
     fullNameGroup: string;
+    trustGraphPopupClient: TrustGraphPopupClient;
 
     //constructor(controller?: ProfileController) {
-    constructor() {
+    constructor(trustGraphPopupClient: TrustGraphPopupClient) {
         //this.controller = controller;
         //this.checkIconUrl = chrome.extension.getURL("img/check13.gif");
-        this.Anchor = '.ProfileTweet-action--favorite';
+        this.Anchor = 'div.ProfileTweet-action--favorite';
         this.fullNameGroup = '.FullNameGroup';
+        this.trustGraphPopupClient = trustGraphPopupClient;
     }
 
     public render(controller: ProfileController, element: HTMLElement): void {
@@ -95,10 +98,11 @@ class ProfileView {
         let $bar = $element.data('dtp_bar') as JQuery;
         if (!$bar) {
             let $anchor = $element.find(this.Anchor);
-            $bar = $('span') as JQuery;
+            $bar = $('<span>') as JQuery;
             $anchor.after($bar);
             $bar.$fullNameGroup = $element.find(this.fullNameGroup);
             $bar.$fullNameGroup.prepend(this.createIdenticon(controller.profile));
+            $element.data('dtp_bar', $bar);
         }
 
         let html = this.createBar(controller);
@@ -251,12 +255,13 @@ class ProfileView {
             //profile.time = Date.now();
             //profile.controller.save();
         }
+
         iconData = profile.identiconData16;
 
         let $icon = $('<a title="' + profile.screen_name + '" href="javascript:void 0"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
         $icon.data("dtp_profile", profile);
 
-        $icon.click(function () {
+        $icon.click(() => {
             let selectedProfile = $(this).data('dtp_profile');
 
             //let p = selectedProfile.
@@ -266,23 +271,10 @@ class ProfileView {
                 scope: Profile.CurrentUser.scope,
                 currentUser: Profile.CurrentUser,
                 selectedProfile: selectedProfile,
-                binaryTrustResult: selectedProfile.binaryTrustResult
+                trustResult: null
             };
 
-            var opt = {
-                command: 'openDialog',
-                url: 'trustgraph.html',
-                data: dialogData
-            };
-            opt['w'] = 800;
-            opt['h'] = 800;
-            var wLeft = window.screenLeft ? window.screenLeft : window.screenX;
-            var wTop = window.screenTop ? window.screenTop : window.screenY;
-
-            opt['left'] = Math.floor(wLeft + (window.innerWidth / 2) - (opt['w'] / 2));
-            opt['top'] = Math.floor(wTop + (window.innerHeight / 2) - (opt['h'] / 2));
-
-            chrome.runtime.sendMessage(opt);
+            this.trustGraphPopupClient.openPopup({ data: dialogData });
             return false;
         });
         return $icon;

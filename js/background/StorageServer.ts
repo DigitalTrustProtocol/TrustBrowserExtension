@@ -2,20 +2,24 @@ import * as localforage from 'localforage';
 import { MessageHandler, Callback } from '../Shared/MessageHandler';
 
 export class StorageServer {
-    static action: string = "Storage";
+    static handlerName: string = "Storage";
 
     //private storage: LocalForage;
     private messageHandler: MessageHandler;
-    private methods: { [s: string]: any };
+    private methods: { [s: string]: any } = {};
 
     constructor(messageHandler : MessageHandler) {
         this.messageHandler = messageHandler;
-        this.methods = {};
+    }
+
+    public init() : StorageServer {
         this.methods["getItem"] = this.getItem;
         this.methods["setItem"] = this.setItem;
+        return this;
     }
 
     public ready(): Promise<void> {
+        this.init();
 
         localforage.config({
             name        : 'DTP',
@@ -27,15 +31,13 @@ export class StorageServer {
 
         let promise = localforage.ready();
         return promise.then(() => {
-            this.messageHandler.receive(StorageServer.action, (params: any, sender: any) => {
-                let method = this.methods[params.method];
+            this.messageHandler.receive(StorageServer.handlerName, (params: any, sender: any) => {
+                let method = this.methods[params.action];
                 if(method)
                     return method(params);
             });
         });
     }
-
-    private handleCall
 
     private getItem(params: any) : Promise<any> {
         console.log(params)
@@ -47,9 +49,9 @@ export class StorageServer {
         localforage.setItem(params.key, params.value);
     }
 
-    public static command(method: string, key: string, value?: any) {
+    public static action(action: string, key: string, value?: any) {
         return { 
-            method: method, 
+            action: action, 
             key: key,
             value: value
         };
