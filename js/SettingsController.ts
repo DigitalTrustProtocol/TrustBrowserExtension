@@ -19,7 +19,8 @@ import localforage = require('localforage');
             "infoserver": "https://trust.dance",
             'twitterdistrust': 'hidecontent',
             "twittertrust": 'noaction',
-            "identicon" : ""
+            "identicon" : "",
+            "time": 0
         } as ISettings;
 
         Object.defineProperty(this.settings, 'keyPair', { enumerable: false, writable: true, value: null }); // No serialize to json!

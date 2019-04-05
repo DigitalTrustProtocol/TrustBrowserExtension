@@ -49,7 +49,7 @@ class Twitter {
         this.profileRepository = profileRepository;
         this.trustGraphPopupClient = trustGraphPopupClient;
         this.waiting = false;
-        this.profileView = new ProfileView(this.trustGraphPopupClient);
+        this.profileView = new ProfileView(this.trustGraphPopupClient, settings);
 
         console.log('twitter class init', this.settings)
     }
@@ -129,8 +129,8 @@ class Twitter {
             if (!controllers.hasOwnProperty(key))
                 continue;
             let controller = controllers[key] as ProfileController;
-            if(controller.profile.userId == "160139307")
-                profiles.push(controller.profile);
+            // if(controller.profile.userId == "160139307")
+            profiles.push(controller.profile);
         }
 
         return this.dtpService.Query(profiles, window.location.hostname).done((result: QueryContext) => {
@@ -145,14 +145,8 @@ class Twitter {
                     continue;
                 let controller = controllers[key] as ProfileController;
 
-                if(controller.profile.userId == "160139307") {
-
-                    controller.queried = true;
-                    if(controller.changed) {
-                        controller.renderAll();
-                        this.twitterUserAction(controller);
-                    }
-                }
+                controller.queried = true;
+                controller.render();
             }
         });
     }
@@ -173,87 +167,6 @@ class Twitter {
         this.twitterService.sendTweet(data).then((result) => {
             ProfileView.showMessage("DTP tweet created");
         });
-    }
-
-
-    twitterUserAction(controller: ProfileController) {
-        if (!controller.trustResult || controller.trustResult.state == 0) {
-            this.displayAll(controller);
-            return;
-        }
-            
-
-        if (controller.domElements.length == 0)
-            return;
-
-
-        // if (location.href.indexOf(controller.profile.screen_name) >= 0)
-        //     return; // Ignore the profile page for now
-
-        if (controller.trustResult.state > 0) {
-            if (this.settings.twittertrust == "autofollow") {
-                this.follow(controller);
-            }
-
-            this.displayAll(controller);
-
-            return;
-        }
-
-
-        if (controller.trustResult.state < 0) {
-
-            let $selectedTweet = $(controller.domElements[0]);
-
-            if (this.settings.twitterdistrust == "hidecontent") {
-                for(let key in controller.domElements) {
-                    let element = controller.domElements[key];
-                    let $element = $(element);
-                    $element.find('.js-tweet-text-container').hide();
-                    $element.find('.QuoteTweet-container').hide();
-                    $element.find('.AdaptiveMediaOuterContainer').hide();
-                    $element.find('.card2').hide();
-                }
-            }
-
-            if (this.settings.twitterdistrust == "automute") {
-                $selectedTweet.find("li.mute-user-item").trigger("click");
-            }
-
-            if (this.settings.twitterdistrust == "autoblock") {
-                $selectedTweet.find("li.block-link").trigger("click");
-                $("body").removeClass("modal-enabled");
-                $(document).find("#block-dialog").hide();
-                $(document).find("button.block-button").trigger("click");
-                $(document).find("span.Icon--close").trigger("click");
-            }
-        }
-    }
-
-    private displayAll(controller: ProfileController) {
-        for(let key in controller.domElements) {
-            let element = controller.domElements[key];
-            let $element = $(element);
-            $element.find('.js-tweet-text-container').show();
-            $element.find('.QuoteTweet-container').show();
-            $element.find('.AdaptiveMediaOuterContainer').show();
-            $element.find('.card2').show();
-        }
-    }
-
-    private follow(controller: ProfileController) : void {
-        DTP['trace']("Follow " + controller.profile.screen_name);
-        if (controller.domElements.length == 0)
-            return;
-
-        let $selectedTweet = $(controller.domElements[0]);
-
-        let follow = $selectedTweet.data("you-follow");
-        if (follow || controller.following)
-            return;
-
-        var $button = controller.view.createFollowButton($selectedTweet, controller.profile);
-        $button.click();
     }
 
 

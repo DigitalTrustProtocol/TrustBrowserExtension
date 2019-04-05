@@ -10,4 +10,5 @@ export default interface ISettings  {
     keyPair?: any;
     address?: string;
     hash:any;
+    time: number;
 }

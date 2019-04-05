@@ -19,7 +19,6 @@ class ProfileController {
     view: ProfileView;
     host: any;
     public domElements: Array<HTMLElement> = [];
-    queueElements: Array<HTMLElement> = [];
     //blocked: boolean;
     following: boolean = false;
     profileRepository: ProfileRepository;
@@ -71,8 +70,7 @@ class ProfileController {
     }
 
     public addElement(element: HTMLElement): void {
-        //this.domElements.push(element);
-        this.queueElements.push(element);
+        this.domElements.push(element);
         this.bindEvents(element);
         $(element).data("dtp_controller", this);
     }
@@ -81,51 +79,13 @@ class ProfileController {
         return this.profileRepository.setProfile(this.profile);
     }
 
-    public updateTrustResult(source: BinaryTrustResult) : boolean {
-        let changed = false;
-        if(this.trustResult) {
-            // Comparer
-            changed = this.trustResult.claims.length != source.claims.length ? true : changed;
-            changed = this.trustResult.direct != source.direct ? true : changed;
-            changed = this.trustResult.directValue != source.directValue ? true : changed;
-            changed = this.trustResult.distrust != source.distrust ? true : changed;
-            changed = this.trustResult.trust != source.trust ? true : changed;
-            changed = this.trustResult.state != source.state ? true : changed;
-        }
-        
-        if(changed || !this.trustResult) {
-            this.trustResult = source;
-            this.changed = true;
-        }
-
-        return this.changed;
-    }
-
-
     // Render all elements
-    public renderAll() : void {
-        if(!this.changed) // If data have not change, no need for a rerender!
-            return;
-
+    public render() : void {
         for (let key in this.domElements) {
             let element = this.domElements[key] as HTMLElement;
             this.view.render(this, element);
         }
-        this.render(); // Pickup all queue elements as well
-        this.changed = false; // Now reset the changed property
     }
-
-    // Render new elements
-    public render(): void {
-        for (let key in this.queueElements) {
-            let element = this.queueElements[key] as HTMLElement;
-            this.domElements.push(element);
-            this.view.render(this, element);
-        }
-        this.queueElements = [];
-    }
-
-
 
     trust() {
         console.log('Trust clicked');

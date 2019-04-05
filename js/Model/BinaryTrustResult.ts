@@ -13,6 +13,7 @@ class BinaryTrustResult {
     public profiles: Array<IProfile> = []
 
 
+
     public Clean() {
         Object.defineProperty(this, 'claims', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
@@ -28,6 +29,23 @@ class BinaryTrustResult {
 
     public calculateState() {
     }
+
+    public isEqual(source: BinaryTrustResult) : boolean {
+        if(!source)
+            return false;
+
+        // Comparer
+        let changed = this.claims.length != source.claims.length ? true : false;
+        changed = this.direct != source.direct ? true : changed;
+        changed = this.directValue != source.directValue ? true : changed;
+        changed = this.distrust != source.distrust ? true : changed;
+        changed = this.trust != source.trust ? true : changed;
+        changed = this.state != source.state ? true : changed;
+
+        return !changed;
+    }
+
+
 
 }
 

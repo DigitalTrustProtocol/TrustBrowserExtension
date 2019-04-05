@@ -59,6 +59,7 @@ class TrustStrategy implements ITrustStrategy {
 
         let claims = queryContext.results.claims;
         let subjectIndex: Array<string> = [];
+        const checkTime = Math.round(Date.now()/1000.0);
 
         claims.forEach((claim) => {
             if(claim.type != PackageBuilder.ID_IDENTITY_DTP1)
@@ -86,98 +87,46 @@ class TrustStrategy implements ITrustStrategy {
 
             let profile = controller.profile;
 
-            // // Id can be user id or a DTP id
-            // if(profile == null) {
-            //     if(subjectId == claim.subject.id)
-            //         return; // The profile do not exist! No data on who the claim is about.
-
-                       
-            //     // Create a new profile, but do not load its DTP data
-            //     // The profile should not be a subject as they are all known!(?)
-            //     let data = { 
-            //         userId: subjectId, // Should be local id
-            //         screen_name: 'Unknown', 
-            //         alias: '', // Should be DTP ID
-            //         //owner: new DTPIdentity({ID:claim.subject.id}) // Proof are missing, verify later if needed!
-            //     };
-            //     profile = new Profile(data);
-            //     this.profileRepository.setProfile(profile);
-            // }
-
             // Make sure that an owner is added if missing and a ID identity claim is available.
             if(!profile.owner && subjectId != claim.subject.id) {
                 profile.owner = new DTPIdentity({ID:claim.subject.id}); // Proof are missing, verify later if needed!
                 this.profileRepository.setProfile(profile);
             } 
 
-
-            //if(!controller.trustResult)
             let trustResult = results[subjectId];
             if(!trustResult) {
                 trustResult = new BinaryTrustResult();
                 trustResult["controllerId"] = subjectId;
+                trustResult.time = checkTime;
+                trustResult.queryContext = queryContext;
                 results[subjectId] = trustResult;
             } 
 
-            
-            //let trustResult = controller.trustResult as BinaryTrustResult;
-
-
-            // if(trustResult.time != checkTime) {
-            //     trustResult.Clean(); // Reset the trustResult
-            //     //trustResult.time = checkTime; // Set check time
-            //     trustResult.queryContext = queryContext;
-            // }
-
-
-            // const exists = (claim.issuer.id in trustResult.claims);
-            // if(exists)
-            //     return; // There are already one claim for the subject
+            const exists = (claim.issuer.id in trustResult.claims);
+            if(exists)
+                 return; // There are already one claim for the subject
 
             trustResult.claims[claim.issuer.id] = claim; // Make sure that only one claim per issuer is added.
 
             this.processClaim(trustResult, claim);
-    
-            // let deferred = $.Deferred();
-            // tasks.push(deferred);
-
-            // Issuer is always DTP ID, add reference to the issuer profile.
-            //let issuerProfile = 
-            // 
-            // this.profileRepository.getProfileByIndex(claim.issuer.id).then(issuerProfile => {
-            //     if(issuerProfile)
-            //         trustResult.profiles.push(issuerProfile);
-
-            //     deferred.resolve();
-            // });
-
         });
 
-        for(let subjectId in controllers) {
+        for(let subjectId in controllers) { 
             if (!controllers.hasOwnProperty(subjectId))
                 continue;
 
             let controller = controllers[subjectId] as ProfileController;
-            let result = results[subjectId] as BinaryTrustResult;
-
-            if(result) {
-                result.claims = Object.keys(result.claims).map((key) => { return (result.claims.hasOwnProperty(key)) ? result.claims[key] : undefined; });
-                controller.updateTrustResult(result);
-            } else {
-                controller.updateTrustResult(new BinaryTrustResult()); // Clean out the trust result
-            }
-
-
+            let tempTrustResult = results[subjectId] as BinaryTrustResult;
+            
+            if(tempTrustResult) {
+                tempTrustResult.claims = Object.keys(tempTrustResult.claims).map((key) => { 
+                    return (tempTrustResult.claims.hasOwnProperty(key)) ? tempTrustResult.claims[key] : undefined; 
+                });
+                if(!tempTrustResult.isEqual(controller.trustResult))
+                    controller.trustResult = tempTrustResult;
+            } else
+                controller.trustResult = new BinaryTrustResult(); // Set default trustResult on controller that do not have a result.
         }
-
-
-        // function resultDeferredDone() {
-        //     resultDeferred.resolve();
-        // }
-
-        // $.when(tasks).done(resultDeferredDone);
-
-        //return resultDeferred.promise();
     }
 }
 export = TrustStrategy
