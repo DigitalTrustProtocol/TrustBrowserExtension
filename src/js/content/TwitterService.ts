@@ -1,14 +1,72 @@
-import Profile = require('./Profile');
-import ProfileView = require('./ProfileView');
-import ISettings from './Settings.interface';
-import DTPIdentity = require('./Model/DTPIdentity');
-import IProfile from './IProfile';
-import Crypto = require('./Crypto');
+import TwitterProfileView = require('./TwitterProfileView');
+import DTPIdentity = require('../Model/DTPIdentity');
+import IProfile from '../IProfile';
+import Crypto = require('../Crypto');
+import Profile = require('../Profile');
+import { MessageHandler, CallbacksMap } from '../Shared/MessageHandler';
+import { Runtime } from 'webextension-polyfill-ts';
+import ProfileRepository = require('../ProfileRepository');
+
 
 class TwitterService {
+    public static handlerName: string = "TwitterService";
+
     public BaseUrl = 'https://twitter.com';
 
-    getProfileDTP(profile: IProfile): JQueryPromise<DTPIdentity> {
+    private messageHandler: MessageHandler;
+    private methods: CallbacksMap = {};
+    private profileRepository: ProfileRepository;
+
+
+    constructor(messageHandler : MessageHandler, profileRepository: ProfileRepository) {
+        this.messageHandler = messageHandler;
+        this.profileRepository = profileRepository;
+
+        this.methods["getGraphData"] = (params, sender) => this.getProfileDTP(params, sender);
+        this.methods["getProfile"] = (params, sender) => this.getProfile(params, sender);
+        this.methods["getProfileDTP"] = (params, sender) => this.getProfileDTP(params, sender);
+        this.messageHandler.receive(TwitterService.handlerName, (params: any, sender: Runtime.MessageSender) => {
+            let method = this.methods[params.action];
+            if(method)
+                return method(params, sender);
+        });
+
+    }
+
+    public getGraphData(params: any, sender: Runtime.MessageSender) : JQueryPromise<any> {
+
+        return this.profileRepository.getProfile(params.userId).then(profile => {
+            let dialogData = {
+                scope: "twitter.com",
+                currentUser: Profile.CurrentUser,
+                subjectProfile: profile,
+                trustResult: profile.binaryTrustResult
+            };
+            return dialogData;
+        });
+    }
+
+    public getProfile(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
+        let deferred = $.Deferred<DTPIdentity>();
+        let url = '/search?f=tweets&q=UserID:' + profile.userId;
+        
+        if (profile.screen_name) {
+            url += '%20from%3A' + profile.screen_name;
+        }
+        url += '&src=typd';
+
+        this.getData(url, 'html').then((html: string) => {
+
+            let result = this.extractDTP(html);
+
+            deferred.resolve(result);
+        }).fail((error) => deferred.fail(error));
+
+        return deferred.promise();
+    }
+
+
+    getProfileDTP(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
         let deferred = $.Deferred<DTPIdentity>();
         let url = '/search?f=tweets&q=%23DTP%20ID%20Proof%20UserID:' + profile.userId
         // /search?l=&q=%23DTP%20ID%20Proof%20UserID%3A22551796%20OR%20UserID%3A1002660175277363200&src=typd
@@ -166,7 +224,7 @@ class TwitterService {
     errorHandler(jqXHR, textStatus, errorThrown) {
         if (jqXHR.status == 404 || errorThrown == 'Not Found') {
             let msg = 'Error 404: Server was not found.';
-            ProfileView.showMessage(msg);
+            TwitterProfileView.showMessage(msg);
         }
         else {
             let msg: string = textStatus + " : " + errorThrown;
@@ -175,7 +233,7 @@ class TwitterService {
             } else if (jqXHR.responseJSON.message) {
                 msg = JSON.stringify(jqXHR.responseJSON.message, null, 2);
             }
-            ProfileView.showMessage(msg);
+            TwitterProfileView.showMessage(msg);
         }
     }
 

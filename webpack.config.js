@@ -5,10 +5,10 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin')
 module.exports = {
   entry: {
-    main: './js/main.ts',
-    popup: './js/Extensionpopup.ts',
-    trustgraph: './js/TrustGraph.ts',
-    background: path.join(__dirname, './js/background/background.ts'),
+    main: './src/js/content/main.ts',
+    popup: './src/js/content/popup.ts',
+    trustgraph: './src/js/content/TrustGraph.ts',
+    background: './src/js/background/background.ts',
   },
   mode: 'development',
   devtool: 'cheap-module-source-map',
@@ -46,7 +46,10 @@ module.exports = {
     ]
   },
   resolve: {
-    extensions: [ '.ts', '.js' ]
+    extensions: [ '.ts', '.js' ],
+    alias: {
+      "webextension-polyfill-ts": path.resolve(path.join(__dirname, "node_modules", "webextension-polyfill-ts"))
+    }
   },
   output: {
     filename: "[name].js",
@@ -54,9 +57,10 @@ module.exports = {
   },
   plugins: [
     new CleanWebpackPlugin(['dist']),
-    new HtmlWebpackPlugin({  // Also generate a test.html
+
+    new HtmlWebpackPlugin({  
       filename: './trustgraph.html',
-      template: './trustgraph.html',
+      template: './src/public/trustgraph.html',
       chunks: ['trustgraph'],
       minify: {
         removeComments: true,
@@ -64,33 +68,33 @@ module.exports = {
         conservativeCollapse: true
       }
     }),
-    new HtmlWebpackPlugin({  // Also generate a test.html
-      filename: './extensionpopup.html',
-      template: './extensionpopup.html',
+    new HtmlWebpackPlugin({  
+      filename: './popup.html',
+      template: './src/public/popup.html',
       chunks: ['popup'],
       minify   : {
-        html5                          : true,
-        collapseWhitespace             : true,
-        minifyCSS                      : true,
-        minifyJS                       : true,
-        minifyURLs                     : false,
-        removeAttributeQuotes          : true,
-        removeComments                 : true,
-        removeEmptyAttributes          : true,
-        removeOptionalTags             : true,
-        removeRedundantAttributes      : true,
-        removeScriptTypeAttributes     : true,
-        useShortDoctype                : true
+        // html5                          : true,
+        // collapseWhitespace             : true,
+        // minifyCSS                      : true,
+        // minifyJS                       : true,
+        // minifyURLs                     : false,
+        // removeAttributeQuotes          : true,
+        // removeComments                 : true,
+        // removeEmptyAttributes          : true,
+        // removeOptionalTags             : true,
+        // removeRedundantAttributes      : true,
+        // removeScriptTypeAttributes     : true,
+        // useShortDoctype                : true
       }
     }),
     new CopyWebpackPlugin([
-      {from:'css',to:'./css'},
-      {from:'img',to:'./img'},
-      {from:'fonts',to:'./fonts'},
-      {from:'lib',to:'./lib'},
+      {from:'src/css',to:'./css'},
+      {from:'src/img',to:'./img'},
+      {from:'src/fonts',to:'./fonts'},
+      {from:'src/lib',to:'./lib'},
       //{from:'js/background.js',to:'./js/'},
-      {from:'js/common.js',to:'./js/'},
-      {from:'typings',to:'./typings'},
+      {from:'src/js/common.js',to:'./js/'},
+      {from:'src/typings',to:'./typings'},
       {from:'manifest.json',to:'./manifest.json'}
   ]),
   ]

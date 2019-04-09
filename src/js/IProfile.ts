@@ -7,7 +7,7 @@ import { ProfileStateEnum } from "./Model/ProfileStateEnum";
 export default interface IProfile {
     userId: string;
     screen_name: string;
-    alias: string;
+    alias?: string;
     avatarImage?: string;
     owner?: DTPIdentity;
     //address?: any;

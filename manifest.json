@@ -15,7 +15,7 @@
       "19": "img/DTP48a.png",
       "38": "img/DTP48a.png"
     },
-    "default_popup": "extensionpopup.html"
+    "default_popup": "popup.html"
   },
   "permissions": [
     "tabs",

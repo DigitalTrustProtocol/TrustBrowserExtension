@@ -1,24 +1,23 @@
-import ProfileController = require('./ProfileController');
-import ProfileView = require('./ProfileView');
-import ProfileRepository = require('./ProfileRepository');
-import dtpService = require('./DTPService');
-import ISettings from './Settings.interface';
-import SettingsController = require('./SettingsController');
-import SubjectService = require('./SubjectService')
-import PackageBuilder = require('./PackageBuilder');
+import ProfileController = require('../ProfileController');
+import TwitterProfileView = require('./TwitterProfileView');
+import ProfileRepository = require('../ProfileRepository');
+import dtpService = require('../DTPService');
+import ISettings from '../Interfaces/Settings.interface';
+import SubjectService = require('../SubjectService')
+import PackageBuilder = require('../PackageBuilder');
 import TwitterService = require('./TwitterService');
-import TrustStrategy = require('./TrustStrategy')
-import DTPService = require('./DTPService');
-import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
-import BinaryTrustResult = require('./Model/BinaryTrustResult');
-import IProfile from './IProfile';
-import Profile = require('./Profile');
-import Crypto = require('./Crypto');
-import DTPIdentity = require('./Model/DTPIdentity');
+import TrustStrategy = require('../TrustStrategy')
+import DTPService = require('../DTPService');
+import { QueryRequest, QueryContext } from '../../lib/dtpapi/model/models';
+import BinaryTrustResult = require('../Model/BinaryTrustResult');
+import IProfile from '../IProfile';
+import Profile = require('../Profile');
+import Crypto = require('../Crypto');
+import DTPIdentity = require('../Model/DTPIdentity');
 import bitcoin = require('bitcoinjs-lib');
 import bitcoinMessage = require('bitcoinjs-message');
-import SiteManager = require('./SiteManager');
-import { TrustGraphPopupClient } from './Shared/TrustGraphPopupClient';
+import SiteManager = require('../SiteManager');
+import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
 
 class Twitter {
     OwnerPrefix: string;
@@ -33,7 +32,7 @@ class Twitter {
     profilesToQuery: Array<IProfile> = [];
 
     controllers = {};
-    profileView: ProfileView;
+    profileView: TwitterProfileView;
     trustGraphPopupClient: TrustGraphPopupClient;
 
 
@@ -49,7 +48,7 @@ class Twitter {
         this.profileRepository = profileRepository;
         this.trustGraphPopupClient = trustGraphPopupClient;
         this.waiting = false;
-        this.profileView = new ProfileView(this.trustGraphPopupClient, settings);
+        this.profileView = new TwitterProfileView(this.trustGraphPopupClient, settings, TwitterService.handlerName);
 
         console.log('twitter class init', this.settings)
     }
@@ -165,7 +164,7 @@ class Twitter {
         };
 
         this.twitterService.sendTweet(data).then((result) => {
-            ProfileView.showMessage("DTP tweet created");
+            TwitterProfileView.showMessage("DTP tweet created");
         });
     }
 
@@ -198,7 +197,7 @@ class Twitter {
                         controllers[controller.profile.userId] = controller;
                 });
 
-                ProfileView.createTweetDTPButton();
+                TwitterProfileView.createTweetDTPButton();
 
                 deferred.resolve(controllers);
             });

@@ -1,5 +1,4 @@
 import  PackageBuilder = require('./PackageBuilder');
-import ISettings from './Settings.interface';
 import { ModelPackage,QueryContext, Claim } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import ProfileRepository = require('./ProfileRepository');
@@ -8,6 +7,7 @@ import IProfile from './IProfile';
 import DTPIdentity = require('./Model/DTPIdentity');
 import ITrustStrategy from './Interfaces/ITrustStrategy';
 import ProfileController = require('./ProfileController');
+import ISettings from './Interfaces/Settings.interface';
 
 
 class TrustStrategy implements ITrustStrategy {

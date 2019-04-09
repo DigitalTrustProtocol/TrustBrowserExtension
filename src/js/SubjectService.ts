@@ -1,11 +1,11 @@
-import ISettings from './Settings.interface';
-import ISubject from './SubjectInterface';
+import ISubject from './Interfaces/SubjectInterface';
 import PackageBuilder = require('./PackageBuilder');
 import { Claim } from '../lib/dtpapi/model/Claim';
 import Crypto = require("./Crypto");
 import Profile = require('./Profile');
 import { ModelPackage } from '../lib/dtpapi/model/models';
 import IProfile from './IProfile';
+import ISettings from './Interfaces/Settings.interface';
 
 class SubjectService  {
     SCRIPT: string;

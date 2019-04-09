@@ -1,4 +1,4 @@
-import { browser, Windows } from "webextension-polyfill-ts";
+import { browser, Windows, Runtime } from "webextension-polyfill-ts";
 import { MessageHandler } from "../Shared/MessageHandler";
 
 
@@ -10,7 +10,8 @@ export class TrustGraphPopupServer {
 
     private popupTab = null;
     private popupWindow = null;
-    private profileData = null;
+    private userId: string = null;
+    private contentHandler: string = null;
     private contentTabId = null;
     
 
@@ -19,10 +20,10 @@ export class TrustGraphPopupServer {
     }
 
     public init() : TrustGraphPopupServer {
-        this.methods["openDialog"] = (params, sender) => { this.openDialog(params, sender) };
-        this.methods["requestData"] = (params, sender) => { this.requestData(params, sender) };
+        this.methods["openDialog"] = (params: any, sender: Runtime.MessageSender) => this.openDialog(params, sender);
+        this.methods["requestContentTabId"] = (params: any, sender: Runtime.MessageSender) => this.requestContentTabId(params, sender);
 
-        this.messageHandler.receive(TrustGraphPopupServer.handlerName, (params: any, sender: any) => {
+        this.messageHandler.receive(TrustGraphPopupServer.handlerName, (params: any, sender: Runtime.MessageSender) => {
             let method = this.methods[params.action];
             if (method)
                 return method(params, sender);
@@ -46,7 +47,8 @@ export class TrustGraphPopupServer {
 
 
     private openDialog(request: any, sender: any): void {
-        this.profileData = request.data;
+        this.userId = request.userId;
+        this.contentHandler = request.contentHandler;
         this.contentTabId = sender.tab.id;
         // Open up the Popup window
         if(this.popupWindow) {
@@ -65,7 +67,6 @@ export class TrustGraphPopupServer {
 
     private createDialog(request, contentTabId) : void
     {
-        
         try {
             browser.tabs.create({
                 url: browser.extension.getURL('trustgraph.html'), //'dialog.html'
@@ -92,12 +93,14 @@ export class TrustGraphPopupServer {
         }
     }
 
-    private requestData(request: any, sender: any) : any {
-        //chrome.windows.update(popupWindow.id, {focused:true });
-        return { 
-            data: this.profileData, 
+    private requestContentTabId(params: any, sender: Runtime.MessageSender) : any {
+        browser.windows.update(this.popupWindow.id, {focused:true });
+        let result = { 
+            userId: this.userId,
+            contentHandler: this.contentHandler,
             contentTabId: this.contentTabId 
         };
+        return result; // Need to wrap in promise!!!
     }
 
     private sendMessageToDialog(action: string, data: any, contentTabId: any, cb: any) : void

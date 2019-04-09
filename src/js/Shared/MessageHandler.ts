@@ -10,13 +10,13 @@ import { browser, Runtime } from "webextension-polyfill-ts";
 
 // fixme: types
 export type Callback = (params: any, sender: Runtime.MessageSender) => any;
-// export type Callback = (params: any, sender?: browser.runtime.MessageSender) => any;
+// // export type Callback = (params: any, sender?: browser.runtime.MessageSender) => any;
 
 export interface ReceiverHandle {
     destroy(): void;
 }
 
-type CallbacksMap = { [s: string]: Callback };
+export type CallbacksMap = { [s: string]: Callback };
 
 export class MessageHandler {
     private callbacksMap: CallbacksMap | null = null;
@@ -45,6 +45,18 @@ export class MessageHandler {
             params
         };
         const promise = browser.runtime.sendMessage(data);
+        if (callback)
+            promise.then(callback);
+        promise.catch(this.noop);
+        return promise;
+    }
+
+    public sendTab(tabId: number, handler: string, params?: any, callback?: (value: any) => any) : Promise<any> {
+        const data = {
+            handler: handler,
+            params
+        };
+        const promise = browser.tabs.sendMessage(tabId, data);
         if (callback)
             promise.then(callback);
         promise.catch(this.noop);

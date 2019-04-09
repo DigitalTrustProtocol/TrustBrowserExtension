@@ -1,6 +1,8 @@
 {
     "name": "dtp",
     "version": "0.2.0",
+    "author": "Carsten Keutmann",
+    "license": "MIT",
     "typeAcquisition": {
         "include": [
             "jquery"
@@ -32,7 +34,7 @@
         "css-loader": "^1.0.0",
         "file-loader": "^2.0.0",
         "html-loader": "^0.5.5",
-        "html-webpack-plugin": "^3.2.0",
+        "html-webpack-plugin": "3.0.7",
         "rimraf": "^2.6.2",
         "shelljs": "^0.8.2",
         "style-loader": "^0.23.0",

@@ -1,40 +1,42 @@
 import * as angular from 'angular';
-import './common.js';
-import SettingsController = require('./SettingsController');
-import PackageBuilder = require('./PackageBuilder');
-import DTPService = require('./DTPService');
-import TrustStrategy = require('./TrustStrategy');
-import SubjectService = require('./SubjectService');
-import ISettings from './Settings.interface';
-import Crypto = require('./Crypto');
-import IProfile from './IProfile';
-import ProfileRepository = require('./ProfileRepository');
-import BinaryTrustResult = require('./Model/BinaryTrustResult');
+import '../common.js';
+import PackageBuilder = require('../PackageBuilder');
+import DTPService = require('../DTPService');
+import TrustStrategy = require('../TrustStrategy');
+import SubjectService = require('../SubjectService');
+import Crypto = require('../Crypto');
+import IProfile from '../IProfile';
+import ProfileRepository = require('../ProfileRepository');
+import BinaryTrustResult = require('../Model/BinaryTrustResult');
 import vis2 = require('vis');
-import Profile = require('./Profile');
+import Profile = require('../Profile');
 import Identicon = require('identicon.js');
 import { Buffer } from 'buffer';
-import ISiteInformation from './Model/SiteInformation.interface';
-import SiteManager = require('./SiteManager');
-import { ModelPackage, QueryContext } from '../lib/dtpapi/model/models.js';
-import ProfileModal = require('./Model/ProfileModal');
+import ISiteInformation from '../Model/SiteInformation.interface';
+import SiteManager = require('../SiteManager');
+import { ModelPackage, QueryContext } from '../../lib/dtpapi/model/models.js';
+import ProfileModal = require('../Model/ProfileModal');
 import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
 import * as localforage from 'localforage';
-import { MessageHandler } from './Shared/MessageHandler';
-import { TrustGraphPopupClient } from './Shared/TrustGraphPopupClient';
-import { StorageClient } from './Shared/StorageClient';
+import { MessageHandler } from '../Shared/MessageHandler';
+import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
+import { StorageClient } from '../Shared/StorageClient';
+import SettingsClient = require('../Shared/SettingsClient');
+import ISettings from "../Interfaces/Settings.interface";
 
 class TrustGraphController {
-    settingsController: any;
+    settingsClient: SettingsClient;
     settings: any;
     packageBuilder: any;
     subjectService: any;
     dtpService: DTPService;
     contentTabId: number;
+    contentHandler: string;
     network: any;
     profileRepository: ProfileRepository;
     currentUser: IProfile;
     selectedProfile: IProfile;
+
     modalData: ProfileModal;
     source: any;
 
@@ -50,10 +52,11 @@ class TrustGraphController {
         this.messageHandler = new MessageHandler();
         this.storageClient = new StorageClient(this.messageHandler);
         this.trustGraphPopupClient = new TrustGraphPopupClient(this.messageHandler);
+
    
         SiteManager.GetUserContext().then((userContext) => {
-            this.settingsController = new SettingsController(userContext);
-            this.settingsController.loadSettings((settings) => {
+            this.settingsClient = new SettingsClient(this.messageHandler, userContext);
+            this.settingsClient.loadSettings((settings) => {
                 this.settings = settings;
                 this.profileRepository = new ProfileRepository(this.storageClient);
                 this.packageBuilder = new PackageBuilder(settings);
@@ -61,7 +64,14 @@ class TrustGraphController {
                 this.dtpService = new DTPService(settings);
 
                 this.trustGraphPopupClient.showSubject = (params, sender) => { this.contentTabId = params.contentTabId; this.loadOnData(params.data); };
-                this.trustGraphPopupClient.requestData().then((params) => { this.loadOnData(params.data); });
+                this.trustGraphPopupClient.requestContentTabId().then((params) => 
+                { 
+                    this.contentHandler = params.contentHandler;
+                    this.contentTabId = params.contentTabId;
+                    this.trustGraphPopupClient.getGraphData(this.contentTabId, this.contentHandler, params.userId).then(result => {
+                        this.loadOnData(result.data); 
+                    });
+                });
             });
         });
     }
@@ -74,14 +84,14 @@ class TrustGraphController {
 
         this.source = source;
         // First load all the profiles in locally
-        let trustResult = <BinaryTrustResult>source.binaryTrustResult;
-        trustResult.profiles.forEach((profile) => {
-            this.profileRepository.setProfile(profile);
-        });
+        let trustResult = <BinaryTrustResult>source.trustResult;
+        // trustResult.profiles.forEach((profile) => {
+        //     this.profileRepository.setProfile(profile);
+        // });
         this.currentUser = source.currentUser || this.currentUser;
         this.selectedProfile = source.selectedProfile || this.selectedProfile;
-        this.profileRepository.setProfile(source.selectedProfile);
-        this.profileRepository.setProfile(source.currentUser);
+        // this.profileRepository.setProfile(source.selectedProfile);
+        // this.profileRepository.setProfile(source.currentUser);
 
         // Then process the claims agaist the profiles
         let trustStrategy = new TrustStrategy(this.settings, this.profileRepository);

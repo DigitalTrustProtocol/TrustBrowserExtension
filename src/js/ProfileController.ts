@@ -1,22 +1,23 @@
-import ProfileView = require('./ProfileView');
+///<reference path="../typings/globals/jquery/index.d.ts" />
+
 import TrustStrategy = require('./TrustStrategy');
 import { QueryRequest, QueryContext } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import DTPIdentity = require('./Model/DTPIdentity');
 import Crypto = require('./Crypto');
-import TwitterService = require('./TwitterService');
 import ProfileRepository = require('./ProfileRepository');
 import IProfile from './IProfile';
 import Profile = require('./Profile');
-import ISettings from './Settings.interface';
 import { ProfileStateEnum } from './Model/ProfileStateEnum';
 import DTPService = require('./DTPService');
 import SubjectService = require('./SubjectService');
 import PackageBuilder = require('./PackageBuilder');
+import ISettings from "./Interfaces/Settings.interface";
+import IProfileView from './content/IProfileView';
 
 class ProfileController {
     profile: IProfile;
-    view: ProfileView;
+    view: IProfileView;
     host: any;
     public domElements: Array<HTMLElement> = [];
     //blocked: boolean;
@@ -25,7 +26,7 @@ class ProfileController {
     queried: boolean;
     trustResult : BinaryTrustResult;
     changed: boolean = true;
-    public updateProfilesCallBack = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
+    public updateProfilesCallBack: any = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
     dtpService: DTPService;
     subjectService: SubjectService;
     packageBuilder: PackageBuilder;
@@ -33,7 +34,7 @@ class ProfileController {
     scope: string;
 
 
-    constructor(userId: string, view: any, profileRepository: ProfileRepository, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder, scope: string) {
+    constructor(userId: string, view: IProfileView, profileRepository: ProfileRepository, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder, scope: string) {
         this.profile = new Profile({ userId: userId });
         this.view = view;
         this.profileRepository = profileRepository;
@@ -139,7 +140,7 @@ class ProfileController {
                 deferred.resolve(trustResult);
             }, (trustResult) => {
                 DTP['trace']("Adding trust failed: " + trustResult.statusText);
-                deferred.fail();
+                deferred.fail(null);
             });
         })
         return deferred.promise();

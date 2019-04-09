@@ -1,26 +1,29 @@
 import * as angular from 'angular';
-import './common.js';
-import SettingsController = require('./SettingsController');
-import PackageBuilder = require('./PackageBuilder');
-import DTPService = require('./DTPService');
-import TrustStrategy = require('./TrustStrategy');
-import SubjectService = require('./SubjectService');
-import ISettings from './Settings.interface';
-import Crypto = require('./Crypto');
-import IProfile from './IProfile';
-import ProfileRepository = require('./ProfileRepository');
-import BinaryTrustResult = require('./Model/BinaryTrustResult');
+import '../common.js';
+import PackageBuilder = require('../PackageBuilder');
+import DTPService = require('../DTPService');
+import TrustStrategy = require('../TrustStrategy');
+import SubjectService = require('../SubjectService');
+import Crypto = require('../Crypto');
+import IProfile from '../IProfile';
+import ProfileRepository = require('../ProfileRepository');
+import BinaryTrustResult = require('../Model/BinaryTrustResult');
 import vis2 = require('vis');
-import Profile = require('./Profile');
+import Profile = require('../Profile');
 import Identicon = require('identicon.js');
 import { Buffer } from 'buffer';
-import ISiteInformation from './Model/SiteInformation.interface';
-import SiteManager = require('./SiteManager');
+import ISiteInformation from '../Model/SiteInformation.interface';
+import SiteManager = require('../SiteManager');
+import ISettings from '../Interfaces/Settings.interface';
+import SettingsClient = require('../Shared/SettingsClient');
+import { MessageHandler } from '../Shared/MessageHandler';
+import Settings = require('../Shared/Settings');
 
 
 class ExtensionpopupController {
 
-    settingsController: SettingsController;
+    messageHandler: MessageHandler;
+    settingsClient: SettingsClient;
     settings: ISettings;
     showIcon: boolean = true;
     contentTabId: any;
@@ -30,9 +33,12 @@ class ExtensionpopupController {
     }
 
     init() {
+        this.messageHandler = new MessageHandler();
+
         SiteManager.GetUserContext().then((userContext) => {
-            this.settingsController = new SettingsController(userContext);
-            this.settingsController.loadSettings((items: ISettings) => {
+            this.settingsClient = new SettingsClient(this.messageHandler, userContext);
+            this.settingsClient.loadSettings().then((items: ISettings) => {
+                items = items || new Settings();
                 this.settings = items;
 
                 this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true : false;
@@ -59,6 +65,8 @@ class ExtensionpopupController {
    
     modelChange(state?: string) {
         if (state === 'identicon') {
+            this.settingsClient.buildKey(this.settings);
+
             var identicon = new Identicon(this.settings.address, { margin: 0.1, size: 64, format: 'svg' }).toString();
             if (identicon.length > 0) {
                 this.settings.identicon = "data:image/svg+xml;base64," + identicon.toString();
@@ -67,10 +75,8 @@ class ExtensionpopupController {
         }
 
         if (this.settings.rememberme || state === 'rememberme') {
-            this.settingsController.saveSettings(this.settings);
+            this.settingsClient.saveSettings(this.settings);
         }
-
-        this.settingsController.buildKey(this.settings);
     }
 
     getSiteInfo() : JQueryPromise<ISiteInformation> {

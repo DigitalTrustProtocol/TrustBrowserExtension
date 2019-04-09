@@ -1,11 +1,11 @@
 import vis2 = require('vis');
-import ITrustStrategy from "./Interfaces/ITrustStrategy";
-import { QueryContext, Claim } from '../lib/dtpapi/model/models';
-import IProfile from './IProfile';
-import Crypto = require('./Crypto');
+import ITrustStrategy from "../Interfaces/ITrustStrategy";
+import { QueryContext, Claim } from '../../lib/dtpapi/model/models';
+import IProfile from '../IProfile';
+import Crypto = require('../Crypto');
 import Identicon = require('identicon.js');
-import ProfileRepository = require('./ProfileRepository');
-import BinaryTrustResult = require('./Model/BinaryTrustResult');
+import ProfileRepository = require('../ProfileRepository');
+import BinaryTrustResult = require('../Model/BinaryTrustResult');
 
 
 class TrustGraphDataAdapter {

@@ -1,12 +1,16 @@
-import './common.js';
-import ProfileController = require("./ProfileController");
-import Profile = require("./Profile");
-import IProfile from "./IProfile";
+import '../common.js';
+import ProfileController = require("../ProfileController");
+import Profile = require("../Profile");
+import IProfile from "../IProfile";
 import Identicon = require('identicon.js');
-import Crypto = require("./Crypto");
-import BinaryTrustResult = require('./Model/BinaryTrustResult');
-import { TrustGraphPopupClient } from './Shared/TrustGraphPopupClient';
-import ISettings from './Settings.interface';
+import Crypto = require("../Crypto");
+import BinaryTrustResult = require('../Model/BinaryTrustResult');
+import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
+import ISettings from '../Interfaces/Settings.interface.js';
+import IProfileView from './IProfileView.js';
+import { browser } from 'webextension-polyfill-ts';
+import TwitterService = require('./TwitterService');
+
 
 //declare var Identicon: any;
 class ProfileViewButtonModel {
@@ -32,7 +36,7 @@ class ProfileViewButtonModel {
     }
 }
 
-class ProfileViewModel {
+class ProfileViewModel  {
     public time: number = undefined;
     public settingsTime: number = undefined;
     public stateChanged: boolean = true;
@@ -42,17 +46,20 @@ class ProfileViewModel {
 
 }
 
-class ProfileView {
+class TwitterProfileView implements IProfileView {
     Anchor: string;
     fullNameGroup: string;
     trustGraphPopupClient: TrustGraphPopupClient;
     settings: ISettings;
+    private handler: string = null;
 
-    constructor(trustGraphPopupClient: TrustGraphPopupClient, settings: ISettings) {
+
+    constructor(trustGraphPopupClient: TrustGraphPopupClient, settings: ISettings, serviceHandler: string) {
         this.Anchor = 'div.ProfileTweet-action--favorite';
         this.fullNameGroup = '.FullNameGroup';
         this.trustGraphPopupClient = trustGraphPopupClient;
         this.settings = settings;
+        this.handler = serviceHandler;
     }
 
     public render(controller: ProfileController, element: HTMLElement): void {
@@ -93,8 +100,8 @@ class ProfileView {
             let $anchor = $element.find(this.Anchor);
             $bar = $('<span>') as JQuery;
             $anchor.after($bar);
-            $bar.$fullNameGroup = $element.find(this.fullNameGroup);
-            $bar.$fullNameGroup.prepend(this.createIdenticon(controller.profile));
+            $bar["$fullNameGroup"] = $element.find(this.fullNameGroup);
+            $bar["$fullNameGroup"].prepend(this.createIdenticon(controller.profile));
             $element.data('dtp_bar', $bar);
         }
 
@@ -264,19 +271,14 @@ class ProfileView {
         $icon.data("dtp_profile", profile);
 
         $icon.click(() => {
-            let selectedProfile = $(this).data('dtp_profile');
-
-            //let p = selectedProfile.
-            //let parentProfile = this.profileRepository.getProfileByIndex(claim.issuer.id); // issuer is always a DTP ID
+            let subjectProfile = $icon.data('dtp_profile') as IProfile;
 
             let dialogData = {
-                scope: Profile.CurrentUser.scope,
-                currentUser: Profile.CurrentUser,
-                selectedProfile: selectedProfile,
-                trustResult: null
+                userId: subjectProfile.userId,
+                contentHandler: this.handler
             };
 
-            this.trustGraphPopupClient.openPopup({ data: dialogData });
+            this.trustGraphPopupClient.openPopup(dialogData);
             return false;
         });
         return $icon;
@@ -310,4 +312,4 @@ class ProfileView {
         return $button;
     }
 }
-export = ProfileView
+export = TwitterProfileView
