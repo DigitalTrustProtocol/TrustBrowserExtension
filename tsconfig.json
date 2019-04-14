@@ -3,6 +3,7 @@
         "outDir": "./dist/js",
         "allowJs": true,
         "target": "es5",
+        "lib": ["es5", "es2015.promise", "dom"]
         //"emitDecoratorMetadata": true,
         //"experimentalDecorators": true,
         //"allowSyntheticDefaultImports": true

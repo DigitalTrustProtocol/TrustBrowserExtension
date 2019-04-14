@@ -87,10 +87,10 @@ class ProfileModal
     }
 
     private setupStatus() : void {
-        if(this.profile.binaryTrustResult) {
-            let postText = this.profile.binaryTrustResult.direct ? " directly" : "";
+        if(this.profile.trustResult) {
+            let postText = this.profile.trustResult.direct ? " directly" : "";
 
-            this.score.result = this.profile.binaryTrustResult.trust - this.profile.binaryTrustResult.distrust;
+            this.score.result = this.profile.trustResult.trust - this.profile.trustResult.distrust;
             if(this.score.result < 0)
                 this.status = { cssClass: "distrusted", text: "Distrusted" + postText, show: true};
 
@@ -103,20 +103,20 @@ class ProfileModal
     }
     
     private setupScore() : void {
-        this.score.show = (this.profile.binaryTrustResult && this.profile.binaryTrustResult.direct) ? false : true;
+        this.score.show = (this.profile.trustResult && this.profile.trustResult.direct) ? false : true;
         //    this.score.show = true; // Only show score if not trust directly.
     }
 
     private setupButtons() : void {
         this.button.show = true;
-        if(this.profile.binaryTrustResult && this.profile.binaryTrustResult.direct) 
+        if(this.profile.trustResult && this.profile.trustResult.direct) 
             this.directButtons();
         else
             this.undirectButtons();
     }
 
     private directButtons(): void {
-        let claimValue = this.profile.binaryTrustResult.directValue;
+        let claimValue = this.profile.trustResult.directValue;
         if(claimValue == "true" || claimValue == "1") {
             this.button.trust.title = `${this.profile.alias} is trusted`;
             this.button.trust.disabled = true;

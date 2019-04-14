@@ -6,85 +6,136 @@ import Crypto = require('../Crypto');
 import Identicon = require('identicon.js');
 import ProfileRepository = require('../ProfileRepository');
 import BinaryTrustResult = require('../Model/BinaryTrustResult');
+import ProfileController = require('../ProfileController');
+import Profile = require('../Profile');
+import TrustStrategy = require('../TrustStrategy');
+import IGraphData from './IGraphData';
 
 
 class TrustGraphDataAdapter {
 
-    private graph: any = {     
+    public graph: any = {     
         nodes: new vis2.DataSet(),
         edges: new vis2.DataSet()
     };
     
+    //private currentUser: IProfile;
+    private subjectProfileID: string;
+
     private trustStrategy: ITrustStrategy;
     private profileRepository: ProfileRepository;
+    //private controllers: Array<ProfileController>;
+    //private results: object;
+    private source: IGraphData;
 
 
-    currentUser: IProfile;
-    subjectProfile: IProfile;
+    constructor(data: IGraphData,  trustStrategy: TrustStrategy, profileRepository: ProfileRepository) {
+        Object.defineProperty(this, 'trustStrategy', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'profileRepository', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        // Object.defineProperty(this, 'subjectProfile', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        // Object.defineProperty(this, 'currentUser', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
-
-    constructor(subjectProfile: IProfile, currentUser: IProfile, trustStrategy: ITrustStrategy, profileRepository: ProfileRepository) {
-        this.subjectProfile = subjectProfile;
-        this.currentUser = currentUser;
+        // this.subjectProfileID = subjectProfile;
+        // this.currentUser = currentUser;
+        this.source = data;
         this.trustStrategy = trustStrategy;
         this.profileRepository = profileRepository;
+        //this.controllers = controllers;
     }
+
+    // public static CreateFrom(data: any) : TrustGraphDataAdapter {
+    //     let adapter = new TrustGraphDataAdapter()
+    //     if(!data || !data.graph) 
+    //         return new ;
+
+            
+    // }
+
+    public load() : void {
+        this.graph.nodes.clear();
+        this.graph.edges.clear();
+
+        let subjectProfile = this.source.profiles[this.source.subjectProfileId] as IProfile;
+
+        let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
+        this.loadNodes(subjectProfile, result);
+    }
+
+    private loadNodes(profile: IProfile, result: BinaryTrustResult) : void {
+        if(this.graph.nodes.get(profile.userId))
+             return; // Do not re-process the node
+
+        this.addNode(profile);
+
+        if(profile.userId == this.source.currentUser.userId)
+             return; // Stop with oneself
+
+        if(!result)
+            return;
+             
+        for(let key in result.claims) {
+            let claim = result.claims[key];
+
+            let parentProfile = this.source.profiles[claim.issuer.id] as IProfile;
+
+            this.addEdge(parentProfile, profile, claim.value);
+
+            let subResult = this.source.trustResults[parentProfile.owner.ID];
+            
+            this.loadNodes(parentProfile, subResult);
+        }
+    }
+
 
     public getGraph() : any {
         return this.graph;
     }
 
-    public load(queryContext: QueryContext) : void {
-        // this.trustStrategy.ProcessResult(queryContext, null).then(() => {
-        //     this.rebuild();
-        // })
-        
-    }
+    // public build() : void {
+    //     this.graph.nodes.clear();
+    //     this.graph.edges.clear();
+    //     let controller = this.controllers[this.subjectProfile.userId] as ProfileController;
+    //     this.buildNodes(controller);
+    // }
 
-    public rebuild() : void {
-        this.graph.nodes.clear();
-        this.graph.edges.clear();
-        this.buildNodes(this.subjectProfile);
-    }
+    // private buildNodes(profile: IProfile) : void {
+    //     if(this.graph.nodes.get(profile.userId))
+    //         return; // Do not re-process the node
 
-    private buildNodes(profile: IProfile) : void {
-        if(this.graph.nodes.get(profile.userId))
-            return; // Do not re-process the node
+    //     this.addNode(profile);
 
-        this.addNode(profile);
+    //     if(profile.userId == this.currentUser.userId)
+    //         return; // Stop with oneself
 
-        if(profile.userId == this.currentUser.userId)
-            return; // Stop with oneself
+    //     if(!profile.trustResult) {
+    //         //controller.trustResult = new BinaryTrustResult();
+    //         return; // The profile do not have any claim data
+    //     }
 
-        if(!profile.binaryTrustResult) {
-            profile.binaryTrustResult = new BinaryTrustResult();
-            return; // The profile do not have any claim data
-        }
+    //     for(let key in profile.trustResult.claims) {
+    //         let claim = profile.trustResult.claims[key]; // is Key the same as claim.issuer.ID?
 
-        for(let key in profile.binaryTrustResult.claims) {
-            let claim = profile.binaryTrustResult.claims[key]; // is Key the same as claim.issuer.ID?
+    //         // issuer is always a DTP ID
+    //         this.profileRepository.getProfileByIndex(claim.issuer.id).then(parentProfile => {
+    //             // There should always be a profile, even if it just been created by the TrustStrategy class
+    //             this.addEdge(parentProfile, profile, claim.value);
 
-            // issuer is always a DTP ID
-            this.profileRepository.getProfileByIndex(claim.issuer.id).then(parentProfile => {
-                // There should always be a profile, even if it just been created by the TrustStrategy class
-                this.addEdge(parentProfile, profile, claim);
 
-                this.buildNodes(parentProfile);
-            });
-        }
-    }
+    //             this.buildNodes(parentProfile);
+    //         });
+    //     }
+    // }
 
 
     public updateWithClaim(claim : Claim) : void {
-        this.profileRepository.getProfile(claim.issuer.id).then(from => {
-            this.profileRepository.getProfile(claim.subject.id).then(to => {
-                to.binaryTrustResult.claims[claim.issuer.id] = claim;
-                this.trustStrategy.calculateBinaryTrustResult(to.binaryTrustResult);
+        let from = this.source.profiles[claim.issuer.id];
+        let to = this.source.profiles[claim.subject.id];
         
-                this.updateNode(from); // Make sure that "from" profile node exist in graph
-                this.updateEdge(from, to, claim);
-            });
-        });
+        to.trustResult.claims[claim.issuer.id] = claim;
+        //this.trustStrategy.calculateBinaryTrustResult(to.binaryTrustResult);
+
+        this.updateNode(from); // Make sure that "from" profile node exist in graph
+        this.updateEdge(from, to, claim);
     }
 
    
@@ -99,22 +150,25 @@ class TrustGraphDataAdapter {
 
 
     private createNode(profile: IProfile) : any {
+        let hasUserId = !(profile.userId == "?");
+        let userId = hasUserId ? profile.userId : profile.owner.ID;
+
         if(!profile.avatarImage) {
-            let hash = Crypto.toDTPAddress(Crypto.Hash160(profile.userId));
+            let hash = Crypto.toDTPAddress(Crypto.Hash160(userId));
             let icon = new Identicon(hash, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
-            profile.avatarImage = icon.toString();
+            profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
         }
 
         let node = {
-            id: profile.userId,
+            id: userId,
             image: profile.avatarImage,
-            label: '*'+profile.alias+'*\n_@'+profile.screen_name+'_',
+            label: '*'+profile.alias+ (hasUserId) ? '*\n_@'+profile.screen_name+'_' : '',
         }
         return node;
     }
 
-    public addEdge(from: IProfile, to:IProfile, claim: any) : void {
-        this.graph.edges.add(this.createEdge(from, to, claim));
+    public addEdge(from: IProfile, to:IProfile, value: any) : void {
+        this.graph.edges.add(this.createEdge(from, to, value));
     }
 
     public removeEdge(from: IProfile, to:IProfile) : void {
@@ -123,12 +177,12 @@ class TrustGraphDataAdapter {
         });
     }
 
-    public updateEdge(from: IProfile, to:IProfile, claim: any) : void {
-        this.graph.edges.update(this.createEdge(from, to, claim)); // Auto create if node do not exist
+    public updateEdge(from: IProfile, to:IProfile, value: any) : void {
+        this.graph.edges.update(this.createEdge(from, to, value)); // Auto create if node do not exist
     }
 
-    private createEdge(from: IProfile, to:IProfile, claim: any) : any {
-        let color = (claim.value === "true" || claim.value === "1") ? 'green' : (claim.value == undefined || claim.value == "") ? 'gray': 'red';
+    private createEdge(from: IProfile, to:IProfile, value: any) : any {
+        let color = (value === "true" || value === "1") ? 'green' : (value == undefined || value == "") ? 'gray': 'red';
         let node = { 
             id: from.userId+to.userId,
             from: from.userId, 

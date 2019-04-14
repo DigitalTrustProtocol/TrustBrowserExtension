@@ -14,6 +14,7 @@ import SubjectService = require('./SubjectService');
 import PackageBuilder = require('./PackageBuilder');
 import ISettings from "./Interfaces/Settings.interface";
 import IProfileView from './content/IProfileView';
+import * as $ from 'jquery';
 
 class ProfileController {
     profile: IProfile;

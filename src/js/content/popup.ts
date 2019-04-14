@@ -18,6 +18,7 @@ import ISettings from '../Interfaces/Settings.interface';
 import SettingsClient = require('../Shared/SettingsClient');
 import { MessageHandler } from '../Shared/MessageHandler';
 import Settings = require('../Shared/Settings');
+import * as $ from 'jquery';
 
 
 class ExtensionpopupController {
@@ -34,7 +35,7 @@ class ExtensionpopupController {
 
     init() {
         this.messageHandler = new MessageHandler();
-
+        
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsClient = new SettingsClient(this.messageHandler, userContext);
             this.settingsClient.loadSettings().then((items: ISettings) => {
@@ -94,5 +95,17 @@ class ExtensionpopupController {
     }
 }
 
+
 const app = angular.module("myApp", []);
 app.controller('ExtensionpopupController', ["$scope", ExtensionpopupController]) // bootstrap angular app here 
+app.controller('TabController', ['$scope', function($scope) {
+    $scope.tab = 1;
+
+    $scope.setTab = function(newTab){
+      $scope.tab = newTab;
+    };
+
+    $scope.isSet = function(tabNum){
+      return $scope.tab === tabNum;
+    };
+}]);

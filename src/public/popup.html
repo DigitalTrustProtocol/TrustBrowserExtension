@@ -15,13 +15,14 @@
 
 <body ng-app="myApp" ng-controller="ExtensionpopupController as ct" ng-init="ct.init()"> 
 
+    <div ng-controller="TabController">
     <nav class="navbar navbar-default" role="navigation">
         <div class="collapse navbar-collapse navbar-ex1-collapse">
             <ul class="nav navbar-nav" data-tabs="tabs">
-                <li class="active"><a href="#usercontainer" data-toggle="tab">Trust</a></li>
-                <li><a href="#settingscontainer" data-toggle="tab">Settings</a></li>
-                <li><a href="#servercontainer" data-toggle="tab">Server</a></li>
-                <li><a href="#aboutcontainer" data-toggle="tab">About</a></li>
+                <li ng-class="{ active: isSet(1) }"><a href="#usercontainer" ng-click="setTab(1)">Trust</a></li>
+                <li ng-class="{ active: isSet(2) }"><a href="#settingscontainer" ng-click="setTab(2)">Settings</a></li>
+                <li ng-class="{ active: isSet(3) }"><a href="#servercontainer" ng-click="setTab(3)">Server</a></li>
+                <li ng-class="{ active: isSet(4) }"><a href="#aboutcontainer" ng-click="setTab(4)">About</a></li>
             </ul>
         </div>
     </nav>
@@ -30,7 +31,7 @@
     <section>
         <form class="form-signin">
             <div id="my-tab-content" class="tab-content">
-                <div id="usercontainer" class="tab-pane active">
+                <div id="usercontainer" class="tab-pane" ng-class="{ active: isSet(1) }">
                     <h3 class="form-signin-heading">User identity</h3>
                     <p>This is an alpha product. The user account ID is generated from the Password and the additional seed (optional). No signup is needed. NB! The password is not encrypted on the client and may be very insecure. The password and seed will never be submittet to the server.</p>
                     <div><label for="inputPassword">Password</label></div>
@@ -58,7 +59,7 @@
                     </div>
                 </div>
 
-                <div id="settingscontainer" class="tab-pane">
+                <div id="settingscontainer" class="tab-pane" ng-class="{ active: isSet(2) }">
                     <h3 class="form-signin-heading">Trust settings</h3>
                     <p><b>Trust</b></p>
                     <div>When the query result on a name is positive.</div>
@@ -88,14 +89,14 @@
                         </div>
                     </div>
                 </div>
-                <div id="servercontainer" class="tab-pane">
+                <div id="servercontainer" class="tab-pane" ng-class="{ active: isSet(3) }">
                     <h3 class="form-signin-heading">Server</h3>
                     <div class="input-group">
                         <label for="trustserver">Trust server</label>
                         <input type="url" id="trustserver" class="form-control" placeholder="Trust server" ng-model="ct.settings.infoserver" ng-change="ct.modelChange()" required autofocus>
                     </div>
                 </div>
-                <div id="aboutcontainer" class="tab-pane">
+                <div id="aboutcontainer" class="tab-pane" ng-class="{ active: isSet(4) }">
                     <h3 class="form-signin-heading">About</h3>
                     <h4>Version 0.2.20190110</h4>
                     <div>Alpha release.</div>
@@ -120,11 +121,5 @@
             <!-- <button id="savebtn" class="btn btn-lg btn-primary btn-block" type="button">Save</button> -->
         </div>
     </section>
-
-
-    <!-- Bootstrap core JavaScript
-     ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="lib/jquery/jquery-2.0.3.min.js"></script>
-    <script src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
+    </div>
 </html>

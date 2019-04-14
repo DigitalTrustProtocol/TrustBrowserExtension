@@ -21,7 +21,7 @@ export type CallbacksMap = { [s: string]: Callback };
 export class MessageHandler {
     private callbacksMap: CallbacksMap | null = null;
 
-    private noop = () => undefined;
+    private noop = (reason) => { alert(reason); };
 
     constructor() {
         this.callbacksMap = {};

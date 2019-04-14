@@ -23,7 +23,7 @@ class Profile implements IProfile {
     public scope: string;
     public controller: ProfileController;
     public formAuthenticityToken: string;
-    public binaryTrustResult : BinaryTrustResult;
+    public trustResult : BinaryTrustResult;
 
     public state: ProfileStateEnum = ProfileStateEnum.None; 
 
@@ -32,10 +32,10 @@ class Profile implements IProfile {
         Object.defineProperty(this, 'scope', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'controller', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'formAuthenticityToken', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        Object.defineProperty(this, 'binaryTrustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'trustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'state', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
-        this.binaryTrustResult = new BinaryTrustResult()
+        //this.trustResult = new BinaryTrustResult()
 
         this.update(source);
     }

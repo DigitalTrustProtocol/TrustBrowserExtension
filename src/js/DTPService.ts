@@ -3,6 +3,7 @@ import { PackageApi, QueryApi } from '../lib/dtpapi/api/api';
 import { QueryContext } from '../lib/dtpapi/model/models';
 import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
+import * as $ from 'jquery';
 
 class DTPService  {
     settings: ISettings;

@@ -3,27 +3,25 @@
     "version": "0.2.0",
     "author": "Carsten Keutmann",
     "license": "MIT",
-    "typeAcquisition": {
-        "include": [
-            "jquery"
-        ]
-    },
     "scripts": {
         "dev": "webpack --mode development --config webpack.config.js --watch --display-error-details",
         "build": "webpack --mode production --config webpack.config.js"
     },
     "dependencies": {
+        "@types/bootstrap": "^4.3.0",
         "@types/jquery": "^3.3.29",
+        "@types/notifyjs": "^3.0.0",
         "angular": "^1.7.4",
         "bitcoinjs-lib": "^4.0.3",
         "bitcoinjs-message": "^2.0.0",
+        "bootstrap": "^4.3.1",
         "buffer": "^5.2.1",
         "identicon.js": "^2.3.3",
         "jquery": "^3.3.1",
         "json-ignore": "^0.4.0",
         "localforage": "^1.7.3",
         "lodash": "^4.17.11",
-        "popper.js": "^1.14.6",
+        "popper.js": "^1.15.0",
         "vis": "^4.21.0"
     },
     "devDependencies": {

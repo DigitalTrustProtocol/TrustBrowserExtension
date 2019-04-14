@@ -16,6 +16,7 @@ import * as models from '../model/models';
 import { COLLECTION_FORMATS } from '../variables';
 import { Configuration } from '../configuration';
 
+
 /* tslint:disable:no-unused-variable member-ordering */
 
 

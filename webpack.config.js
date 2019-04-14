@@ -7,7 +7,7 @@ module.exports = {
   entry: {
     main: './src/js/content/main.ts',
     popup: './src/js/content/popup.ts',
-    trustgraph: './src/js/content/TrustGraph.ts',
+    trustgraph: ['./src/js/content/TrustGraph.ts','./src/lib/Notify/notify.min.js', './src/lib/bootstrap/dist/js/bootstrap.min.js'],
     background: './src/js/background/background.ts',
   },
   mode: 'development',
@@ -19,10 +19,10 @@ module.exports = {
         use: 'ts-loader',
         exclude: /node_modules/
       },
-      // {
-      //   test: /\.css$/,
-      //   use: [ 'style-loader', 'css-loader' ]
-      // },
+      {
+        test: /\.css$/,
+        use: [ 'style-loader', 'css-loader' ]
+      },
       {
         test: /\.(png|jpg|gif|ttf|woff2|woff|eot|svg)$/i,
         use: [
@@ -73,18 +73,18 @@ module.exports = {
       template: './src/public/popup.html',
       chunks: ['popup'],
       minify   : {
-        // html5                          : true,
-        // collapseWhitespace             : true,
-        // minifyCSS                      : true,
-        // minifyJS                       : true,
-        // minifyURLs                     : false,
-        // removeAttributeQuotes          : true,
-        // removeComments                 : true,
-        // removeEmptyAttributes          : true,
-        // removeOptionalTags             : true,
-        // removeRedundantAttributes      : true,
-        // removeScriptTypeAttributes     : true,
-        // useShortDoctype                : true
+        html5                          : true,
+        collapseWhitespace             : true,
+        minifyCSS                      : true,
+        minifyJS                       : true,
+        minifyURLs                     : false,
+        removeAttributeQuotes          : true,
+        removeComments                 : true,
+        removeEmptyAttributes          : true,
+        removeOptionalTags             : true,
+        removeRedundantAttributes      : true,
+        removeScriptTypeAttributes     : true,
+        useShortDoctype                : true
       }
     }),
     new CopyWebpackPlugin([

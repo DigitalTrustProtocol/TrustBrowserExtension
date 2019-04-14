@@ -4,9 +4,10 @@ import Profile = require('./Profile'); //declare var DTP: any;
 import DTPIdentity = require('./Model/DTPIdentity');
 import IProfile from './IProfile';
 import IStorage from './Interfaces/IStorage';
+import * as $ from 'jquery';
 class ProfileRepository {
-    profiles: Array<IProfile> = [];
-    index: Array<IProfile> = [];
+    public profiles: Array<IProfile> = [];
+    public index: Array<IProfile> = [];
     storage: IStorage;
     constructor(storage: IStorage) {
         this.storage = storage;

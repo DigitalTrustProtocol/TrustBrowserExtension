@@ -10,7 +10,8 @@ class BinaryTrustResult {
     public claims: Array<Claim> = [];
     public time: number = 0;
     public queryContext: QueryContext;
-    public profiles: Array<IProfile> = []
+    //public profiles: Array<IProfile> = []
+    public DTPid: string;
 
 
 
@@ -25,6 +26,7 @@ class BinaryTrustResult {
         this.claims = [];
         this.time = 0;
         this.queryContext = null;
+        this.DTPid = "";
     }
 
     public calculateState() {
@@ -41,6 +43,7 @@ class BinaryTrustResult {
         changed = this.distrust != source.distrust ? true : changed;
         changed = this.trust != source.trust ? true : changed;
         changed = this.state != source.state ? true : changed;
+        changed = this.DTPid != source.DTPid ? true : changed;
 
         return !changed;
     }

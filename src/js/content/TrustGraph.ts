@@ -23,6 +23,13 @@ import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
 import { StorageClient } from '../Shared/StorageClient';
 import SettingsClient = require('../Shared/SettingsClient');
 import ISettings from "../Interfaces/Settings.interface";
+import notify = require("notifyjs");
+import IGraphData from './IGraphData';
+import * as $ from 'jquery';
+
+
+declare var window: any;
+window.jQuery = $;
 
 class TrustGraphController {
     settingsClient: SettingsClient;
@@ -38,7 +45,7 @@ class TrustGraphController {
     selectedProfile: IProfile;
 
     modalData: ProfileModal;
-    source: any;
+    source: IGraphData;
 
     dataAdapter: TrustGraphDataAdapter;
     messageHandler: MessageHandler;
@@ -69,34 +76,34 @@ class TrustGraphController {
                     this.contentHandler = params.contentHandler;
                     this.contentTabId = params.contentTabId;
                     this.trustGraphPopupClient.getGraphData(this.contentTabId, this.contentHandler, params.userId).then(result => {
-                        this.loadOnData(result.data); 
+                        this.loadOnData(result); 
                     });
                 });
             });
         });
     }
 
-    private loadOnData(source: any) : void {
+    private loadOnData(source: IGraphData) : void {
         this.network = this.buildNetwork(source);
     }
 
-    private buildNetwork(source: any) : any {
+    private buildNetwork(source: IGraphData) : any {
 
         this.source = source;
         // First load all the profiles in locally
-        let trustResult = <BinaryTrustResult>source.trustResult;
+        //let trustResult = <BinaryTrustResult>source.trustResults;
         // trustResult.profiles.forEach((profile) => {
         //     this.profileRepository.setProfile(profile);
         // });
         this.currentUser = source.currentUser || this.currentUser;
-        this.selectedProfile = source.selectedProfile || this.selectedProfile;
+        this.selectedProfile = source.profiles[source.subjectProfileId] as IProfile;
         // this.profileRepository.setProfile(source.selectedProfile);
         // this.profileRepository.setProfile(source.currentUser);
 
         // Then process the claims agaist the profiles
         let trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
-        this.dataAdapter = new TrustGraphDataAdapter(this.selectedProfile, this.currentUser, trustStrategy, this.profileRepository);
-        this.dataAdapter.load(source.binaryTrustResult.queryContext);
+        this.dataAdapter = new TrustGraphDataAdapter(source, trustStrategy, this.profileRepository);
+        this.dataAdapter.load();
 
         let options = this.buildOptions();
         let container = document.getElementById('networkContainer');
@@ -164,7 +171,8 @@ class TrustGraphController {
             // Show dtpbar
             this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
             //$("#networkModal").finish().show();
-            $("#networkModal").modal('show');
+            $('#networkModal').modal('show');
+            
         });
     }
 
@@ -201,7 +209,8 @@ class TrustGraphController {
         return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
             //$.notify("Updating view",trustResult.status.toLowerCase());
             console.log("Posting package is a "+trustResult.status);
-
+            
+            
             $["notify"](message, 'success');
 
 

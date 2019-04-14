@@ -1,6 +1,6 @@
 import { browser, Windows, Runtime } from "webextension-polyfill-ts";
 import { MessageHandler } from "../Shared/MessageHandler";
-
+import * as $ from 'jquery';
 
 export class TrustGraphPopupServer {
     static handlerName: string = "TrustGraphPopup";
@@ -95,12 +95,18 @@ export class TrustGraphPopupServer {
 
     private requestContentTabId(params: any, sender: Runtime.MessageSender) : any {
         browser.windows.update(this.popupWindow.id, {focused:true });
-        let result = { 
-            userId: this.userId,
-            contentHandler: this.contentHandler,
-            contentTabId: this.contentTabId 
-        };
-        return result; // Need to wrap in promise!!!
+        return $.Deferred().resolve({ 
+                    userId: this.userId,
+                    contentHandler: this.contentHandler,
+                    contentTabId: this.contentTabId 
+                }).promise();
+        // return new Promise((resolve, reject) => {
+        //     return resolve({ 
+        //         userId: this.userId,
+        //         contentHandler: this.contentHandler,
+        //         contentTabId: this.contentTabId 
+        //     });
+        // } );
     }
 
     private sendMessageToDialog(action: string, data: any, contentTabId: any, cb: any) : void

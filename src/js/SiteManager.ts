@@ -1,4 +1,5 @@
 import { browser } from "webextension-polyfill-ts";
+import * as $ from 'jquery';
 
 class SiteManager {
     static dtpUserContext: any;

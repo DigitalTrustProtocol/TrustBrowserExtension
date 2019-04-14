@@ -1,7 +1,7 @@
 import SiteManager = require("../SiteManager");
 import PackageBuilder = require("../PackageBuilder");
 import SubjectService = require("../SubjectService");
-import TwitterService = require("./TwitterService");
+//import TwitterService = require("./TwitterService");
 import ProfileRepository = require("../ProfileRepository");
 import Twitter = require("./Twitter");
 import * as localforage from 'localforage';
@@ -11,7 +11,8 @@ import { TrustGraphPopupClient } from "../Shared/TrustGraphPopupClient";
 import SettingsClient = require("../Shared/SettingsClient");
 import ISettings from "../Interfaces/Settings.interface";
 import DTPService = require("../DTPService");
-
+import * as $ from 'jquery';
+import TrustStrategy = require("../TrustStrategy");
 
 $(document).ready( () =>{ 
     // Start application
@@ -27,10 +28,11 @@ $(document).ready( () =>{
             let packageBuilder = new PackageBuilder(settings);
             let subjectService = new SubjectService(settings, packageBuilder);
             let dtpService = new DTPService(settings);
-            let twitterService = new TwitterService(messageHandler, this.profileRepository);
+            let trustStrategy = new TrustStrategy(settings, profileRepository);
 
-            let twitter = new Twitter(settings, packageBuilder, subjectService, dtpService, twitterService, profileRepository, trustGraphPopupClient);
+            let twitter = new Twitter(settings, packageBuilder, subjectService, dtpService, profileRepository, trustGraphPopupClient, messageHandler, trustStrategy);
             twitter.ready(document).then(() => {
+                // Bind an event 
                 trustGraphPopupClient.updateContent = (params, sender) => { twitter.queryDTP(twitter.controllers); };
             });
 

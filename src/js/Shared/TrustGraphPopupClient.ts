@@ -28,9 +28,7 @@ export class TrustGraphPopupClient {
     public getGraphData(tabId: number, handlerName: string, userId: string, callback?: (err: any, value: any) => void): Promise<any> {
         let param = {
             action: "getGraphData",
-            params: {
-                userId: userId
-            }
+            userId: userId
         };
         return this.messageHandler.sendTab(tabId, handlerName, param, result => {
             if(callback)
@@ -42,7 +40,7 @@ export class TrustGraphPopupClient {
     public getProfile(tabId: number, handlerName: string, profile: IProfile, callback?: (err: any, value: IProfile) => void): Promise<IProfile> {
         let param = {
             action: "getProfile",
-            params: profile
+            profile: profile
         };
         return this.messageHandler.sendTab(tabId, handlerName, param, result => {
             if(callback)

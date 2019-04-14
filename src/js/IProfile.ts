@@ -15,7 +15,7 @@ export default interface IProfile {
     scope: string;
     controller: ProfileController;
     formAuthenticityToken: string;
-    binaryTrustResult : BinaryTrustResult;
+    trustResult : BinaryTrustResult;
     identiconData16: string;
     state: ProfileStateEnum; 
 

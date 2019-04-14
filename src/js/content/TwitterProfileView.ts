@@ -9,8 +9,7 @@ import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
 import ISettings from '../Interfaces/Settings.interface.js';
 import IProfileView from './IProfileView.js';
 import { browser } from 'webextension-polyfill-ts';
-import TwitterService = require('./TwitterService');
-
+import * as $ from 'jquery';
 
 //declare var Identicon: any;
 class ProfileViewButtonModel {
