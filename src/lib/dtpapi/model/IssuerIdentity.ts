@@ -17,6 +17,6 @@ export interface IssuerIdentity {
 
     id?: string;
 
-    signature?: string;
+    proof?: any;
 
 }

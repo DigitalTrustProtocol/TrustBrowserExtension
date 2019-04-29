@@ -13,9 +13,9 @@
 import * as models from './models';
 
 export interface Claim {
-    algorithm?: string;
+    //algorithm?: string;
 
-    id?: string;
+    //id?: string;
 
     root?: string;
 
@@ -35,7 +35,9 @@ export interface Claim {
 
     expire?: number;
 
-    note?: string;
+    metadata?: string;
+
+    templateId?: number;
 
     timestamps?: Array<models.Timestamp>;
 

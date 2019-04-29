@@ -5,12 +5,12 @@ import { Buffer } from 'buffer';
 
 
 class Crypto {
-    static Sign(keyPair: any, message: string) : any
+    static Sign(keyPair: any, message: any) : any
     {
         return bitcoinMessage.sign(message, keyPair.privateKey, keyPair.compressed);
     }
 
-    static Verify(dtpIdentity: DTPIdentity, message: string): boolean
+    static Verify(dtpIdentity: DTPIdentity, message: any): boolean
     {
         return bitcoinMessage.verify(message, dtpIdentity.ID, dtpIdentity.Proof);
     }
