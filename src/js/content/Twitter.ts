@@ -85,9 +85,7 @@ class Twitter {
             let claimCollections = this.trustStrategy.ProcessClaims(claims);
 
             let profiles: object = {};
-            let trustResults: Object = {};
-
-            this.buildGraph(profile, profile.userId, controller.trustResult, profiles, trustResults, claimCollections);
+            let trustResults = this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
 
             //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
             //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
@@ -103,14 +101,14 @@ class Twitter {
         });
     }
 
-    private buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : void {
+    private buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Object {
         if(profiles[id])
             return; // Exist, then it has been processed.
 
         profiles[id] = profile;
 
         if(!trustResult)
-            return;
+            return trustResults;
             
         trustResults[id] = trustResult;
         
@@ -128,7 +126,7 @@ class Twitter {
 
             this.buildGraph(parentProfile, parentProfile.owner.ID, parentTrustResult, profiles, trustResults, claimCollections);
         }
-
+        return trustResults;
     }
 
     public getProfile(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {

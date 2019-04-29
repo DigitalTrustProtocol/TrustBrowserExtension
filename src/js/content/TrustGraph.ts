@@ -14,7 +14,7 @@ import Identicon = require('identicon.js');
 import { Buffer } from 'buffer';
 import ISiteInformation from '../Model/SiteInformation.interface';
 import SiteManager = require('../SiteManager');
-import { ModelPackage, QueryContext } from '../../lib/dtpapi/model/models.js';
+import { ModelPackage, QueryContext, Claim } from '../../lib/dtpapi/model/models.js';
 import ProfileModal = require('../Model/ProfileModal');
 import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
 import * as localforage from 'localforage';
@@ -43,6 +43,7 @@ class TrustGraphController {
     profileRepository: ProfileRepository;
     currentUser: IProfile;
     selectedProfile: IProfile;
+    trustStrategy: TrustStrategy;
 
     modalData: ProfileModal;
     source: IGraphData;
@@ -69,6 +70,10 @@ class TrustGraphController {
                 this.packageBuilder = new PackageBuilder(settings);
                 this.subjectService = new SubjectService(settings, this.packageBuilder);
                 this.dtpService = new DTPService(settings);
+                this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
+
+
+
 
                 this.trustGraphPopupClient.showSubject = (params, sender) => { this.contentTabId = params.contentTabId; this.loadOnData(params.data); };
                 this.trustGraphPopupClient.requestContentTabId().then((params) => 
@@ -101,8 +106,8 @@ class TrustGraphController {
         // this.profileRepository.setProfile(source.currentUser);
 
         // Then process the claims agaist the profiles
-        let trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
-        this.dataAdapter = new TrustGraphDataAdapter(source, trustStrategy, this.profileRepository);
+        //this.dataAdapter = new TrustGraphDataAdapter(source, this.trustStrategy, this.profileRepository);
+        this.dataAdapter = new TrustGraphDataAdapter(source);
         this.dataAdapter.load();
 
         let options = this.buildOptions();
@@ -164,16 +169,26 @@ class TrustGraphController {
     }
 
     showModal(profileId: any) : void {
-        this.profileRepository.getProfile(profileId).then(profile => {
-            this.modalData = new ProfileModal(profile, this.selectedProfile, this.currentUser);
-        
-            this.$scope.$apply();
-            // Show dtpbar
-            this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
-            //$("#networkModal").finish().show();
-            $('#networkModal').modal('show');
-            
-        });
+
+        let profile = this.source.profiles[profileId];
+        if(!profile.trustResult) {
+            profile.trustResult = this.source.trustResults[profileId];
+            let arr = {};
+            for(let key in profile.trustResult.claims) {
+                let claim = profile.trustResult.claims[key] as Claim;
+                arr[claim.issuer.id] = claim;
+            }
+            profile.trustResult.claims = arr;
+        }
+        this.trustStrategy.calculateBinaryTrustResult(profile.trustResult);
+
+        this.modalData = new ProfileModal(profile, this.selectedProfile, this.currentUser);
+    
+        this.$scope.$apply();
+        // Show dtpbar
+        this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
+        //$("#networkModal").finish().show();
+        $('#networkModal').modal('show');
     }
 
     hideModal(): void {

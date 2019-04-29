@@ -31,8 +31,6 @@ class PackageBuilder {
         for(let index in claimPackage.claims) {
             let claim = claimPackage.claims[index];
             let source = this.BuildIdSource(claim);
-            //claim.id = this.CalculateClaimId(claim);
-            //let buf = Buffer.from(source);
             claim.issuer.proof = this.Sign(source);
         }
         return this;

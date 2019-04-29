@@ -29,7 +29,7 @@ export class TrustGraphPopupServer {
                 return method(params, sender);
         });
         
-        browser.windows.onRemoved.addListener(function (id) {
+        browser.windows.onRemoved.addListener((id) => {
             if (!this.popupWindow)
                 return;
     

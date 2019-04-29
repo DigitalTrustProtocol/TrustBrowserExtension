@@ -22,24 +22,24 @@ class TrustGraphDataAdapter {
     //private currentUser: IProfile;
     private subjectProfileID: string;
 
-    private trustStrategy: ITrustStrategy;
-    private profileRepository: ProfileRepository;
+    //private trustStrategy: ITrustStrategy;
+    //private profileRepository: ProfileRepository;
     //private controllers: Array<ProfileController>;
     //private results: object;
     private source: IGraphData;
 
-
-    constructor(data: IGraphData,  trustStrategy: TrustStrategy, profileRepository: ProfileRepository) {
-        Object.defineProperty(this, 'trustStrategy', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        Object.defineProperty(this, 'profileRepository', { enumerable: false, writable: true, value: null }); // No serialize to json!
+    constructor(data: IGraphData) {
+    //constructor(data: IGraphData,  trustStrategy: TrustStrategy, profileRepository: ProfileRepository) {
+        //Object.defineProperty(this, 'trustStrategy', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        // Object.defineProperty(this, 'profileRepository', { enumerable: false, writable: true, value: null }); // No serialize to json!
         // Object.defineProperty(this, 'subjectProfile', { enumerable: false, writable: true, value: null }); // No serialize to json!
         // Object.defineProperty(this, 'currentUser', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
         // this.subjectProfileID = subjectProfile;
         // this.currentUser = currentUser;
         this.source = data;
-        this.trustStrategy = trustStrategy;
-        this.profileRepository = profileRepository;
+        //this.trustStrategy = trustStrategy;
+        //this.profileRepository = profileRepository;
         //this.controllers = controllers;
     }
 
@@ -132,10 +132,9 @@ class TrustGraphDataAdapter {
         let to = this.source.profiles[claim.subject.id];
         
         to.trustResult.claims[claim.issuer.id] = claim;
-        //this.trustStrategy.calculateBinaryTrustResult(to.binaryTrustResult);
 
         this.updateNode(from); // Make sure that "from" profile node exist in graph
-        this.updateEdge(from, to, claim);
+        this.updateEdge(from, to, claim.value);
     }
 
    
