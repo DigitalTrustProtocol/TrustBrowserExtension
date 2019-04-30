@@ -78,43 +78,51 @@ class SubjectService  {
         return !input || !input.trim();
     }
 
-    BuildBinaryClaim (profile: IProfile, value: string, note: string, scope: string, expire: number) : ModelPackage {
+    BuildBinaryClaim (profile: IProfile, value: string, metadata: string, scope: string, expire: number) : ModelPackage {
         let claim: Claim = null;
         if(profile.userId) {
-            claim = this.packageBuilder.CreateBinaryClaim(
+            claim = this.packageBuilder.CreateClaim(
             this.settings.address, 
-            this.SCRIPT, 
+            this.SCRIPT,
             profile.userId, 
-            value, 
+            PackageBuilder.IDENTITY_TYPE_NUMERIC,
+            PackageBuilder.BINARY_TRUST_DTP1,
             scope,
+            value, 
             0,
             expire,
-            note);
+            metadata);
         }
 
         let trustpackage = this.packageBuilder.CreatePackage(claim);
 
         if(profile.owner && profile.owner.ID) {
-            let ownerClaim = this.packageBuilder.CreateBinaryClaim(
+            let ownerClaim = this.packageBuilder.CreateClaim(
                 this.settings.address, 
                 this.SCRIPT, 
                 profile.owner.ID, 
-                value, 
+                PackageBuilder.IDENTITY_TYPE_DTPAddress,
+                PackageBuilder.BINARY_TRUST_DTP1,
                 scope,
+                value, 
                 0,
                 expire,
-                note);
+                metadata);
+
                 trustpackage.claims.push(ownerClaim);
 
             if(!this.isNullOrWhitespace(profile.screen_name)) { 
-                let idClaim = this.packageBuilder.CreateIDIdentityClaim(
+                let idClaim = this.packageBuilder.CreateClaim(
                     this.settings.address,
                     this.SCRIPT, 
-                    profile.owner.ID,
-                    profile.userId,
+                    profile.owner.ID, // Subject
+                    PackageBuilder.IDENTITY_TYPE_DTPAddress, 
+                    PackageBuilder.ID_IDENTITY_DTP1,
                     scope,
+                    profile.userId, // Value
                     0,
-                    expire);
+                    expire,
+                    metadata);
 
                     trustpackage.claims.push(idClaim);
             }
