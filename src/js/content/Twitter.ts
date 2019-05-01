@@ -5,7 +5,6 @@ import dtpService = require('../DTPService');
 import ISettings from '../Interfaces/Settings.interface';
 import SubjectService = require('../SubjectService')
 import PackageBuilder = require('../PackageBuilder');
-//import TwitterService = require('./TwitterService');
 import TrustStrategy = require('../TrustStrategy')
 import DTPService = require('../DTPService');
 import { QueryRequest, QueryContext, Claim } from '../../lib/dtpapi/model/models';
@@ -19,10 +18,11 @@ import bitcoinMessage = require('bitcoinjs-message');
 import SiteManager = require('../SiteManager');
 import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
 import * as $ from 'jquery';
-import { Runtime } from 'webextension-polyfill-ts';
+import { Runtime, Bookmarks } from 'webextension-polyfill-ts';
 import { MessageHandler, CallbacksMap } from '../Shared/MessageHandler';
 import ITrustStrategy from '../Interfaces/ITrustStrategy';
 import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
+import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models';
 
 class Twitter {
     OwnerPrefix: string;
@@ -38,6 +38,8 @@ class Twitter {
     controllers = {};
     profileView: TwitterProfileView;
     trustGraphPopupClient: TrustGraphPopupClient;
+
+    wait: boolean;
 
     public static handlerName: string = "TwitterService";
 
@@ -322,8 +324,6 @@ class Twitter {
 
 
     processElement(element: HTMLElement): ProfileController { // Element = dom element
-        let deferred = $.Deferred<IProfile>();
-
         let source = this.createProfile(element);
         let controller = this.getController(source.userId);
         controller.addElement(element);
@@ -386,9 +386,9 @@ class Twitter {
         return deferred.promise();
     }
 
-    queryDTP(controllers: any): JQueryPromise<QueryContext> {
+    queryDTP(controllers: any): JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }> {
         if(controllers == null || controllers.length == 0)
-            return $.Deferred<QueryContext>().resolve(null).promise();
+            return $.Deferred<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }>().resolve(null).promise();
 
         let profiles = [];
         for(let key in controllers) {
@@ -399,7 +399,7 @@ class Twitter {
             profiles.push(controller.profile);
         }
 
-        return this.dtpService.Query(profiles, window.location.hostname).done((result: QueryContext) => {
+        return this.dtpService.Query(profiles, window.location.hostname).done((response, result) => {
             DTP['trace'](JSON.stringify(result, null, 2));
 
             // Process the result
@@ -476,25 +476,17 @@ class Twitter {
         return deferred.promise();
     }
 
-    attatchNodeInserted(doc : Document) : void {
-        $(doc).on('DOMNodeInserted', (e: JQueryEventObject) => {
-            let controllers = [];
-            let self = this;
+    attachNodeInserted(doc : Document) : void {
+        let wait = false;
+        let controllers = {}; 
+        let self = this;
 
+        $(doc).on('DOMNodeInserted', (e: JQueryEventObject) => {
             let classObj = e.target["attributes"]['class'];
             if (!classObj)
                 return;
 
-            let permaTweets = $(e.target).find('.tweet.permalink-tweet');
-            permaTweets.each((i: number, element: HTMLElement) => {
-                let controller = self.processElement(element);
-                if(!controller.trustResult)
-                    controllers[controller.profile.userId] = controller;
-                else
-                    controller.render();
-            });
-
-            let tweets = $(e.target).find('.tweet.js-stream-tweet');
+            let tweets = $(e.target).find('.tweet.js-stream-tweet, .tweet.permalink-tweet');
             tweets.each((i: number, element: HTMLElement) => {
                 let controller = self.processElement(element);
                 if(!controller.trustResult)
@@ -503,9 +495,20 @@ class Twitter {
                     controller.render();
             });
 
-            self.queryDTP(controllers).then(() => {
-                //deferred.resolve();
-            });
+            // Process controllers, but wait a little time before calling server, 
+            // this is to batch into fewer calls
+            if(!wait) { 
+                wait = true;
+                setTimeout(() => {
+                    let temp = controllers; 
+                    controllers = {}; // Reset for new controllers added when calling the DTP server 
+                    console.log("Batch call - controllers: "+Object.keys(temp).length)
+                    self.queryDTP(temp).then(() => {
+                        wait = false;
+                    });
+                }, 100);
+            }
+
         });
     }
 
@@ -514,7 +517,7 @@ class Twitter {
             this.queryDTP(controllers).done((queryContext) => {
                 console.log("Page load completed");
             });
-            this.attatchNodeInserted(doc);
+            this.attachNodeInserted(doc);
 
             $(doc).on('click', '.tweet-dtp', (event) => {
                 this.tweetDTP();

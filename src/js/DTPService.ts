@@ -1,6 +1,5 @@
-import { SubjectQuery, QueryRequest, ModelPackage, TrustScope } from '../lib/dtpapi/model/models';
-import { PackageApi, QueryApi } from '../lib/dtpapi/api/api';
-import { QueryContext } from '../lib/dtpapi/model/models';
+import { DtpGraphCoreModelQueryContext, DtpGraphCoreModelQueryRequest, DtpCoreModelPackage } from '../lib/typescript-jquery-client/model/models';
+import { PackageApi, QueryApi } from '../lib/typescript-jquery-client/api/api';
 import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
 import * as $ from 'jquery';
@@ -17,42 +16,37 @@ class DTPService  {
         this.queryApi = new QueryApi(settings.infoserver);
     } 
 
-    Query (targets: Array<IProfile>, scope: any) :JQueryPromise<QueryContext> {
+    Query (targets: Array<IProfile>, scope: any) :JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }> {
         let query = this.BuildQuery(targets, scope);
         if(query == null) {
             let deferred = $.Deferred();
             deferred.resolve(null);
             return deferred.promise();
         }
-        this.queryApi.basePath = this.settings.infoserver;
+        //this.queryApi.basePath = this.settings.infoserver;
         DTP['trace'](JSON.stringify(query, null, 2));
         return this.queryApi.resolvePost(query);
     }
 
-    BuildQuery (targets: Array<IProfile>, scope: any) : QueryRequest {
-        let subjects = new Array<SubjectQuery>();
+    BuildQuery (targets: Array<IProfile>, scope: string) : DtpGraphCoreModelQueryRequest {
+        let subjects = new Array<string>();
         //targets.forEach((target, index) => {
         for (let key in targets) {
             if (!targets.hasOwnProperty(key))
                 continue;            
             let target = targets[key];
             
-            let subject = <SubjectQuery>{ address: target.userId };
-            subjects.push(subject);
+            subjects.push(target.userId);
             if(target.owner && target.owner.ID) {
-                let owner = <SubjectQuery>{ address: target.owner.ID };
-                subjects.push(owner);
+                subjects.push(target.owner.ID);
             }
         }
 
         if(subjects.length == 0)
             return null;
     
-        if(typeof scope === 'string')
-            scope = <TrustScope>{ value : scope };
-
-        let obj = <QueryRequest>{
-            "issuers": this.settings.address,
+        let obj = <DtpGraphCoreModelQueryRequest>{
+            "issuers": { id: this.settings.address }  ,
             "subjects": subjects,
     
             // Scope is used to filter on trust resolvement. It can be any text
@@ -94,7 +88,7 @@ class DTPService  {
     //     return this.PostData('/api/package/build', JSON.stringify(trustPackage));
     // }
 
-    PostPackage (claimPackage: ModelPackage) : JQueryPromise<any> {
+    PostPackage (claimPackage: DtpCoreModelPackage) : JQueryPromise<any> {
         this.packageApi.basePath = this.settings.infoserver;
         return this.packageApi.postPackage(claimPackage);
     }
