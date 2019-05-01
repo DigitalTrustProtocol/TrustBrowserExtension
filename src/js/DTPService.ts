@@ -46,7 +46,7 @@ class DTPService  {
             return null;
     
         let obj = <DtpGraphCoreModelQueryRequest>{
-            "issuers": { id: this.settings.address }  ,
+            "issuer": { id: this.settings.address }  ,
             "subjects": subjects,
     
             // Scope is used to filter on trust resolvement. It can be any text
