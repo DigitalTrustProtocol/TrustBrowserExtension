@@ -46,10 +46,10 @@ class Profile implements IProfile {
         this.updateProperty("userId", source.userId);
         this.updateProperty("screen_name", source.screen_name, source.userId);
         this.updateProperty("alias", source.alias);
+        this.updateProperty("avatarImage", source.avatarImage);
         this.updateProperty("identiconData16", source.identiconData16);
         this.updateProperty("formAuthenticityToken", source.formAuthenticityToken);
         this.updateProperty("owner", source.owner);
-        //this.scope = Profile.SimpleDomainFormat(window.location.hostname);
     }
 
     private updateProperty(name: string, value: any, defaultValue?: any) : void {

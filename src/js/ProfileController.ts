@@ -25,7 +25,7 @@ class ProfileController {
     following: boolean = false;
     profileRepository: ProfileRepository;
     queried: boolean;
-    trustResult : BinaryTrustResult;
+    trustResult : BinaryTrustResult = new BinaryTrustResult();
     changed: boolean = true;
     public updateProfilesCallBack: any = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
     dtpService: DTPService;
@@ -35,8 +35,8 @@ class ProfileController {
     scope: string;
 
 
-    constructor(userId: string, view: IProfileView, profileRepository: ProfileRepository, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder, scope: string) {
-        this.profile = new Profile({ userId: userId });
+    constructor(profile: IProfile, view: IProfileView, profileRepository: ProfileRepository, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder, scope: string) {
+        this.profile = profile;
         this.view = view;
         this.profileRepository = profileRepository;
         this.dtpService = dtpService;
@@ -68,7 +68,8 @@ class ProfileController {
         if (this.profile.state == ProfileStateEnum.Changed) {
             return this.profileRepository.setProfile(this.profile);
         }
-        return $.when(this.profile).promise();
+        //return $.when(this.profile).promise();
+        return $.Deferred<IProfile>().resolve(this.profile).promise();
     }
 
     public addElement(element: HTMLElement): void {

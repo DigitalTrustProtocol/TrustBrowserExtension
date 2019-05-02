@@ -11,14 +11,10 @@
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
     <style>
-        html,
-        body {
-            font-size: 12px;
-            height: 100%;
-        }
 
-        .container {
-            min-height: 100%;
+        .content {
+            border: 2px;
+            border-color: black;
         }
 
         .dtp-avatarImg {
@@ -31,7 +27,23 @@
     </style>
 </head>
 
-<body ng-app="myApp" ng-controller="IdentityController as tc" data-ng-init="tc.init()">
-    Tweet your DTP address!
+<body ng-app="myApp" ng-controller="IdentityPopupController as tc" data-ng-init="tc.init()">
+    <main role="main" class="container">
+        <section class="jumbotron text-center">
+            <div class="container">
+                <h1 class="jumbotron-heading">Tweet your DTP address!</h1>
+                <p class="lead text-muted">DTP requries you to publish your DTP address, so that others are able to trust you and leverage on your trusted network.</p>
+            </div>
+        </section>
+        <section class="text-center">
+            <div class="container">
+                <fieldset>
+                    <legend>Tweet this!</legend>
+                    <pre ng-bind="tc.content" class="text-left"></pre>
+                </fieldset>
+            </div>
+        </section>
+                
+    </main><!-- /.container -->
 </body>
 </html>

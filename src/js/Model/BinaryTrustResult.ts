@@ -48,8 +48,6 @@ class BinaryTrustResult {
         return !changed;
     }
 
-
-
 }
 
 export = BinaryTrustResult

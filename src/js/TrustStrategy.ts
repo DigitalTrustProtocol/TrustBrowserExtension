@@ -86,19 +86,16 @@ class TrustStrategy implements ITrustStrategy {
         return results;
     }
 
-    public ProcessResult(queryContext : QueryContext, controllers: Array<ProfileController>) : void {
+    public ProcessResult(queryContext : QueryContext, controllers: ProfileController[]) : void {
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
             return;
 
         let results = this.ProcessClaims(queryContext.results.claims);
 
         // Update controllers
-        for(let subjectId in controllers) { 
-            if (!controllers.hasOwnProperty(subjectId))
-                continue;
+        for(let controller of controllers) { 
 
-            let controller = controllers[subjectId] as ProfileController;
-            let tempTrustResult = results[subjectId] as BinaryTrustResult;
+            let tempTrustResult = results[controller.profile.userId] as BinaryTrustResult;
             
             if(tempTrustResult) {
                 if(!tempTrustResult.isEqual(controller.trustResult)) 

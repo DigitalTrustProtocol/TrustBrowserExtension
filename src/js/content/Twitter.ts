@@ -25,6 +25,10 @@ import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models';
 import { IdentityPopupClient } from '../Shared/IdentityPopupClient';
 
+// Array.prototype.wait = function(arr: JQueryPromise[]) {
+
+// }
+
 class Twitter {
     OwnerPrefix: string;
     settings: ISettings;
@@ -86,7 +90,8 @@ class Twitter {
         return this.profileRepository.getProfile(params.userId).then(profile => {
 
             let controller = this.controllers[profile.userId] as ProfileController;
-            let claims = controller.trustResult.queryContext.results.claims;
+
+            let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
             let claimCollections = this.trustStrategy.ProcessClaims(claims);
 
             let profiles: object = {};
@@ -326,29 +331,45 @@ class Twitter {
     }
 
 
-    processElement(element: HTMLElement): ProfileController { // Element = dom element
-        let source = this.createProfile(element);
-        let controller = this.getController(source.userId);
-        controller.addElement(element);
+    // processElement(element: HTMLElement): ProfileController { // Element = dom element
+    //     let profile = this.createProfile(element) as IProfile;
+    //     let controller = this.getController(profile);
 
-        controller.updateProfile(source);
+    //     controller.addElement(element);
 
-        return controller;
+    //     return controller;
+    // }
+
+    processElement(element: HTMLElement): JQueryPromise<ProfileController> { // Element = dom element
+        let elementProfile = this.createProfile(element) as IProfile;
+
+        return this.profileRepository.getProfile(elementProfile.userId).then<ProfileController>(loadedProfile => {
+            let profile = (!loadedProfile) ? elementProfile : loadedProfile; // Make sure we have the a profile
+            profile.update(elementProfile); // Ensure to update the profile
+
+            let controller = this.getController(profile);
+            controller.addElement(element);
+
+            return controller;
+        });
     }
 
-    getController(userId: string) : ProfileController {
-        let controller = this.controllers[userId] as ProfileController;
+
+
+    getController(profile: IProfile) : ProfileController {
+        let controller = this.controllers[profile.userId] as ProfileController;
         if(!controller) {
-            controller = new ProfileController(userId, this.profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, "twitter.com");
+            controller = new ProfileController(profile, this.profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, "twitter.com");
             controller.updateProfilesCallBack = (profiles) => { return this.updateProfiles(profiles) };
             controller.trustSubmittedCallBack = (result) => { this.trustSubmitted(result); };
             this.controllers[controller.profile.userId] = controller;
-        }
+        } 
         return controller;
     }
 
     trustSubmitted(result : any) : void {
-        this.queryDTP(this.controllers).done((queryContext) => {
+        let arr = Object.keys(this.controllers).map((v) => this.controllers[v]);
+        this.queryDTP(arr).done((queryContext) => {
             console.log("Trust reload completed");
         });
     }
@@ -389,7 +410,7 @@ class Twitter {
         return deferred.promise();
     }
 
-    queryDTP(controllers: any): JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }> {
+    queryDTP(controllers: ProfileController[]): JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }> {
         if(controllers == null || controllers.length == 0)
             return $.Deferred<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }>().resolve(null).promise();
 
@@ -456,63 +477,91 @@ class Twitter {
         }).promise();
     }
 
-    loadPage() : JQueryPromise<{}> {
+    loadPage() : JQueryPromise<ProfileController[]> {
         let deferred = $.Deferred();
 
         SiteManager.GetUserContext().then((userContext) => {
             this.loadCurrentUserProfile(userContext).then(() => {
-                let controllers = {};
-                let tweets = this.getTweets();
 
-                tweets.each((i: number, element: HTMLElement) => {
-                    let controller = this.processElement(element);
-                    if(!controller.queried)
-                        controllers[controller.profile.userId] = controller;
-                });
+                let tweets = this.getTweets().get();
+                this.loadControllers(tweets).then(deferred.resolve);
 
                 TwitterProfileView.createTweetDTPButton();
 
-                deferred.resolve(controllers);
             });
         });
-
 
         return deferred.promise();
     }
 
     attachNodeInserted(doc : Document) : void {
         let wait = false;
-        let controllers = {}; 
         let self = this;
+        let elements = [];
 
         $(doc).on('DOMNodeInserted', (e: JQueryEventObject) => {
             let classObj = e.target["attributes"]['class'];
             if (!classObj)
                 return;
 
-            let tweets = $(e.target).find('.tweet.js-stream-tweet, .tweet.permalink-tweet');
-            tweets.each((i: number, element: HTMLElement) => {
-                let controller = self.processElement(element);
-                if(!controller.trustResult)
-                    controllers[controller.profile.userId] = controller;
-                else
-                    controller.render();
-            });
+            let tweets = $(e.target).find('.tweet.js-stream-tweet, .tweet.permalink-tweet').get();
+            if(tweets.length == 0)
+                return;
+
+            Array.prototype.push.apply(elements, tweets);
 
             // Process controllers, but wait a little time before calling server, 
             // this is to batch into fewer calls
             if(!wait) { 
                 wait = true;
+
                 setTimeout(() => {
-                    let temp = controllers; 
-                    controllers = {}; // Reset for new controllers added when calling the DTP server 
-                    console.log("Batch call - controllers: "+Object.keys(temp).length)
-                    self.queryDTP(temp).then(() => {
-                        wait = false;
+
+                    let temp = elements; 
+                    elements = []; // Reset for new controllers added when calling the DTP server 
+
+                    this.loadControllers(temp).then(controllers => {
+                        let query = [];
+                        for(let c of controllers)
+                            if(!c.queried)
+                                query.push(c);
+                            else
+                                c.render();
+        
+                        if(query.length == 0) {
+                            wait = false;
+                            return ;
+                        }
+
+                        console.log("Batch call - controllers: "+Object.keys(temp).length)
+                        self.queryDTP(query).then(() => {
+                            wait = false;
+                        });
                     });
                 }, 100);
+            }                        
+
+
+
+
+
+        });
+    }
+
+
+    loadControllers(tweets: HTMLElement[]) : JQueryPromise<ProfileController[]> {
+        let controllers = [];
+        let promises : Array<JQueryPromise<ProfileController>> = [];
+        for(let element of tweets)
+            promises.push(this.processElement(element));
+        
+        return $.when.apply(self, promises).then(function() {
+            let length = arguments.length;
+            for (let i=0; i < length; i++) {
+                controllers.push(arguments[i] as ProfileController);
             }
 
+            return controllers;
         });
     }
 

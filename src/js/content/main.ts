@@ -33,7 +33,7 @@ $(document).ready( () =>{
             let twitter = new Twitter(settings, packageBuilder, subjectService, dtpService, profileRepository, trustGraphPopupClient, messageHandler, trustStrategy);
             twitter.ready(document).then(() => {
                 // Bind an event 
-                trustGraphPopupClient.updateContent = (params, sender) => { twitter.queryDTP(twitter.controllers); };
+                //trustGraphPopupClient.updateContent = (params, sender) => { twitter.queryDTP(twitter.controllers); };
             });
 
         });
