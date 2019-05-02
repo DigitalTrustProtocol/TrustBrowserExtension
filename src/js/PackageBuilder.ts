@@ -105,16 +105,25 @@ class PackageBuilder {
     BuildIdSource(claim: Claim): Buffer {
         let buffers = [];
 
+
+        function Write7BitEncodedInt(value: number)
+        {
+            let nums = [];
+            let num;
+            for (num = value; num >= 128; num >>= 7)
+            {
+                nums.push((num | 0x80));
+            }
+            nums.push(num);
+            buffers.push(Buffer.from(nums));
+        }
+
         function addInt32LE(value : number) {
             if(!value || value == 0) {
                 addUInt8(0);
                 return;
             }
-            
-            addUInt8(4);
-            let buf = Buffer.allocUnsafe(4);
-            buf.writeInt32LE(value, 0, true);
-            buffers.push(buf);
+            Write7BitEncodedInt(value);
         }
 
         function addUInt8(value : number) {
@@ -130,7 +139,7 @@ class PackageBuilder {
             }
 
             var buf = Buffer.from(text, "UTF8");
-            addUInt8(buf.byteLength); // Add the length 
+            Write7BitEncodedInt(buf.byteLength); // Add the length 
             buffers.push(buf);
         }
 

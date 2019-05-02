@@ -23,6 +23,7 @@ import { MessageHandler, CallbacksMap } from '../Shared/MessageHandler';
 import ITrustStrategy from '../Interfaces/ITrustStrategy';
 import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models';
+import { IdentityPopupClient } from '../Shared/IdentityPopupClient';
 
 class Twitter {
     OwnerPrefix: string;
@@ -48,6 +49,7 @@ class Twitter {
     private messageHandler: MessageHandler;
     private methods: CallbacksMap = {};
     private trustStrategy: ITrustStrategy;
+    private identityPopup: IdentityPopupClient;
 
 
 
@@ -64,6 +66,7 @@ class Twitter {
         this.waiting = false;
         this.profileView = new TwitterProfileView(this.trustGraphPopupClient, settings, Twitter.handlerName);
         this.messageHandler = messageHandler;
+        this.identityPopup = new IdentityPopupClient(messageHandler);
         this.trustStrategy = trustStrategy;
 
         this.methods["getGraphData"] = (params, sender) => { return this.getGraphData(params, sender); }
@@ -422,16 +425,17 @@ class Twitter {
         let status = 'Digital Trust Protocol #DTP ID:' + Profile.CurrentUser.owner.ID
             + ' \rProof:' + Profile.CurrentUser.owner.Proof
             + ' \rUserID:' + Profile.CurrentUser.userId;
-        let data = {
-            batch_mode: 'off',
-            is_permalink_page: false,
-            place_id: !0,
-            status: status
-        };
+        // let data = {
+        //     batch_mode: 'off',
+        //     is_permalink_page: false,
+        //     place_id: !0,
+        //     status: status
+        // };
 
-        this.sendTweet(data).then((result) => {
-            TwitterProfileView.showMessage("DTP tweet created");
-        });
+        this.identityPopup.openDialog("TwitterIdentity.html", status);
+        // this.sendTweet(data).then((result) => {
+        //     TwitterProfileView.showMessage("DTP tweet created");
+        // });
     }
 
 

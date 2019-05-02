@@ -182,10 +182,13 @@ class TrustGraphDataAdapter {
 
     private createEdge(from: IProfile, to:IProfile, value: any) : any {
         let color = (value === "true" || value === "1") ? 'green' : (value == undefined || value == "") ? 'gray': 'red';
+        let fromId = (from.userId == "?") ? from.owner.ID : from.userId;
+        let toId = (to.userId == "?") ? to.owner.ID : to.userId;
+
         let node = { 
-            id: from.userId+to.userId,
-            from: from.userId, 
-            to: to.userId, 
+            id: fromId+toId,
+            from: fromId, 
+            to: toId, 
             color:{
                 color:color, 
                 highlight: color 
