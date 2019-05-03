@@ -52,7 +52,7 @@ export class TrustGraphPopupServer {
         this.contentTabId = sender.tab.id;
         // Open up the Popup window
         if(this.popupWindow) {
-            this.sendMessageToDialog('showSubject', request.data, sender.tab.id, null);
+            this.sendMessageToDialog('showSubject', request, sender.tab.id, null);
             browser.windows.update(this.popupWindow.id, { focused:true });
         } else {
             this.createDialog(request, sender.tab.id);

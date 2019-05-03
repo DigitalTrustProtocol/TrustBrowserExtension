@@ -330,16 +330,6 @@ class Twitter {
         }
     }
 
-
-    // processElement(element: HTMLElement): ProfileController { // Element = dom element
-    //     let profile = this.createProfile(element) as IProfile;
-    //     let controller = this.getController(profile);
-
-    //     controller.addElement(element);
-
-    //     return controller;
-    // }
-
     processElement(element: HTMLElement): JQueryPromise<ProfileController> { // Element = dom element
         let elementProfile = this.createProfile(element) as IProfile;
 
@@ -565,12 +555,22 @@ class Twitter {
         });
     }
 
+    updateContent(params, sender) : void {
+        let controller = this.getController(params.profile);
+        this.queryDTP([controller]).then(()=>{
+        });
+    }
+
     ready(doc: Document): JQueryPromise<void> {
         return this.loadPage().then((controllers) => {
             this.queryDTP(controllers).done((queryContext) => {
                 console.log("Page load completed");
             });
             this.attachNodeInserted(doc);
+
+            // Bind an event 
+            this.trustGraphPopupClient.updateContent = (params, sender) => { this.updateContent(params, sender); };
+
 
             $(doc).on('click', '.tweet-dtp', (event) => {
                 this.tweetDTP();

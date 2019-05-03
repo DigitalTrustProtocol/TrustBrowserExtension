@@ -74,12 +74,13 @@ export class TrustGraphPopupClient {
     }
 
 
-    public sendUpdateContentMessage(tabId: any) : Promise<any>
+    public sendUpdateContentMessage(tabId: any, profile: IProfile) : Promise<any>
     {
         let message = { 
             handler: TrustGraphPopupServer.handlerName,
             params: {
-                action: "updateContent"
+                action: "updateContent",
+                profile: profile
             }
         };
         return browser.tabs.sendMessage(tabId, message);

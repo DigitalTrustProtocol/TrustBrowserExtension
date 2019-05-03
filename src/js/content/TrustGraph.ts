@@ -35,7 +35,7 @@ class TrustGraphController {
     settingsClient: SettingsClient;
     settings: any;
     packageBuilder: any;
-    subjectService: any;
+    subjectService: SubjectService;
     dtpService: DTPService;
     contentTabId: number;
     contentHandler: string;
@@ -72,10 +72,13 @@ class TrustGraphController {
                 this.dtpService = new DTPService(settings);
                 this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
 
-
-
-
-                this.trustGraphPopupClient.showSubject = (params, sender) => { this.contentTabId = params.contentTabId; this.loadOnData(params.data); };
+                this.trustGraphPopupClient.showSubject = (params, sender) => { 
+                    this.contentHandler = params.data.contentHandler;
+                    this.contentTabId = params.data.contentTabId;
+                    this.trustGraphPopupClient.getGraphData(this.contentTabId, this.contentHandler, params.data.userId).then(result => {
+                        this.loadOnData(result); 
+                    });
+                };
                 this.trustGraphPopupClient.requestContentTabId().then((params) => 
                 { 
                     this.contentHandler = params.contentHandler;
@@ -200,37 +203,35 @@ class TrustGraphController {
 
 
     trustClick() {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, true, 0, this.modalData.profile.alias + " trusted");
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, "true", 0, this.modalData.profile.alias + " trusted");
         return false;
     };
 
     distrustClick () {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, false, 0, this.modalData.profile.alias + " distrusted");
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, "false", 0, this.modalData.profile.alias + " distrusted");
         return false;
     }
 
     untrustClick() {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, undefined, 1, this.modalData.profile.alias + " untrusted");
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, null, 1, this.modalData.profile.alias + " untrusted");
 
         return false;
     }
 
-    buildAndSubmitBinaryTrust (profile: IProfile, value: boolean, expire: number, message: string): JQueryPromise<any> {
+    buildAndSubmitBinaryTrust (profile: IProfile, value: string, expire: number, message: string): JQueryPromise<any> {
         //this.modalData.disableButtons();
         this.modalData.processing = true;
         profile.scope = this.source.scope;
-        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, null, expire);
+        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, undefined, "twitter.com", expire);
         this.packageBuilder.SignPackage(trustPackage);
         return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
-            //$.notify("Updating view",trustResult.status.toLowerCase());
             console.log("Posting package is a "+trustResult.status);
-            
-            
+           
             $["notify"](message, 'success');
-
 
             this.updateNetwork(trustPackage);
 
+            this.trustGraphPopupClient.sendUpdateContentMessage(this.contentTabId, profile);
            
             this.hideModal(); 
         }).fail((trustResult) => { 
@@ -244,8 +245,6 @@ class TrustGraphController {
         for(let key in trustPackage.claims) {
             let claim = trustPackage.claims[key];
             this.dataAdapter.updateWithClaim(claim);
-
-            this.trustGraphPopupClient.sendUpdateContentMessage(this.contentTabId);
         }
     }
 
