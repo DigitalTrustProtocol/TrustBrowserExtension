@@ -25,7 +25,6 @@ export class MessageHandler {
 
     constructor() {
         this.callbacksMap = {};
-        //browser.runtime.onMessage.addListener(this.handleMessage);
         browser.runtime.onMessage.addListener((request, sender) => {
             const callback = this.callbacksMap[request.handler];
             if(callback) 

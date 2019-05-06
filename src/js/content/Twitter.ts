@@ -18,12 +18,13 @@ import bitcoinMessage = require('bitcoinjs-message');
 import SiteManager = require('../SiteManager');
 import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
 import * as $ from 'jquery';
-import { Runtime, Bookmarks } from 'webextension-polyfill-ts';
 import { MessageHandler, CallbacksMap } from '../Shared/MessageHandler';
 import ITrustStrategy from '../Interfaces/ITrustStrategy';
 import TrustGraphDataAdapter = require('./TrustGraphDataAdapter');
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models';
 import { IdentityPopupClient } from '../Shared/IdentityPopupClient';
+import IGraphData from './IGraphData';
+import { browser, Runtime, Bookmarks } from "webextension-polyfill-ts";
 
 // Array.prototype.wait = function(arr: JQueryPromise[]) {
 
@@ -68,12 +69,11 @@ class Twitter {
         this.profileRepository = profileRepository;
         this.trustGraphPopupClient = trustGraphPopupClient;
         this.waiting = false;
-        this.profileView = new TwitterProfileView(this.trustGraphPopupClient, settings, Twitter.handlerName);
+        this.profileView = new TwitterProfileView(settings);
         this.messageHandler = messageHandler;
         this.identityPopup = new IdentityPopupClient(messageHandler);
         this.trustStrategy = trustStrategy;
 
-        this.methods["getGraphData"] = (params, sender) => { return this.getGraphData(params, sender); }
         this.methods["getProfile"] = (params, sender) => { return this.getProfile(params, sender); }
         this.methods["getProfileDTP"] = (params, sender) => { return this.getProfileDTP(params, sender); }
         this.messageHandler.receive(Twitter.handlerName, (params: any, sender: Runtime.MessageSender) => {
@@ -83,32 +83,6 @@ class Twitter {
         });
 
         console.log('twitter class init', this.settings)
-    }
-
-    public getGraphData(params: any, sender: Runtime.MessageSender) : JQueryPromise<any> {
-
-        return this.profileRepository.getProfile(params.userId).then(profile => {
-
-            let controller = this.controllers[profile.userId] as ProfileController;
-
-            let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
-            let claimCollections = this.trustStrategy.ProcessClaims(claims);
-
-            let profiles: object = {};
-            let trustResults = this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
-
-            //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
-            //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
-
-            let dialogData = {
-                scope: "twitter.com",
-                currentUser: Profile.CurrentUser,
-                subjectProfileId: profile.userId,
-                profiles: profiles,
-                trustResults: trustResults
-            };
-            return dialogData;
-        });
     }
 
     private buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Object {
@@ -349,7 +323,7 @@ class Twitter {
     getController(profile: IProfile) : ProfileController {
         let controller = this.controllers[profile.userId] as ProfileController;
         if(!controller) {
-            controller = new ProfileController(profile, this.profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, "twitter.com");
+            controller = new ProfileController(profile, this.profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, this.trustGraphPopupClient, "twitter.com");
             controller.updateProfilesCallBack = (profiles) => { return this.updateProfiles(profiles) };
             controller.trustSubmittedCallBack = (result) => { this.trustSubmitted(result); };
             this.controllers[controller.profile.userId] = controller;
@@ -371,11 +345,13 @@ class Twitter {
         profile.alias = element.attributes["data-name"].value;
         profile.avatarImage = $(element).find('img.avatar').attr('src');
 
-        // var youFollow = (element.attributes["data-you-follow"].value == "true");
-        // Object.defineProperty(profile, 'youFollow', { enumerable: false, value: youFollow, }); // No serialize to json!
+        var youFollow = (element.attributes["data-you-follow"].value == "true");
+        Object.defineProperty(profile, 'youFollow', { enumerable: false, value: youFollow, }); // No serialize to json!
+        Object.defineProperty(profile, 'youMute', { enumerable: false, value: false, }); // No serialize to json!
+        Object.defineProperty(profile, 'youBlock', { enumerable: false, value: false, }); // No serialize to json!
 
-        // var followsYou = (element.attributes["data-follows-you"].value == "true");
-        // Object.defineProperty(profile, 'followsYou', { enumerable: false, value: youFollow, }); // No serialize to json!
+        var followsYou = (element.attributes["data-follows-you"].value == "true");
+        Object.defineProperty(profile, 'followsYou', { enumerable: false, value: youFollow, }); // No serialize to json!
 
         //console.log('screen_name: ' + profile.screen_name + ' - ' + profile.alias);
         return profile;
@@ -555,11 +531,39 @@ class Twitter {
         });
     }
 
-    updateContent(params, sender) : void {
+    updateContentHandler(params, sender) : void {
         let controller = this.getController(params.profile);
         this.queryDTP([controller]).then(()=>{
         });
     }
+
+    public requestSubjectHandler(params: any, sender: Runtime.MessageSender) : JQueryPromise<IGraphData> {
+
+        return this.profileRepository.getProfile(params.profileId).then(profile => {
+
+            let controller = this.controllers[profile.userId] as ProfileController;
+
+            let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
+            let claimCollections = this.trustStrategy.ProcessClaims(claims);
+
+            let profiles: object = {};
+            let trustResults = this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
+
+            //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
+            //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
+
+            let dialogData = {
+                scope: "twitter.com",
+                currentUser: Profile.CurrentUser,
+                subjectProfileId: profile.userId,
+                profiles: profiles,
+                trustResults: trustResults
+            } as IGraphData;
+
+            return dialogData;
+        });
+    }
+
 
     ready(doc: Document): JQueryPromise<void> {
         return this.loadPage().then((controllers) => {
@@ -568,9 +572,9 @@ class Twitter {
             });
             this.attachNodeInserted(doc);
 
-            // Bind an event 
-            this.trustGraphPopupClient.updateContent = (params, sender) => { this.updateContent(params, sender); };
-
+            // Bind events
+            this.trustGraphPopupClient.updateContentHandler = (params, sender) => { this.updateContentHandler(params, sender); };
+            this.trustGraphPopupClient.requestSubjectHandler = (params, sender) => { return this.requestSubjectHandler(params, sender); };
 
             $(doc).on('click', '.tweet-dtp', (event) => {
                 this.tweetDTP();

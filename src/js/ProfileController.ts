@@ -15,6 +15,11 @@ import PackageBuilder = require('./PackageBuilder');
 import ISettings from "./Interfaces/Settings.interface";
 import IProfileView from './content/IProfileView';
 import * as $ from 'jquery';
+import { TrustGraphPopupClient } from './Shared/TrustGraphPopupClient';
+import IOpenDialogResult from './Model/OpenDialogResult.interface';
+import IGraphData from './content/IGraphData';
+import { browser, Runtime } from "webextension-polyfill-ts";
+
 
 class ProfileController {
     profile: IProfile;
@@ -27,23 +32,30 @@ class ProfileController {
     queried: boolean;
     trustResult : BinaryTrustResult = new BinaryTrustResult();
     changed: boolean = true;
-    public updateProfilesCallBack: any = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
     dtpService: DTPService;
     subjectService: SubjectService;
     packageBuilder: PackageBuilder;
     trustSubmittedCallBack: any;
     scope: string;
+    trustGraphPopupClient: TrustGraphPopupClient;
+
+    public updateProfilesCallBack: any = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
+    public onTrustGraphClick: (eventObject: JQueryEventObject) => boolean;
 
 
-    constructor(profile: IProfile, view: IProfileView, profileRepository: ProfileRepository, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder, scope: string) {
+    constructor(profile: IProfile, view: IProfileView, profileRepository: ProfileRepository, dtpService: DTPService, subjectService: SubjectService, packageBuilder: PackageBuilder, trustGraphPopupClient: TrustGraphPopupClient, scope: string) {
         this.profile = profile;
         this.view = view;
         this.profileRepository = profileRepository;
         this.dtpService = dtpService;
         this.subjectService = subjectService;
         this.packageBuilder = packageBuilder;
+        this.trustGraphPopupClient = trustGraphPopupClient;
         this.scope = scope;
+        this.onTrustGraphClick = (eventObject) => { return this.trustGraphClickHandler(eventObject) };
     }
+
+
 
     // Update data for the profile
     private loadProfileFromHost(): JQueryPromise<IProfile> {
@@ -75,7 +87,6 @@ class ProfileController {
     public addElement(element: HTMLElement): void {
         this.domElements.push(element);
         this.bindEvents(element);
-        $(element).data("dtp_controller", this);
     }
 
     public save(): JQueryPromise<IProfile> {
@@ -167,36 +178,26 @@ class ProfileController {
     //     }
 
     private bindEvents(element: HTMLElement): void {
-        $(element).on('click', '.trustIcon', (event) => {
+        $(element).on('click', this, (event) => {            
             let button = event.target;
-            $(button).addClass('trustSpinner24');
-            //let tweetContainer = ProfileController.getTweetContainer(button);
-            //let screen_name = $(tweetContainer).attr("data-screen-name");
+            let controller = event.data;
 
-            // let userId = $(tweetContainer).attr("data-user-id");
-            // profileRepository.ensureProfile(userId).then(profile => {
-
-            //this.loadProfile(userId, profileRepository).then(function(profile: IProfile) {
             let classList = button['classList'];
 
             if (classList.contains('trust')) {
+                $(button).addClass('trustSpinner24');
                 this.trust().then(RemoveSpinner);
             }
 
             if (classList.contains('distrust')) {
+                $(button).addClass('trustSpinner24');
                 this.distrust().then(RemoveSpinner);
             }
 
             if (classList.contains('untrust')) {
+                $(button).addClass('trustSpinner24');
                 this.untrust().then(RemoveSpinner);
             }
-
-            // if (classList.contains('follow')) {
-            //     this.follow();
-            //     RemoveSpinner();
-            // }
-
-            //});
 
             function RemoveSpinner() {
                 $(button).removeClass('trustSpinner24');
@@ -205,17 +206,27 @@ class ProfileController {
         });
     }
 
+    private trustGraphClickHandler(eventObject: JQueryEventObject) : boolean {
+        let dialogData = {
+            profileId: this.profile.userId,
+        };
+        let tt = browser.tabs;
+
+        this.trustGraphPopupClient.openPopup(dialogData).then((result: IOpenDialogResult) => {
+            if(result.alreadyOpen) {
+                this.trustGraphPopupClient.requestSubjectHandler(dialogData, null).then((data: IGraphData) => {
+                    this.trustGraphPopupClient.showSubject(result.tabId, data);
+                });
+            }
+            // If popup is not open, then the popup will call the content tab when ready.
+        });
+        eventObject.stopPropagation();
+        return false;
+    }
+
     static getTweetContainer(element): JQuery<any> {
         return $(element).closest('div.tweet'); //.attr("data-screen-name");
     }
-
-    //    loadProfile(id: string, profileRepository : ProfileRepository) : JQueryPromise<IProfile> {
-    //         return profileRepository.getProfile(id).then(profile => {
-    //             if(profile != null)
-    //                 return profile.controller.update();
-    //             return null;
-    //         });
-    //     }
 }
 
 export = ProfileController

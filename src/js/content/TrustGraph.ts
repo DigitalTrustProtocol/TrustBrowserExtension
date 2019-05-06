@@ -26,6 +26,9 @@ import ISettings from "../Interfaces/Settings.interface";
 import notify = require("notifyjs");
 import IGraphData from './IGraphData';
 import * as $ from 'jquery';
+import Url = require('url-parse');
+import IOpenDialogParameters from '../Model/OpenDialogParameters.interface.js';
+import { Runtime } from "webextension-polyfill-ts";
 
 
 declare var window: any;
@@ -38,7 +41,6 @@ class TrustGraphController {
     subjectService: SubjectService;
     dtpService: DTPService;
     contentTabId: number;
-    contentHandler: string;
     network: any;
     profileRepository: ProfileRepository;
     currentUser: IProfile;
@@ -72,20 +74,15 @@ class TrustGraphController {
                 this.dtpService = new DTPService(settings);
                 this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
 
-                this.trustGraphPopupClient.showSubject = (params, sender) => { 
-                    this.contentHandler = params.data.contentHandler;
-                    this.contentTabId = params.data.contentTabId;
-                    this.trustGraphPopupClient.getGraphData(this.contentTabId, this.contentHandler, params.data.userId).then(result => {
-                        this.loadOnData(result); 
-                    });
+                this.trustGraphPopupClient.showSubjectHandler = (params: any, sender: Runtime.MessageSender) => { 
+                    this.contentTabId = sender.tab.id;
+                    this.loadOnData(params.data);
                 };
-                this.trustGraphPopupClient.requestContentTabId().then((params) => 
-                { 
-                    this.contentHandler = params.contentHandler;
-                    this.contentTabId = params.contentTabId;
-                    this.trustGraphPopupClient.getGraphData(this.contentTabId, this.contentHandler, params.userId).then(result => {
-                        this.loadOnData(result); 
-                    });
+
+                let url = new Url(location.href, true);
+                this.contentTabId = parseInt(url.query.tabId);
+                this.trustGraphPopupClient.requestSubject(this.contentTabId, url.query.profileId).then(data => {
+                    this.loadOnData(data);
                 });
             });
         });
@@ -231,7 +228,7 @@ class TrustGraphController {
 
             this.updateNetwork(trustPackage);
 
-            this.trustGraphPopupClient.sendUpdateContentMessage(this.contentTabId, profile);
+            this.trustGraphPopupClient.updateContent(this.contentTabId, profile);
            
             this.hideModal(); 
         }).fail((trustResult) => { 

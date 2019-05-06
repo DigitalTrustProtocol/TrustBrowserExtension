@@ -10,6 +10,8 @@ import ISettings from '../Interfaces/Settings.interface.js';
 import IProfileView from './IProfileView.js';
 import { browser } from 'webextension-polyfill-ts';
 import * as $ from 'jquery';
+import IGraphData from './IGraphData.js';
+import IOpenDialogResult from '../Model/OpenDialogResult.interface.js';
 
 //declare var Identicon: any;
 class ProfileViewButtonModel {
@@ -48,27 +50,21 @@ class ProfileViewModel  {
 class TwitterProfileView implements IProfileView {
     Anchor: string;
     fullNameGroup: string;
-    trustGraphPopupClient: TrustGraphPopupClient;
     settings: ISettings;
-    private handler: string = null;
 
-
-    constructor(trustGraphPopupClient: TrustGraphPopupClient, settings: ISettings, serviceHandler: string) {
+    constructor(settings: ISettings) {
         this.Anchor = 'div.ProfileTweet-action--favorite';
         this.fullNameGroup = '.FullNameGroup';
-        this.trustGraphPopupClient = trustGraphPopupClient;
         this.settings = settings;
-        this.handler = serviceHandler;
     }
 
-    public render(controller: ProfileController, element: HTMLElement): void {
+    public render(controller: ProfileController, element: HTMLElement): JQLite {
         const $element = $(element);
 
-        //let controller = $element.data("dtp_controller") as ProfileController; // Is possible
         let model = $element.data('dtp_viewmodel') as ProfileViewModel || new ProfileViewModel();
         if(controller.trustResult && model.trustResult) {
             if(model.time == controller.trustResult.time) 
-                return; // We know that the data have not changed for this element.
+                return null; // We know that the data have not changed for this element.
 
             model.stateChanged = (model.trustResult.state != controller.trustResult.state) || (model.settingsTime != this.settings.time);
         } else {
@@ -87,25 +83,28 @@ class TwitterProfileView implements IProfileView {
         else 
             this.setupEmpty(model);
 
-        this.renderBar(controller, $element, model);
+        let $bar = this.renderBar(controller, $element, model);
         this.userAction(controller, $element, model);
 
         $element.data('dtp_viewmodel', model);
+        return $bar;
     }
 
-    private renderBar(controller: ProfileController, $element: JQuery, model: ProfileViewModel) : void {
+    private renderBar(controller: ProfileController, $element: JQuery, model: ProfileViewModel) : JQLite {
         let $bar = $element.data('dtp_bar') as JQuery;
         if (!$bar) {
             let $anchor = $element.find(this.Anchor);
             $bar = $('<span>') as JQuery;
             $anchor.after($bar);
             $bar["$fullNameGroup"] = $element.find(this.fullNameGroup);
-            $bar["$fullNameGroup"].prepend(this.createIdenticon(controller.profile));
+            $bar["$identicon"] = this.createIdenticon(controller);
+            $bar["$fullNameGroup"].prepend($bar["$identicon"]);
             $element.data('dtp_bar', $bar);
         }
 
         let html = model.buttons.map(this.renderButton).join('');
         $bar.html(html); // Replace with new html
+        return $bar;
     }
 
 
@@ -160,7 +159,6 @@ class TwitterProfileView implements IProfileView {
             return;
         }
 
-
         if (model.trustResult.state < 0) {
 
             if (this.settings.twitterdistrust == "hidecontent") {
@@ -169,15 +167,11 @@ class TwitterProfileView implements IProfileView {
             }
 
             if (this.settings.twitterdistrust == "automute") {
-                $element.find("li.mute-user-item").trigger("click");
+                this.mute(controller, $element);
             }
 
             if (this.settings.twitterdistrust == "autoblock") {
-                $element.find("li.block-link").trigger("click");
-                $("body").removeClass("modal-enabled");
-                $(document).find("#block-dialog").hide();
-                $(document).find("button.block-button").trigger("click");
-                $(document).find("span.Icon--close").trigger("click");
+                this.block(controller, $element);
             }
         }
     }
@@ -196,15 +190,36 @@ class TwitterProfileView implements IProfileView {
         $element.find('.card2').hide();
     }
 
+    private mute(controller: ProfileController, $element: JQuery) : void {
+        if (controller.profile["youMute"])
+            return;
+
+        $element.find("li.mute-user-item").trigger("click");
+        controller.profile["youFollow"] = true;
+    }
+
+    private block(controller: ProfileController, $element: JQuery) : void {
+        if (controller.profile["youBlock"])
+            return;
+
+        $element.find("li.block-link").trigger("click");
+        $("body").removeClass("modal-enabled");
+        $(document).find("#block-dialog").hide();
+        $(document).find("button.block-button").trigger("click");
+        $(document).find("span.Icon--close").trigger("click");
+
+        controller.profile["youBlock"] = true;
+    }
+
     private follow(controller: ProfileController, $element: JQuery) : void {
         DTP['trace']("Follow " + controller.profile.screen_name);
 
-        let follow = $element.data("you-follow");
-        if (follow)
+        if (controller.profile["youFollow"])
             return;
 
         var $button = this.createFollowButton($element, controller.profile);
         $button.click();
+        controller.profile["youFollow"] = true;
     }
 
 
@@ -253,33 +268,24 @@ class TwitterProfileView implements IProfileView {
         });
     }
 
-    createIdenticon(profile: IProfile) {
+    createIdenticon(controller: ProfileController) {
+
         let iconData = null;
-        if (!profile.identiconData16) {
+        if (!controller.profile.identiconData16) {
             //let hash = Crypto.Hash160(profile.userId).toBase64();
-            let hash = Crypto.toDTPAddress(Crypto.Hash160(profile.userId));
+            let hash = Crypto.toDTPAddress(Crypto.Hash160(controller.profile.userId));
             let icon = new Identicon(hash, { margin: 0.1, size: 16, format: 'svg' }); // Need min 15 chars
-            profile.identiconData16 = icon.toString();
+            controller.profile.identiconData16 = icon.toString();
             //profile.time = Date.now();
             //profile.controller.save();
         }
 
-        iconData = profile.identiconData16;
+        iconData = controller.profile.identiconData16;
 
-        let $icon = $('<a title="' + profile.screen_name + '" href="javascript:void 0"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
-        $icon.data("dtp_profile", profile);
+        let $icon = $('<a title="' + controller.profile.screen_name + '" href="javascript:void 0" class="dtpIdenticon-btn"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
+        if(controller.onTrustGraphClick)  // Bind event directly, to ensure call
+            $icon.click(controller.onTrustGraphClick);
 
-        $icon.click(() => {
-            let subjectProfile = $icon.data('dtp_profile') as IProfile;
-
-            let dialogData = {
-                userId: subjectProfile.userId,
-                contentHandler: this.handler
-            };
-
-            this.trustGraphPopupClient.openPopup(dialogData);
-            return false;
-        });
         return $icon;
     }
 
