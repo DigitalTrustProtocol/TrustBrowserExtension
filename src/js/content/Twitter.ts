@@ -209,8 +209,6 @@ class Twitter {
 
         return count;
     }
-    
-
 
     extractDTP(html: any): DTPIdentity {
         let content = html.findSubstring('<div class="js-tweet-text-container">', '</div>');
@@ -249,38 +247,6 @@ class Twitter {
             dataType: dataType,
         }).done((data, textStatus, jqXHR) => {
             deferred.resolve(data);
-        }).fail((jqXHR, textStatus, errorThrown) => {
-            this.errorHandler(jqXHR, textStatus, errorThrown);
-            deferred.reject();
-        });
-        return deferred.promise();
-    }
-
-
-    sendTweet(data: any): JQueryPromise<any> {
-        return this.postData('/i/tweet/create', data);
-    }
-
-    postData(path: string, data: any): JQueryPromise<any> {
-        var deferred = $.Deferred<any>();
-
-        let url = this.BaseUrl + path;
-        //let postData = 'authenticity_token=' + DTP.Profile.CurrentUser.formAuthenticityToken + '&' + data;
-        data.authenticity_token = Profile.CurrentUser.formAuthenticityToken;
-
-        $.ajax({
-            type: "POST",
-            url: url,
-            data: data,
-            contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-            headers: {
-                'accept': 'application/json, text/javascript, */*; q=0.01',
-                'X-Requested-With': 'XMLHttpRequest',
-                'x-twitter-active-user': 'yes'
-            },
-            dataType: 'json',
-        }).done((msg, textStatus, jqXHR) => {
-            deferred.resolve(msg);
         }).fail((jqXHR, textStatus, errorThrown) => {
             this.errorHandler(jqXHR, textStatus, errorThrown);
             deferred.reject();
@@ -406,25 +372,12 @@ class Twitter {
         });
     }
 
-
-
-    tweetDTP(): void {
+    tweetDTP(): string {
         let status = 'Digital Trust Protocol #DTP ID:' + Profile.CurrentUser.owner.ID
             + ' \rProof:' + Profile.CurrentUser.owner.Proof
             + ' \rUserID:' + Profile.CurrentUser.userId;
-        // let data = {
-        //     batch_mode: 'off',
-        //     is_permalink_page: false,
-        //     place_id: !0,
-        //     status: status
-        // };
-
-        this.identityPopup.openDialog("TwitterIdentity.html", status);
-        // this.sendTweet(data).then((result) => {
-        //     TwitterProfileView.showMessage("DTP tweet created");
-        // });
+        return status;
     }
-
 
     loadCurrentUserProfile(user: any): JQueryPromise<void> {
         return this.profileRepository.ensureProfile(user.userId).then(profile => {
@@ -452,7 +405,7 @@ class Twitter {
                 let tweets = this.getTweets().get();
                 this.loadControllers(tweets).then(deferred.resolve);
 
-                TwitterProfileView.createTweetDTPButton();
+                TwitterProfileView.createTweetDTPButton(this.tweetDTP());
 
             });
         });
@@ -466,6 +419,13 @@ class Twitter {
         let elements = [];
 
         $(doc).on('DOMNodeInserted', (e: JQueryEventObject) => {
+            //console.log(e.target.nodeName+' : ' +  $(e.target).attr('class'));
+
+            if(e.target.nodeName.toLocaleUpperCase() == "TITLE") {
+                console.log(e.target.nodeName+' : ' +  $(e.target).text());
+                
+            }
+               
             let classObj = e.target["attributes"]['class'];
             if (!classObj)
                 return;

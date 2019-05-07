@@ -211,6 +211,8 @@ class TwitterProfileView implements IProfileView {
         controller.profile["youBlock"] = true;
     }
 
+
+
     private follow(controller: ProfileController, $element: JQuery) : void {
         DTP['trace']("Follow " + controller.profile.screen_name);
 
@@ -242,7 +244,7 @@ class TwitterProfileView implements IProfileView {
     
     }
 
-    static createTweetDTPButton() {
+    static createTweetDTPButton(text: string) {
         let $editButton = $('.ProfileNav-list .edit-button');
         if ($editButton.length == 0)
             return;
@@ -252,13 +254,35 @@ class TwitterProfileView implements IProfileView {
             return;
 
         $tweetDTP = $(
-            '<button type="button" class="EdgeButton EdgeButton--tertiary dtpUserAction-Button tweet-dtp">' +
+            '<button type="button" id="twitter-wjs" class="EdgeButton EdgeButton--tertiary dtpUserAction-Button tweet-dtp">' +
             '<span class="button-text">Tweet DTP</span>' +
             '</button>'
         );
+        // $tweetDTP = $(
+        //     '<a href="https://twitter.com/intent/tweet?text='+ encodeURIComponent(text) +'" target="_blank" class="EdgeButton EdgeButton--tertiary dtpUserAction-Button tweet-dtp">' +
+        //         '<span class="button-text">Tweet DTP</span>' +
+        //     '</a>'
+        // );
+
+
+        $tweetDTP.click(() => { TwitterProfileView.tweetDTP(text); });
 
         $editButton.before($tweetDTP);
     }
+
+    static tweetDTP(text: string) : void {
+        $(document).find("#global-new-tweet-button").trigger('click');
+        $("body").removeClass("modal-enabled");
+        $(document).find("#Tweetstorm-dialog-dialog").hide();
+        let editor = $(document).find("#Tweetstorm-tweet-box-0 div.tweet-box.rich-editor");
+        editor.text(text);
+        editor.focus();
+        setTimeout(() => {
+            let btn = $(document).find('#Tweetstorm-tweet-box-0 button.SendTweetsButton');
+            btn.trigger('click');
+        }, 10);
+    }
+
 
     static showMessage(message) {
         let pop = $('#message-drawer');
