@@ -35,12 +35,10 @@ class Profile implements IProfile {
         Object.defineProperty(this, 'trustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'state', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
-        //this.trustResult = new BinaryTrustResult()
-
         this.update(source);
     }
 
-    public update(source: IProfile) : void {
+    public update(source: IProfile) : boolean {
         this.state = ProfileStateEnum.None;
 
         this.updateProperty("userId", source.userId);
@@ -50,6 +48,8 @@ class Profile implements IProfile {
         this.updateProperty("identiconData16", source.identiconData16);
         this.updateProperty("formAuthenticityToken", source.formAuthenticityToken);
         this.updateProperty("owner", source.owner);
+
+        return this.state == ProfileStateEnum.Changed;
     }
 
     private updateProperty(name: string, value: any, defaultValue?: any) : void {

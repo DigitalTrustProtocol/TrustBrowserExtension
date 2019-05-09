@@ -86,7 +86,6 @@ class ProfileController {
 
     public addElement(element: HTMLElement): void {
         this.domElements.push(element);
-        this.bindEvents(element);
     }
 
     public save(): JQueryPromise<IProfile> {
@@ -95,9 +94,12 @@ class ProfileController {
 
     // Render all elements
     public render() : void {
+        this.view.setViewModel(this);
+
         for (let key in this.domElements) {
             let element = this.domElements[key] as HTMLElement;
             this.view.render(this, element);
+            this.bindEvents(element);
         }
     }
 
@@ -159,26 +161,11 @@ class ProfileController {
         return deferred.promise();
     }
 
-
-    // profile will usually be a deserialized neutral object
-    //    static addTo(profile: IProfile, twitterService : any, domElement) : void {
-    //         if(!profile)
-    //             return;
-    //         try {
-
-    //             if (!profile.controller) {
-    //                 profile.controller = new ProfileController(profile, new ProfileView(), twitterService);
-    //             }
-    //         } catch (error) {
-    //             console.log(error);
-    //         }
-    //         profile.controller.domElements.push(domElement);
-
-    //         $(domElement).data("dtp_profile", profile);
-    //     }
-
     private bindEvents(element: HTMLElement): void {
-        $(element).on('click', this, (event) => {            
+        let $element = $(element);
+
+        $element.off(); 
+        $element.on('click', this, (event) => {            
             let button = event.target;
             let controller = event.data;
 
@@ -202,7 +189,6 @@ class ProfileController {
             function RemoveSpinner() {
                 $(button).removeClass('trustSpinner24');
             }
-            //});
         });
     }
 

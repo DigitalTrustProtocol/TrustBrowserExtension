@@ -19,37 +19,14 @@ class TrustGraphDataAdapter {
         edges: new vis2.DataSet()
     };
     
-    //private currentUser: IProfile;
     private subjectProfileID: string;
 
-    //private trustStrategy: ITrustStrategy;
-    //private profileRepository: ProfileRepository;
-    //private controllers: Array<ProfileController>;
-    //private results: object;
     private source: IGraphData;
 
     constructor(data: IGraphData) {
-    //constructor(data: IGraphData,  trustStrategy: TrustStrategy, profileRepository: ProfileRepository) {
-        //Object.defineProperty(this, 'trustStrategy', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        // Object.defineProperty(this, 'profileRepository', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        // Object.defineProperty(this, 'subjectProfile', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        // Object.defineProperty(this, 'currentUser', { enumerable: false, writable: true, value: null }); // No serialize to json!
-
-        // this.subjectProfileID = subjectProfile;
-        // this.currentUser = currentUser;
         this.source = data;
-        //this.trustStrategy = trustStrategy;
-        //this.profileRepository = profileRepository;
-        //this.controllers = controllers;
     }
 
-    // public static CreateFrom(data: any) : TrustGraphDataAdapter {
-    //     let adapter = new TrustGraphDataAdapter()
-    //     if(!data || !data.graph) 
-    //         return new ;
-
-            
-    // }
 
     public load() : void {
         this.graph.nodes.clear();
@@ -91,44 +68,8 @@ class TrustGraphDataAdapter {
         return this.graph;
     }
 
-    // public build() : void {
-    //     this.graph.nodes.clear();
-    //     this.graph.edges.clear();
-    //     let controller = this.controllers[this.subjectProfile.userId] as ProfileController;
-    //     this.buildNodes(controller);
-    // }
-
-    // private buildNodes(profile: IProfile) : void {
-    //     if(this.graph.nodes.get(profile.userId))
-    //         return; // Do not re-process the node
-
-    //     this.addNode(profile);
-
-    //     if(profile.userId == this.currentUser.userId)
-    //         return; // Stop with oneself
-
-    //     if(!profile.trustResult) {
-    //         //controller.trustResult = new BinaryTrustResult();
-    //         return; // The profile do not have any claim data
-    //     }
-
-    //     for(let key in profile.trustResult.claims) {
-    //         let claim = profile.trustResult.claims[key]; // is Key the same as claim.issuer.ID?
-
-    //         // issuer is always a DTP ID
-    //         this.profileRepository.getProfileByIndex(claim.issuer.id).then(parentProfile => {
-    //             // There should always be a profile, even if it just been created by the TrustStrategy class
-    //             this.addEdge(parentProfile, profile, claim.value);
-
-
-    //             this.buildNodes(parentProfile);
-    //         });
-    //     }
-    // }
-
-
     public updateWithClaim(claim : Claim) : void {
-        let from = this.source.profiles[claim.issuer.id];
+        let from = this.source.profiles[claim.issuer.id] || this.source.currentUser;
         let to = this.source.profiles[claim.subject.id];
         
         to.trustResult.claims[claim.issuer.id] = claim;

@@ -51,6 +51,7 @@ class TwitterProfileView implements IProfileView {
     Anchor: string;
     fullNameGroup: string;
     settings: ISettings;
+    viewModel = new ProfileViewModel();
 
     constructor(settings: ISettings) {
         this.Anchor = 'div.ProfileTweet-action--favorite';
@@ -58,55 +59,62 @@ class TwitterProfileView implements IProfileView {
         this.settings = settings;
     }
 
-    public render(controller: ProfileController, element: HTMLElement): JQLite {
-        const $element = $(element);
-
-        let model = $element.data('dtp_viewmodel') as ProfileViewModel || new ProfileViewModel();
-        if(controller.trustResult && model.trustResult) {
-            if(model.time == controller.trustResult.time) 
-                return null; // We know that the data have not changed for this element.
-
-            model.stateChanged = (model.trustResult.state != controller.trustResult.state) || (model.settingsTime != this.settings.time);
+    public setViewModel(controller: ProfileController): void {
+        if(controller.trustResult && this.viewModel.trustResult) {
+            this.viewModel.stateChanged = (this.viewModel.trustResult.state != controller.trustResult.state) || (this.viewModel.settingsTime != this.settings.time);
         } else {
             if(!controller.trustResult)
                 controller.trustResult = new BinaryTrustResult();
             
-            model.stateChanged = true;
+                this.viewModel.stateChanged = true;
         }
 
-        model.trustResult = controller.trustResult;
-        model.time = controller.trustResult.time;
-        model.settingsTime = this.settings.time;
+        this.viewModel.trustResult = controller.trustResult;
+        this.viewModel.time = controller.trustResult.time;
+        this.viewModel.settingsTime = this.settings.time;
 
-        if(model.trustResult.claims.length > 0) 
-            this.setupButtons(model);
+        if(this.viewModel.trustResult.claims.length > 0) 
+            this.setupButtons(this.viewModel);
         else 
-            this.setupEmpty(model);
-
-        let $bar = this.renderBar(controller, $element, model);
-        this.userAction(controller, $element, model);
-
-        $element.data('dtp_viewmodel', model);
-        return $bar;
+            this.setupEmpty(this.viewModel);
     }
 
-    private renderBar(controller: ProfileController, $element: JQuery, model: ProfileViewModel) : JQLite {
-        let $bar = $element.data('dtp_bar') as JQuery;
-        if (!$bar) {
-            let $anchor = $element.find(this.Anchor);
-            $bar = $('<span>') as JQuery;
+    public render(controller: ProfileController, element: HTMLElement): void {
+        const $element = $(element);
+        if(!this.viewModel.stateChanged) {
+            let $identicon = $element.find(".dtp-identicon");
+            if($identicon.length > 0)
+                return;
+        }
+
+        this.renderIdenticon(controller, $element);
+        this.renderBar(controller, $element, this.viewModel);
+        this.userAction(controller, $element, this.viewModel);
+    }
+
+    private renderIdenticon(controller: ProfileController, $element: JQuery) : JQLite {
+       
+        let $identicon = $element.find(".dtp-identicon");
+        if($identicon.length > 0)
+            return;
+
+        let $nameGroup = $element.find(this.fullNameGroup);
+        $identicon = this.createIdenticon(controller);
+        $nameGroup.prepend($identicon);
+        return $identicon;
+    }
+
+    private renderBar(controller: ProfileController, $element: JQuery, model: ProfileViewModel) : void {
+        let $anchor = $element.find(this.Anchor);
+        let $bar = $anchor.parent().find('span.dtp-bar');
+        if (!$bar.length) {
+            $bar = $('<span class="dtp-bar">') as JQuery;
             $anchor.after($bar);
-            $bar["$fullNameGroup"] = $element.find(this.fullNameGroup);
-            $bar["$identicon"] = this.createIdenticon(controller);
-            $bar["$fullNameGroup"].prepend($bar["$identicon"]);
-            $element.data('dtp_bar', $bar);
         }
 
         let html = model.buttons.map(this.renderButton).join('');
         $bar.html(html); // Replace with new html
-        return $bar;
     }
-
 
     private setupButtons(model: ProfileViewModel) : void {
         let btr = model.trustResult;
@@ -226,7 +234,7 @@ class TwitterProfileView implements IProfileView {
 
 
     private renderButton(button: ProfileViewButtonModel) {
-        let html = `<div class="ProfileTweet-action ProfileTweet-action" style="min-width:40px">
+        let html = `<div class="ProfileTweet-action ProfileTweet-action dtp-buttonBar" style="min-width:40px">
                         <button class="ProfileTweet-actionButton u-textUserColorHover js-actionButton" type="button">
                             <div class="IconContainer js-tooltip" >
                                 <span class="Icon Icon--medium">
@@ -306,7 +314,7 @@ class TwitterProfileView implements IProfileView {
 
         iconData = controller.profile.identiconData16;
 
-        let $icon = $('<a title="' + controller.profile.screen_name + '" href="javascript:void 0" class="dtpIdenticon-btn"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtpIdenticon"></a>');
+        let $icon = $('<a title="' + controller.profile.screen_name + '" href="javascript:void 0" class="dtp-identicon-btn"><img src="data:image/svg+xml;base64,' + iconData + '" class="dtp-identicon"></a>');
         if(controller.onTrustGraphClick)  // Bind event directly, to ensure call
             $icon.click(controller.onTrustGraphClick);
 
@@ -317,8 +325,9 @@ class TwitterProfileView implements IProfileView {
         let $button = $element.find('button.dtp-follow > span:first');
         if ($button.length == 0) {
 
-            let user_id = $element.data("user-id");
-            let html = `<div class="user-actions not-following not-muting" data-screen-name="${profile.screen_name}" data-user-id="${profile.userId}">
+            let userId = $element.attr("data-user-id"); 
+            let name = $element.attr("data-name");
+            let html = `<div class="user-actions not-following not-muting" data-screen-name="${name}" data-user-id="${userId}">
                         <span class="user-actions-follow-button js-follow-btn follow-button">
                         <button type="button" class="
                         EdgeButton

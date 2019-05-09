@@ -95,18 +95,13 @@ class TrustGraphController {
     private buildNetwork(source: IGraphData) : any {
 
         this.source = source;
-        // First load all the profiles in locally
-        //let trustResult = <BinaryTrustResult>source.trustResults;
-        // trustResult.profiles.forEach((profile) => {
-        //     this.profileRepository.setProfile(profile);
-        // });
         this.currentUser = source.currentUser || this.currentUser;
-        this.selectedProfile = source.profiles[source.subjectProfileId] as IProfile;
-        // this.profileRepository.setProfile(source.selectedProfile);
-        // this.profileRepository.setProfile(source.currentUser);
+        this.source.profiles[this.currentUser.userId] = this.currentUser;
+        if(this.currentUser.owner)
+            this.source.profiles[this.currentUser.owner.ID] = this.currentUser;
 
-        // Then process the claims agaist the profiles
-        //this.dataAdapter = new TrustGraphDataAdapter(source, this.trustStrategy, this.profileRepository);
+        this.selectedProfile = source.profiles[source.subjectProfileId] as IProfile;
+
         this.dataAdapter = new TrustGraphDataAdapter(source);
         this.dataAdapter.load();
 
@@ -125,9 +120,6 @@ class TrustGraphController {
         return nw;
     }
 
-
-
-    
     private buildOptions() : any {
         var options = {
             layout: {
@@ -172,7 +164,7 @@ class TrustGraphController {
 
         let profile = this.source.profiles[profileId];
         if(!profile.trustResult) {
-            profile.trustResult = this.source.trustResults[profileId];
+            profile.trustResult = this.source.trustResults[profileId] || new BinaryTrustResult();
             let arr = {};
             for(let key in profile.trustResult.claims) {
                 let claim = profile.trustResult.claims[key] as Claim;

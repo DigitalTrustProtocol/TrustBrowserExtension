@@ -42,10 +42,10 @@ class Twitter {
     profilesToQuery: Array<IProfile> = [];
 
     controllers = {};
-    profileView: TwitterProfileView;
     trustGraphPopupClient: TrustGraphPopupClient;
 
     wait: boolean;
+    elementCache = {};
 
     public static handlerName: string = "TwitterService";
 
@@ -69,7 +69,6 @@ class Twitter {
         this.profileRepository = profileRepository;
         this.trustGraphPopupClient = trustGraphPopupClient;
         this.waiting = false;
-        this.profileView = new TwitterProfileView(settings);
         this.messageHandler = messageHandler;
         this.identityPopup = new IdentityPopupClient(messageHandler);
         this.trustStrategy = trustStrategy;
@@ -275,10 +274,12 @@ class Twitter {
 
         return this.profileRepository.getProfile(elementProfile.userId).then<ProfileController>(loadedProfile => {
             let profile = (!loadedProfile) ? elementProfile : loadedProfile; // Make sure we have the a profile
-            profile.update(elementProfile); // Ensure to update the profile
+            if(profile.update(elementProfile))  // Ensure to update the profile
+                this.profileRepository.setProfile(profile);
 
             let controller = this.getController(profile);
             controller.addElement(element);
+            $(element).data("dtp-controller", controller);
 
             return controller;
         });
@@ -289,7 +290,9 @@ class Twitter {
     getController(profile: IProfile) : ProfileController {
         let controller = this.controllers[profile.userId] as ProfileController;
         if(!controller) {
-            controller = new ProfileController(profile, this.profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, this.trustGraphPopupClient, "twitter.com");
+            let profileView = new TwitterProfileView(this.settings);
+
+            controller = new ProfileController(profile, profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, this.trustGraphPopupClient, "twitter.com");
             controller.updateProfilesCallBack = (profiles) => { return this.updateProfiles(profiles) };
             controller.trustSubmittedCallBack = (result) => { this.trustSubmitted(result); };
             this.controllers[controller.profile.userId] = controller;
@@ -323,8 +326,8 @@ class Twitter {
         return profile;
     }
 
-    getTweets(): JQLite {
-        let tweets = $('.tweet.js-stream-tweet');
+    getTweets(): JQuery {
+        let tweets = $('.tweet.js-stream-tweet, .tweet.permalink-tweet'); // .tweet.js-stream-tweet, .tweet.permalink-tweet
         return tweets;
     }
 
@@ -379,44 +382,49 @@ class Twitter {
         return status;
     }
 
-    loadCurrentUserProfile(user: any): JQueryPromise<void> {
-        return this.profileRepository.ensureProfile(user.userId).then(profile => {
-            Profile.CurrentUser = profile;
-            Profile.CurrentUser.update(user);
-            Profile.CurrentUser.avatarImage = $('img.DashboardProfileCard-avatarImage').attr('src');
 
-            if (Profile.CurrentUser.owner == null)
-                this.updateProfiles([Profile.CurrentUser]);
+    loadControllers(tweets: JQuery) : JQueryPromise<ProfileController[]> {
+        let controllers = [];
+        let promises : Array<JQueryPromise<ProfileController>> = [];
+        tweets.each((i: number, element: HTMLElement) => {
+            let $element = $(element);
+            let controller = $element.data("dtp-controller");
+            if(controller)
+                controllers.push(controller);
+            else
+                promises.push(this.processElement(element));
 
-            Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
-            
-            this.profileRepository.setProfile(Profile.CurrentUser); // Save the profile, locally and in DB
-
-            console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
-        }).promise();
-    }
-
-    loadPage() : JQueryPromise<ProfileController[]> {
-        let deferred = $.Deferred();
-
-        SiteManager.GetUserContext().then((userContext) => {
-            this.loadCurrentUserProfile(userContext).then(() => {
-
-                let tweets = this.getTweets().get();
-                this.loadControllers(tweets).then(deferred.resolve);
-
-                TwitterProfileView.createTweetDTPButton(this.tweetDTP());
-
-            });
         });
 
-        return deferred.promise();
+            //let controller = element            
+            // let tweetId = element.getAttribute("data-tweet-id");
+            // if(this.elementCache.hasOwnProperty(tweetId)) { 
+            //     controllers.push(this.elementCache[tweetId]); // Just add the controller
+            //     continue;
+            // }
+
+        
+        // Wait for all promises
+        return $.when.apply($, promises).then(function() {
+
+            let length = arguments.length;
+            for (let i=0; i < length; i++) {
+                let controller = arguments[i] as ProfileController;
+                controllers.push(controller);
+
+            }
+
+            return controllers;
+        });
     }
+
 
     attachNodeInserted(doc : Document) : void {
         let wait = false;
+        let loadAll = true;
         let self = this;
-        let elements = [];
+        let elements = 0;
+        let fav = 0;
 
         $(doc).on('DOMNodeInserted', (e: JQueryEventObject) => {
             //console.log(e.target.nodeName+' : ' +  $(e.target).attr('class'));
@@ -430,64 +438,47 @@ class Twitter {
             if (!classObj)
                 return;
 
-            let tweets = $(e.target).find('.tweet.js-stream-tweet, .tweet.permalink-tweet').get();
-            if(tweets.length == 0)
-                return;
+            //let $target =$(e.target);
+            //console.log($target.html());
+            //let tweets = $(e.target).find('.tweet.js-stream-tweet, .tweet.permalink-tweet').get();
+            //elements += tweets.length;
+            //if(tweets.length > 0)
 
-            Array.prototype.push.apply(elements, tweets);
+            //fav += $(e.target).find('.ProfileTweet-action--favorite').length;
+
+            //Array.prototype.push.apply(elements, tweets);
 
             // Process controllers, but wait a little time before calling server, 
             // this is to batch into fewer calls
-            if(!wait) { 
-                wait = true;
+            if(wait) 
+                return;
 
-                setTimeout(() => {
+            wait = true; // Now wait for timeout to complete
 
-                    let temp = elements; 
-                    elements = []; // Reset for new controllers added when calling the DTP server 
+            setTimeout(() => {
 
-                    this.loadControllers(temp).then(controllers => {
-                        let query = [];
-                        for(let c of controllers)
-                            if(!c.queried)
-                                query.push(c);
-                            else
-                                c.render();
-        
-                        if(query.length == 0) {
-                            wait = false;
-                            return ;
-                        }
+                let tweets = this.getTweets(); // Get all tweets!
+                console.log("Page Elements loaded: " + tweets.length);
 
-                        console.log("Batch call - controllers: "+Object.keys(temp).length)
-                        self.queryDTP(query).then(() => {
-                            wait = false;
-                        });
+                this.loadControllers(tweets).then(controllers => {
+                    let query = [];
+                    for(let c of controllers)
+                        if(!c.queried)
+                            query.push(c);
+                        else
+                            c.render();
+    
+                    if(query.length == 0) {
+                        wait = false;
+                        return ;
+                    }
+
+                    self.queryDTP(query).then(() => {
+                        wait = false;
                     });
-                }, 100);
-            }                        
+                });
 
-
-
-
-
-        });
-    }
-
-
-    loadControllers(tweets: HTMLElement[]) : JQueryPromise<ProfileController[]> {
-        let controllers = [];
-        let promises : Array<JQueryPromise<ProfileController>> = [];
-        for(let element of tweets)
-            promises.push(this.processElement(element));
-        
-        return $.when.apply(self, promises).then(function() {
-            let length = arguments.length;
-            for (let i=0; i < length; i++) {
-                controllers.push(arguments[i] as ProfileController);
-            }
-
-            return controllers;
+            }, 100);
         });
     }
 
@@ -500,6 +491,8 @@ class Twitter {
     public requestSubjectHandler(params: any, sender: Runtime.MessageSender) : JQueryPromise<IGraphData> {
 
         return this.profileRepository.getProfile(params.profileId).then(profile => {
+
+            // If profile is null?
 
             let controller = this.controllers[profile.userId] as ProfileController;
 
@@ -524,6 +517,42 @@ class Twitter {
         });
     }
 
+    loadCurrentUserProfile(user: any): JQueryPromise<void> {
+        return this.profileRepository.ensureProfile(user.userId).then(profile => {
+            Profile.CurrentUser = profile;
+            Profile.CurrentUser.update(user);
+            Profile.CurrentUser.avatarImage = $('img.DashboardProfileCard-avatarImage').attr('src');
+
+            if (Profile.CurrentUser.owner == null)
+                this.updateProfiles([Profile.CurrentUser]);
+
+            Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
+            
+            this.profileRepository.setProfile(Profile.CurrentUser); // Save the profile, locally and in DB
+
+            console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
+        }).promise();
+    }
+
+    loadPage() : JQueryPromise<ProfileController[]> {
+        let deferred = $.Deferred();
+
+        SiteManager.GetUserContext().then((userContext) => {
+            this.loadCurrentUserProfile(userContext).then(() => {
+
+                let tweets = this.getTweets().get();
+                console.log("Loaded controllers: "+Object.keys(this.controllers).length);
+                console.log("Page load tweets: "+tweets.length)
+                deferred.resolve(null);
+                //this.loadControllers(tweets).then(deferred.resolve);
+
+                //TwitterProfileView.createTweetDTPButton(this.tweetDTP());
+
+            });
+        });
+
+        return deferred.promise();
+    }
 
     ready(doc: Document): JQueryPromise<void> {
         return this.loadPage().then((controllers) => {
