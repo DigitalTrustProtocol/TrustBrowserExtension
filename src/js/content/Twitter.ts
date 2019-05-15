@@ -25,10 +25,7 @@ import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-clien
 import { IdentityPopupClient } from '../Shared/IdentityPopupClient';
 import IGraphData from './IGraphData';
 import { browser, Runtime, Bookmarks } from "webextension-polyfill-ts";
-
-// Array.prototype.wait = function(arr: JQueryPromise[]) {
-
-// }
+import { ProfileStateEnum } from '../Model/ProfileStateEnum';
 
 class Twitter {
     OwnerPrefix: string;
@@ -84,7 +81,7 @@ class Twitter {
         console.log('twitter class init', this.settings)
     }
 
-    private buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Object {
+    private async buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Promise<Object> {
         if(profiles[id])
             return; // Exist, then it has been processed.
 
@@ -100,14 +97,15 @@ class Twitter {
 
             // Get a profile from the Issuer ID, as only profiles with a DTP id can be retrived.
             // The profile may not be in index, but in DB, but it will be up to the popup window to handle this.
-            let parentProfile = this.profileRepository.index[claim.issuer.id] as IProfile;
+            //let parentProfile = this.profileRepository.index[claim.issuer.id] as IProfile;
+            let parentProfile = await this.profileRepository.getProfileByIndex(claim.issuer.id);
             if(!parentProfile) { // Do profile exist?
                 parentProfile = new Profile({userId: "?", screen_name: "Unknown", alias: "Unknown"}) as IProfile;
                 parentProfile.owner = new DTPIdentity({ ID: claim.issuer.id });
             }
             let parentTrustResult = claimCollections[parentProfile.owner.ID] as BinaryTrustResult; 
-
-            this.buildGraph(parentProfile, parentProfile.owner.ID, parentTrustResult, profiles, trustResults, claimCollections);
+            
+            await this.buildGraph(parentProfile, parentProfile.owner.ID, parentTrustResult, profiles, trustResults, claimCollections);
         }
         return trustResults;
     }
@@ -177,36 +175,42 @@ class Twitter {
             let done = false;
 
             $tweets.each((index, element) => {
-                if(done)
+                let $tweet = $(element);
+                const owner = this.getOwner($tweet);
+                if(owner == null)
                     return;
 
-                let $tweet = $(element);
-
-                let owner = this.extractDTP($tweet.html());
                 if(owner.PlatformID != profile.userId) {
                     console.log("Invalid userID in tweet!");
                     return;
                 }
 
-                try {
-                    if(Crypto.Verify(owner, profile.userId)) {
-                        if(profile.owner && profile.owner.ID != owner.ID)  
-                        {
-                            console.log("DTP Owner is not the same as tweeted")
-                            return;
-                        }
-                        profile.owner = owner;
-                        profile.avatarImage = $tweet.find('img.avatar').attr('src');
-                        count ++;
-                        done= true;
-                    }
-                } catch(error) {
-                    DTP['trace'](error); // Catch it if Crypto.Verify fails!
-                }
+                DTPIdentity.update(profile, owner);
+                const avatarImage = $tweet.find('img.avatar').attr('src');
+                profile.updateProperty("avatarImage", avatarImage);
+                if(profile.state == ProfileStateEnum.Changed)
+                    this.profileRepository.setProfile(profile);
+                count ++;
             });
         });
 
         return count;
+    }
+
+    findSubstring(text: string, lower: string, startText: string, endText: string) {
+        let start = lower.indexOf(startText);
+        if(start < 0)
+            return null;
+        start += startText.length; // Only return value!
+        
+        let end = lower.indexOf(endText, start);
+        if(end < 0) {
+            end = lower.indexOf('\n', start);
+            if(end < 0)
+                end = lower.length;
+        }
+   
+        return text.substring(start, end);
     }
 
     extractDTP(html: any): DTPIdentity {
@@ -222,12 +226,34 @@ class Twitter {
             return null;
         }
 
-        let id = text['findSubstring']('ID:', ' ', true, true);
-        let proof = text['findSubstring']('Proof:', ' ', true, true);
-        let userId = text['findSubstring']('UserID:', ' ', true, true);
-
-        return new DTPIdentity({ ID: id, Proof: proof, PlatformID: userId });
+        return this.extractOwner(text);
     }
+
+    extractOwner(text: any): DTPIdentity {
+        const lower = text.toLocaleLowerCase();
+        if(lower.indexOf('#dtp') < 0) return null; // There has to be a #DTP tag
+        const id = this.findSubstring(text, lower, 'id:', ' ');
+        if(!id) return null;
+        const proof = this.findSubstring(text, lower, 'proof:', ' ');
+        if(!proof) return null;
+        const userId = this.findSubstring(text, lower, 'userid:', ' ');
+        if(!userId) return null;
+
+        const owner = new DTPIdentity({ ID: id, Proof: proof, PlatformID: userId });
+
+        if(!Crypto.Verify(owner, userId))
+            return null;
+
+        return owner;
+    }
+
+    getOwner($element: JQuery): DTPIdentity {
+        const $container = $element.find('.js-tweet-text-container');
+        const text = $container.text();
+        return this.extractOwner(text);
+    }
+
+
 
     getData(path: string, dataType: any): JQueryPromise<any> {
         let deferred = $.Deferred<any>();
@@ -272,10 +298,14 @@ class Twitter {
     processElement(element: HTMLElement): JQueryPromise<ProfileController> { // Element = dom element
         let elementProfile = this.createProfile(element) as IProfile;
 
-        return this.profileRepository.getProfile(elementProfile.userId).then<ProfileController>(loadedProfile => {
-            let profile = (!loadedProfile) ? elementProfile : loadedProfile; // Make sure we have the a profile
-            if(profile.update(elementProfile))  // Ensure to update the profile
+        return this.profileRepository.getProfile(elementProfile.userId).then<ProfileController>(profile => {
+            if(!profile) {
+                profile = elementProfile;
                 this.profileRepository.setProfile(profile);
+            } else {
+                if(profile.update(elementProfile))  // Ensure to update the profile
+                    this.profileRepository.setProfile(profile);
+            }
 
             let controller = this.getController(profile);
             controller.addElement(element);
@@ -322,7 +352,12 @@ class Twitter {
         var followsYou = (element.attributes["data-follows-you"].value == "true");
         Object.defineProperty(profile, 'followsYou', { enumerable: false, value: youFollow, }); // No serialize to json!
 
-        //console.log('screen_name: ' + profile.screen_name + ' - ' + profile.alias);
+        const owner = this.getOwner($(element));
+        if(owner) {
+            if(owner.PlatformID == profile.userId) 
+                profile.owner = owner;
+        }
+
         return profile;
     }
 
@@ -332,17 +367,10 @@ class Twitter {
     }
 
     updateProfiles(profiles: Array<IProfile>): JQueryPromise<Array<IProfile>> {
-        let deferred = $.Deferred<Array<IProfile>>();
-
-        this.getProfilesDTP(profiles).then((html: string) => {
-
+        return this.getProfilesDTP(profiles).then((html: string) => {
             this.updateProfilesFromHtml(html, profiles);
-            this.profileRepository.setProfiles(profiles);
-
-            deferred.resolve(profiles);
+            return profiles;
         });
-
-        return deferred.promise();
     }
 
     queryDTP(controllers: ProfileController[]): JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }> {
@@ -427,8 +455,6 @@ class Twitter {
         let fav = 0;
 
         $(doc).on('DOMNodeInserted', (e: JQueryEventObject) => {
-            //console.log(e.target.nodeName+' : ' +  $(e.target).attr('class'));
-
             if(e.target.nodeName.toLocaleUpperCase() == "TITLE") {
                 console.log(e.target.nodeName+' : ' +  $(e.target).text());
                 
@@ -437,16 +463,6 @@ class Twitter {
             let classObj = e.target["attributes"]['class'];
             if (!classObj)
                 return;
-
-            //let $target =$(e.target);
-            //console.log($target.html());
-            //let tweets = $(e.target).find('.tweet.js-stream-tweet, .tweet.permalink-tweet').get();
-            //elements += tweets.length;
-            //if(tweets.length > 0)
-
-            //fav += $(e.target).find('.ProfileTweet-action--favorite').length;
-
-            //Array.prototype.push.apply(elements, tweets);
 
             // Process controllers, but wait a little time before calling server, 
             // this is to batch into fewer calls
@@ -488,33 +504,58 @@ class Twitter {
         });
     }
 
-    public requestSubjectHandler(params: any, sender: Runtime.MessageSender) : JQueryPromise<IGraphData> {
+    public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
+        let profile = await this.profileRepository.getProfile(params.profileId);
 
-        return this.profileRepository.getProfile(params.profileId).then(profile => {
+        // If profile is null?
 
-            // If profile is null?
+        let controller = this.controllers[profile.userId] as ProfileController;
 
-            let controller = this.controllers[profile.userId] as ProfileController;
+        let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
+        let claimCollections = this.trustStrategy.ProcessClaims(claims);
 
-            let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
-            let claimCollections = this.trustStrategy.ProcessClaims(claims);
+        let profiles: object = {};
+        let trustResults = await this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
 
-            let profiles: object = {};
-            let trustResults = this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
+        //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
+        //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
 
-            //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
-            //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
+        let dialogData = {
+            scope: "twitter.com",
+            currentUser: Profile.CurrentUser,
+            subjectProfileId: profile.userId,
+            profiles: profiles,
+            trustResults: trustResults
+        } as IGraphData;
 
-            let dialogData = {
-                scope: "twitter.com",
-                currentUser: Profile.CurrentUser,
-                subjectProfileId: profile.userId,
-                profiles: profiles,
-                trustResults: trustResults
-            } as IGraphData;
+        return dialogData;
 
-            return dialogData;
-        });
+
+        // return this.profileRepository.getProfile(params.profileId).then(profile => {
+
+        //     // If profile is null?
+
+        //     let controller = this.controllers[profile.userId] as ProfileController;
+
+        //     let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
+        //     let claimCollections = this.trustStrategy.ProcessClaims(claims);
+
+        //     let profiles: object = {};
+        //     let trustResults = await this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
+
+        //     //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
+        //     //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
+
+        //     let dialogData = {
+        //         scope: "twitter.com",
+        //         currentUser: Profile.CurrentUser,
+        //         subjectProfileId: profile.userId,
+        //         profiles: profiles,
+        //         trustResults: trustResults
+        //     } as IGraphData;
+
+        //     return dialogData;
+        // });
     }
 
     loadCurrentUserProfile(user: any): JQueryPromise<void> {
@@ -535,18 +576,17 @@ class Twitter {
     }
 
     loadPage() : JQueryPromise<ProfileController[]> {
-        let deferred = $.Deferred();
+        let deferred = $.Deferred<ProfileController[]>();
 
         SiteManager.GetUserContext().then((userContext) => {
             this.loadCurrentUserProfile(userContext).then(() => {
 
-                let tweets = this.getTweets().get();
+                let tweets = this.getTweets();
                 console.log("Loaded controllers: "+Object.keys(this.controllers).length);
                 console.log("Page load tweets: "+tweets.length)
-                deferred.resolve(null);
-                //this.loadControllers(tweets).then(deferred.resolve);
 
-                //TwitterProfileView.createTweetDTPButton(this.tweetDTP());
+                this.loadControllers(tweets).then(deferred.resolve);
+                TwitterProfileView.createTweetDTPButton(this.tweetDTP());
 
             });
         });

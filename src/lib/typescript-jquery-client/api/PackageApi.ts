@@ -91,7 +91,7 @@ export class PackageApi {
             requestOptions = (<any>Object).assign(requestOptions, this.defaultExtraJQueryAjaxSettings);
         }
 
-        let dfd = $.Deferred();
+        let dfd = $.Deferred<any>();
         $.ajax(requestOptions).then(
             (data: models.DtpCoreViewModelPackageInfoCollection, textStatus: string, jqXHR: JQueryXHR) =>
                 dfd.resolve(jqXHR, data),
@@ -147,7 +147,7 @@ export class PackageApi {
             requestOptions = (<any>Object).assign(requestOptions, this.defaultExtraJQueryAjaxSettings);
         }
 
-        let dfd = $.Deferred();
+        let dfd = $.Deferred<any>();
         $.ajax(requestOptions).then(
             (data: any, textStatus: string, jqXHR: JQueryXHR) =>
                 dfd.resolve(jqXHR, data),

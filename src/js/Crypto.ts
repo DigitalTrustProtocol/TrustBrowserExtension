@@ -12,7 +12,13 @@ class Crypto {
 
     static Verify(dtpIdentity: DTPIdentity, message: any): boolean
     {
-        return bitcoinMessage.verify(message, dtpIdentity.ID, dtpIdentity.Proof);
+        try {
+            //let buf = new Buffer(dtpIdentity.Proof, "base64");
+            //return bitcoinMessage.verify(message, dtpIdentity.ID, buf);
+            return bitcoinMessage.verify(message, dtpIdentity.ID, dtpIdentity.Proof);
+        } catch {
+            return false;
+        }
     }
     
     static Hash160(data: any) : any {

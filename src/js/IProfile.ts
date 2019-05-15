@@ -19,5 +19,6 @@ export default interface IProfile {
     identiconData16: string;
     state: ProfileStateEnum; 
 
-    update(source: any) : boolean;
+    update(source: IProfile) : boolean;
+    updateProperty(name: string, value: any, defaultValue?: any) : void;
 }

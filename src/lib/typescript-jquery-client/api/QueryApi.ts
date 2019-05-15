@@ -95,7 +95,7 @@ export class QueryApi {
             requestOptions = (<any>Object).assign(requestOptions, this.defaultExtraJQueryAjaxSettings);
         }
 
-        let dfd = $.Deferred();
+        let dfd = $.Deferred<any>();
         $.ajax(requestOptions).then(
             (data: models.DtpGraphCoreModelQueryContext, textStatus: string, jqXHR: JQueryXHR) =>
                 dfd.resolve(jqXHR, data),

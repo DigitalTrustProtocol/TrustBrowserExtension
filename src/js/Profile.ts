@@ -47,12 +47,12 @@ class Profile implements IProfile {
         this.updateProperty("avatarImage", source.avatarImage);
         this.updateProperty("identiconData16", source.identiconData16);
         this.updateProperty("formAuthenticityToken", source.formAuthenticityToken);
-        this.updateProperty("owner", source.owner);
+        DTPIdentity.update(this, source.owner);
 
         return this.state == ProfileStateEnum.Changed;
     }
 
-    private updateProperty(name: string, value: any, defaultValue?: any) : void {
+    public updateProperty(name: string, value: any, defaultValue?: any) : void {
         if(value == undefined && defaultValue == undefined)
             return;
 

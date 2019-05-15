@@ -10,7 +10,7 @@ export class TrustGraphPopupClient {
 
 
     public showSubjectHandler = (params, sender) => { return; };
-    public requestSubjectHandler = (params, sender): JQueryPromise<IGraphData> => { return null; };
+    public requestSubjectHandler = (params, sender): Promise<IGraphData> => { return null; };
     public updateContentHandler = (params, sender) => { return; };
     
     constructor(messageHandler : MessageHandler) {
@@ -78,16 +78,13 @@ export class TrustGraphPopupClient {
     }
     
 
-    // public getProfile(tabId: number, handlerName: string, profile: IProfile, callback?: (err: any, value: IProfile) => void): Promise<IProfile> {
-    //     let param = {
-    //         action: "getProfile",
-    //         profile: profile
-    //     };
-    //     return this.messageHandler.sendTab(tabId, handlerName, param, result => {
-    //         if(callback)
-    //             callback(null, result);
-    //     });     
-    // }
+    public getProfileDTP(tabId: number, handlerName: string, profile: IProfile): Promise<IProfile> {
+        let param = {
+            action: "getProfileDTP",
+            profile: profile
+        };
+        return this.messageHandler.sendTab(tabId, handlerName, param);     
+    }
 
 
     // public requestContentTabId() : Promise<any> {

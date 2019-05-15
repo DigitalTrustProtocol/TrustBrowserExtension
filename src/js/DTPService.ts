@@ -15,8 +15,8 @@ class DTPService  {
         this.packageApi = new PackageApi(settings.infoserver);
         this.queryApi = new QueryApi(settings.infoserver);
     } 
-
-    Query (targets: Array<IProfile>, scope: any) :JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }> {
+//{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }
+    Query (targets: Array<IProfile>, scope: any) : JQueryPromise<any> {
         let query = this.BuildQuery(targets, scope);
         if(query == null) {
             let deferred = $.Deferred();
