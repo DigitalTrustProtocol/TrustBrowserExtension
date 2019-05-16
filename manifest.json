@@ -1,6 +1,6 @@
 {
   "name": "DTP Browser Extension V2",
-  "description": "Proof of concept of Digital Trust Protocol UI implementation - Currently only for Twitter. This extension is in alpha and do not provide any security features, no effort has been done to protect your password!",
+  "description": "Proof of concept of Digital Trust Protocol UI implementation - This extension is in alpha and do not provide any security features, no effort has been done to protect your password!",
   "version": "0.2.190108",
   "manifest_version": 2,
   "author": "DTP protocol developers",
@@ -37,8 +37,18 @@
         "main.js"
       ],
       "run_at": "document_end"
+    },
+    {
+      "matches": [ "*://*.bitcoinhackers.org/*" ],
+      "css": [
+        "css/content.css"
+      ],
+      "js": [
+        "js/common.js",
+        "mastodon.js"
+      ],
+      "run_at": "document_end"
     }
-
   ],
   "web_accessible_resources": [
     "/*",

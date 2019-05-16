@@ -16,6 +16,8 @@ class PackageBuilder {
    static IDENTITY_TYPE_NAME = "name";
    static IDENTITY_TYPE_DTPAddress = "address.dtp1";
    static IDENTITY_TYPE_NUMERIC = "numeric";
+   static IDENTITY_TYPE_ALPHANUMERIC = "alphanumeric";
+   static IDENTITY_TYPE_URI = "uri";
    
     constructor(settings) {
         this.settings = settings;

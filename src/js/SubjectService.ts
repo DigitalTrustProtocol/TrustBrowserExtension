@@ -85,7 +85,7 @@ class SubjectService  {
             this.settings.address, 
             this.SCRIPT,
             profile.userId, 
-            PackageBuilder.IDENTITY_TYPE_NUMERIC,
+            PackageBuilder.IDENTITY_TYPE_URI,
             PackageBuilder.BINARY_TRUST_DTP1,
             scope,
             value, 
