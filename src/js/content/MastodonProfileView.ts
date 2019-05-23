@@ -106,9 +106,9 @@ class MastodonProfileView implements IProfileView {
 
     private renderBar(controller: ProfileController, $element: JQuery, model: ProfileViewModel) : void {
         let $anchor = $element.find(this.Anchor);
-        let $bar = $anchor.parent().find('span.dtp-bar');
+        let $bar = $anchor.parent().find('div.dtp-bar');
         if (!$bar.length) {
-            $bar = $('<span class="dtp-bar">') as JQuery;
+            $bar = $('<div class="dtp-bar">') as JQuery;
             $anchor.after($bar);
         }
 
@@ -185,19 +185,25 @@ class MastodonProfileView implements IProfileView {
     }
 
     private showElement($element: JQuery) : void {
-        $element.show();
+        $element.find('.status__content').show();
+        $element.find('.status-card').show();
     }
 
     private hideElement($element: JQuery) : void {
-        $element.hide();
+        $element.find('.status__content').hide();
+        $element.find('.status-card').hide();
     }
 
     private mute(controller: ProfileController, $element: JQuery) : void {
         if (controller.profile["youMute"])
             return;
 
-        //$element.find("li.mute-user-item").trigger("click");
-        controller.profile["youFollow"] = true;
+        // $element.find("div.status__action-bar-dropdown button").trigger("click");
+        // setTimeout(() => {
+        //     $(($element.get(0) as HTMLElement).ownerDocument).find()
+        // }, 1);
+
+        controller.profile["youMute"] = true;
     }
 
     private block(controller: ProfileController, $element: JQuery) : void {
@@ -228,24 +234,9 @@ class MastodonProfileView implements IProfileView {
 
 
     private renderButton(button: ProfileViewButtonModel) {
-        let html = `<button aria-label="Boost" aria-pressed="false" title="${button.title}" class="trustIcon ${button.typeClass} ${button.iconClass}" tabindex="0" style="font-size: 18px; width: 23.1429px; height: 23.1429px; line-height: 18px;">
-                        <i role="img" class="fa fa-retweet fa-fw" aria-hidden="true"></i>
+        let html = `<button aria-label="Boost" aria-pressed="false" title="${button.title}" class="icon-button" tabindex="0" style="font-size: 18px; width: 23.1429px; height: 23.1429px; line-height: 24px;">
+                        <i role="img" class="trustIcon ${button.typeClass} ${button.iconClass}" aria-hidden="true"></i>
                     </button>`;
-
-        // let html = `<div class="ProfileTweet-action ProfileTweet-action dtp-buttonBar" style="min-width:40px">
-        //                 <button class="ProfileTweet-actionButton u-textUserColorHover js-actionButton" type="button">
-        //                     <div class="IconContainer js-tooltip" >
-        //                         <span class="Icon Icon--medium">
-        //                             <a class="trustIcon ${button.typeClass} js-tooltip ${button.iconClass}" data-orignal-title="${button.title}" title="${button.title}"></a>
-        //                         </span>
-        //                         <span class="u-hiddenVisually">${button.text}</span>
-        //                     </div>
-        //                     <span class="ProfileTweet-actionCount">
-        //                         <span class="ProfileTweet-actionCountForPresentation" aria-hidden="true">${button.countText}</span>
-        //                     </span>
-        //                 </button>
-        //             </div>`;
-
         return html;
     
     }
@@ -279,34 +270,5 @@ class MastodonProfileView implements IProfileView {
 
         return $icon;
     }
-
-    // createFollowButton($element: JQuery, profile: IProfile): JQuery {
-    //     let $button = $element.find('button.dtp-follow > span:first');
-    //     if ($button.length == 0) {
-
-    //         let userId = $element.attr("data-user-id"); 
-    //         let name = $element.attr("data-name");
-    //         let html = `<div class="user-actions not-following not-muting" data-screen-name="${name}" data-user-id="${userId}">
-    //                     <span class="user-actions-follow-button js-follow-btn follow-button">
-    //                     <button type="button" class="
-    //                     EdgeButton
-    //                     EdgeButton--secondary
-    //                     EdgeButton--small 
-    //                     dtp-follow
-    //                     button-text
-    //                     follow-text">
-    //                         <span aria-hidden="true">Follow</span>
-    //                     </button>
-    //                 </span>
-    //                 </div>`;
-    //         //            <span class="u-hiddenVisually">Follow <span class="username u-dir u-textTruncate" dir="ltr">@<b>${this.profile.screen_name}</b></span></span>
-
-
-    //         let $card = $(html).hide();
-    //         $button = $card.find('button > span:first');
-    //         $element.append($card);
-    //     }
-    //     return $button;
-    // }
 }
 export = MastodonProfileView

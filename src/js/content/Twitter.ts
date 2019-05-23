@@ -130,7 +130,7 @@ class Twitter {
     }
 
 
-    getProfileDTP(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
+    getProfileDTP(profile: IProfile, sender?: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
         let deferred = $.Deferred<DTPIdentity>();
         let url = '/search?f=tweets&q=%23DTP%20ID%20Proof%20UserID:' + profile.userId
         // /search?l=&q=%23DTP%20ID%20Proof%20UserID%3A22551796%20OR%20UserID%3A1002660175277363200&src=typd
@@ -151,20 +151,20 @@ class Twitter {
         return deferred.promise();
     }
 
-    getProfilesDTP(profiles : Array<IProfile>) : JQueryPromise<string>
-    {
-        let deferred = $.Deferred<string>();
+    // getProfileDTP(profils : IProfile) : JQueryPromise<string>
+    // {
+    //     let deferred = $.Deferred<string>();
 
-        let userIds = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
-        let froms = profiles.map((profile)=>{ return profile.screen_name;});
-        let path = '/search?f=tweets&q=ID%20Proof%20'+ userIds.join('%20OR%20') +'%20%23DTP%20' + froms.join('%20OR%20') +'&src=typd';
+    //     let userIds = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
+    //     let froms = profiles.map((profile)=>{ return profile.screen_name;});
+    //     let path = '/search?f=tweets&q=ID%20Proof%20'+ userIds.join('%20OR%20') +'%20%23DTP%20' + froms.join('%20OR%20') +'&src=typd';
 
-        this.getData(path, 'html').then((html: string) => {
-            deferred.resolve(html);
-        }).fail((error) => deferred.fail(error));
+    //     this.getData(path, 'html').then((html: string) => {
+    //         deferred.resolve(html);
+    //     }).fail((error) => deferred.fail(error));
 
-        return deferred.promise();
-    }
+    //     return deferred.promise();
+    // }
 
     updateProfilesFromHtml(html: string, profiles : Array<IProfile>) : number {
         let $document = $(html);
@@ -323,7 +323,7 @@ class Twitter {
             let profileView = new TwitterProfileView(this.settings);
 
             controller = new ProfileController(profile, profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, this.trustGraphPopupClient, "twitter.com");
-            controller.updateProfilesCallBack = (profiles) => { return this.updateProfiles(profiles) };
+            controller.updateProfileCallBack = (profile) => { return this.updateProfile(profile) };
             controller.trustSubmittedCallBack = (result) => { this.trustSubmitted(result); };
             this.controllers[controller.profile.userId] = controller;
         } 
@@ -366,10 +366,10 @@ class Twitter {
         return tweets;
     }
 
-    updateProfiles(profiles: Array<IProfile>): JQueryPromise<Array<IProfile>> {
-        return this.getProfilesDTP(profiles).then((html: string) => {
-            this.updateProfilesFromHtml(html, profiles);
-            return profiles;
+    updateProfile(profile: IProfile): JQueryPromise<IProfile> {
+        return this.getProfileDTP(profile).then((identity: any) => {
+            profile.owner = identity;
+            return profile;
         });
     }
 
@@ -564,8 +564,8 @@ class Twitter {
             Profile.CurrentUser.update(user);
             Profile.CurrentUser.avatarImage = $('img.DashboardProfileCard-avatarImage').attr('src');
 
-            if (Profile.CurrentUser.owner == null)
-                this.updateProfiles([Profile.CurrentUser]);
+            // if (Profile.CurrentUser.owner == null)
+            //     this.updateProfile(Profile.CurrentUser);
 
             Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
             

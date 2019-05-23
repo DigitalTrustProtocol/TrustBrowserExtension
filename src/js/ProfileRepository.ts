@@ -9,16 +9,19 @@ class ProfileRepository {
     public profiles: Array<IProfile> = [];
     public index: Array<IProfile> = [];
     storage: IStorage;
+
+    public static scope : string = "DTP";
+
     constructor(storage: IStorage) {
         this.storage = storage;
     }
 
     getCacheKey(id: string): string {
-        return 'Twitter' + id;
+        return ProfileRepository.scope + id;
     }
 
     getIndexCacheKey(id: string): string {
-        return 'TwitterIndex' + id;
+        return ProfileRepository.scope + 'Index' + id;
     }
 
     getProfileDirect(id: string): JQueryPromise<IProfile> {

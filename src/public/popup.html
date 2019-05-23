@@ -19,10 +19,11 @@
     <nav class="navbar navbar-default" role="navigation">
         <div class="collapse navbar-collapse navbar-ex1-collapse">
             <ul class="nav navbar-nav" data-tabs="tabs">
-                <li ng-class="{ active: isSet(1) }"><a href="#usercontainer" ng-click="setTab(1)">Trust</a></li>
+                <li ng-class="{ active: isSet(1) }"><a href="#usercontainer" ng-click="setTab(1)">Account</a></li>
                 <li ng-class="{ active: isSet(2) }"><a href="#settingscontainer" ng-click="setTab(2)">Settings</a></li>
                 <li ng-class="{ active: isSet(3) }"><a href="#servercontainer" ng-click="setTab(3)">Server</a></li>
-                <li ng-class="{ active: isSet(4) }"><a href="#aboutcontainer" ng-click="setTab(4)">About</a></li>
+                <li ng-class="{ active: isSet(4) }"><a href="#profilecontainer" ng-click="setTab(5)">Profile</a></li>
+                <li ng-class="{ active: isSet(5) }"><a href="#aboutcontainer" ng-click="setTab(4)">About</a></li>
             </ul>
         </div>
     </nav>
@@ -96,7 +97,18 @@
                         <input type="url" id="trustserver" class="form-control" placeholder="Trust server" ng-model="ct.settings.infoserver" ng-change="ct.modelChange()" required autofocus>
                     </div>
                 </div>
-                <div id="aboutcontainer" class="tab-pane" ng-class="{ active: isSet(4) }">
+
+                <div id="profilecontainer" class="tab-pane" ng-class="{ active: isSet(4) }">
+                    <h3 class="form-signin-heading">Profile</h3>
+                    <p>Add the following to your platforms profile, enabling the DTP connect your platform ID with the DTP identity.</p>
+                    <div class="input-group">
+                        <label for="dtpIdentity">DTP Identity</label>
+                        <textarea id="dtpIdentity" class="form-control" ng-model="ct.settings.dtpIdentity" >
+                        </textarea>
+                    </div>
+                </div>
+
+                <div id="aboutcontainer" class="tab-pane" ng-class="{ active: isSet(5) }">
                     <h3 class="form-signin-heading">About</h3>
                     <h4>Version 0.2.20190110</h4>
                     <div>Alpha release.</div>

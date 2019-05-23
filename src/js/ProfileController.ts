@@ -39,7 +39,7 @@ class ProfileController {
     scope: string;
     trustGraphPopupClient: TrustGraphPopupClient;
 
-    public updateProfilesCallBack: any = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
+    public updateProfileCallBack: any = (profiles) => { return $.Deferred<Array<IProfile>>().resolve(null).promise(); };
     public onTrustGraphClick: (eventObject: JQueryEventObject) => boolean;
 
 
@@ -64,10 +64,10 @@ class ProfileController {
         if (this.profile.owner) {
             deferred.resolve(this.profile);
         } else {
-            if(!this.updateProfilesCallBack)
+            if(!this.updateProfileCallBack)
                 deferred.resolve(this.profile);
             
-            this.updateProfilesCallBack([this.profile]).then((profiles) => {
+            this.updateProfileCallBack(this.profile).then((profiles) => {
                 deferred.resolve(this.profile);
             });
         }

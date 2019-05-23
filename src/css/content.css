@@ -33,8 +33,9 @@
     width: 13px;
     margin-top: 0px;
     cursor: pointer;
-    background-size: 13px;
+    background-size: 15px;
     display: inline-block;
+    background-repeat: no-repeat;
 }
 
 .dtp-Identicon {

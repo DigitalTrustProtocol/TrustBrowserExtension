@@ -52,7 +52,7 @@ class Mastodon {
 
     public static handlerName: string = "MastodonService";
 
-    public BaseUrl = 'https://bitcoinhackers.org';
+    public static scope = 'mastodon.social';
 
     private messageHandler: MessageHandler;
     private methods: CallbacksMap = {};
@@ -76,7 +76,7 @@ class Mastodon {
         this.identityPopup = new IdentityPopupClient(messageHandler);
         this.trustStrategy = trustStrategy;
 
-        this.methods["getProfile"] = (params, sender) => { return this.getProfile(params, sender); }
+        //this.methods["getProfile"] = (params, sender) => { return this.getProfile(params, sender); }
         this.methods["getProfileDTP"] = (params, sender) => { return this.getProfileDTP(params, sender); }
         this.messageHandler.receive(Mastodon.handlerName, (params: any, sender: Runtime.MessageSender) => {
             let method = this.methods[params.action];
@@ -117,166 +117,115 @@ class Mastodon {
     }
 
 
-    public getProfile(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
-        let deferred = $.Deferred<DTPIdentity>();
-        let url = '/search?f=tweets&q=UserID:' + profile.userId;
-        
-        if (profile.screen_name) {
-            url += '%20from%3A' + profile.screen_name;
-        }
-        url += '&src=typd';
+    // public getProfile(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
 
-        this.getData(url, 'html').then((html: string) => {
+    //     return this.getData(url).then((html: string) => {
 
-            let result = this.extractDTP(html);
+    //         let result = this.extractDTP(html);
 
-            deferred.resolve(result);
-        }).fail((error) => deferred.fail(error));
-
-        return deferred.promise();
-    }
+    //         deferred.resolve(result);
+    //     });
+    // }
 
 
-    getProfileDTP(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
-        let deferred = $.Deferred<DTPIdentity>();
-        let url = '/search?f=tweets&q=%23DTP%20ID%20Proof%20UserID:' + profile.userId
-        // /search?l=&q=%23DTP%20ID%20Proof%20UserID%3A22551796%20OR%20UserID%3A1002660175277363200&src=typd
-        if (profile.screen_name) {
-            url += '%20from%3A' + profile.screen_name;
-        }
-        url += '&src=typd';
+    getProfileDTP(profile: IProfile, sender?: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
 
-        this.getData(url, 'html').then((html: string) => {
+        // https://bitcoinhackers.org/api/v1/accounts/37992
+        // https://bitcoinhackers.org/users/sophia
 
-            //let $body = $(html);
-            //let tweets = $body.find(null)
-            let result = this.extractDTP(html);
+        //let url = '/users/'+profile.screen_name.replace('@','');
+        let url = profile.userId.replace('@','users/');
 
-            deferred.resolve(result);
-        }).fail((error) => deferred.fail(error));
+        return this.getData(url).then((data: any) => {
 
-        return deferred.promise();
-    }
+            let result = this.extractDTP(data);
 
-    getProfilesDTP(profiles : Array<IProfile>) : JQueryPromise<string>
-    {
-        let deferred = $.Deferred<string>();
-
-        let userIds = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
-        let froms = profiles.map((profile)=>{ return profile.screen_name;});
-        let path = '/search?f=tweets&q=ID%20Proof%20'+ userIds.join('%20OR%20') +'%20%23DTP%20' + froms.join('%20OR%20') +'&src=typd';
-
-        this.getData(path, 'html').then((html: string) => {
-            deferred.resolve(html);
-        }).fail((error) => deferred.fail(error));
-
-        return deferred.promise();
-    }
-
-    updateProfilesFromHtml(html: string, profiles : Array<IProfile>) : number {
-        let $document = $(html);
-        let count = 0;
-
-        profiles.forEach((profile) => {
-            let $tweets = $document.find('div.tweet[data-user-id="'+ profile.userId +'"]')
-            let done = false;
-
-            $tweets.each((index, element) => {
-                let $tweet = $(element);
-                const owner = this.getOwner($tweet);
-                if(owner == null)
-                    return;
-
-                if(owner.PlatformID != profile.userId) {
-                    console.log("Invalid userID in tweet!");
-                    return;
-                }
-
-                DTPIdentity.update(profile, owner);
-                const avatarImage = $tweet.find('img.avatar').attr('src');
-                profile.updateProperty("avatarImage", avatarImage);
-                if(profile.state == ProfileStateEnum.Changed)
-                    this.profileRepository.setProfile(profile);
-                count ++;
-            });
+            return result;
         });
-
-        return count;
     }
 
-    findSubstring(text: string, lower: string, startText: string, endText: string) {
-        let start = lower.indexOf(startText);
-        if(start < 0)
+    // getProfilesDTP(profiles : Array<IProfile>) : JQueryPromise<string>
+    // {
+    //     let deferred = $.Deferred<string>();
+
+
+
+    //     let userIds = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
+    //     let froms = profiles.map((profile)=>{ return profile.screen_name;});
+    //     let path = '/search?f=tweets&q=ID%20Proof%20'+ userIds.join('%20OR%20') +'%20%23DTP%20' + froms.join('%20OR%20') +'&src=typd';
+
+    //     this.getData(path, 'html').then((html: string) => {
+    //         deferred.resolve(html);
+    //     }).fail((error) => deferred.fail(error));
+
+    //     return deferred.promise();
+    // }
+
+    // updateProfilesFromHtml(html: string, profiles : Array<IProfile>) : number {
+    //     let $document = $(html);
+    //     let count = 0;
+
+    //     profiles.forEach((profile) => {
+    //         let $tweets = $document.find('div.tweet[data-user-id="'+ profile.userId +'"]')
+    //         let done = false;
+
+    //         $tweets.each((index, element) => {
+    //             let $tweet = $(element);
+    //             const owner = this.getOwner($tweet);
+    //             if(owner == null)
+    //                 return;
+
+    //             if(owner.PlatformID != profile.userId) {
+    //                 console.log("Invalid userID in tweet!");
+    //                 return;
+    //             }
+
+    //             DTPIdentity.update(profile, owner);
+    //             const avatarImage = $tweet.find('img.avatar').attr('src');
+    //             profile.updateProperty("avatarImage", avatarImage);
+    //             if(profile.state == ProfileStateEnum.Changed)
+    //                 this.profileRepository.setProfile(profile);
+    //             count ++;
+    //         });
+    //     });
+
+    //     return count;
+    // }
+
+    extractDTP(data: any): DTPIdentity {
+
+        if(!data)
             return null;
-        start += startText.length; // Only return value!
-        
-        let end = lower.indexOf(endText, start);
-        if(end < 0) {
-            end = lower.indexOf('\n', start);
-            if(end < 0)
-                end = lower.length;
+
+        let dtp = null;
+        if(data.attachment) {
+            for(let key in data.attachment) {
+                let item = data.attachment[key];
+                if("dtp" == (item["name"]+'').toLocaleLowerCase()) {
+                    dtp = item["value"];
+                }
+            }
         }
-   
-        return text.substring(start, end);
-    }
-
-    extractDTP(html: any): DTPIdentity {
-        let content = html.findSubstring('<div class="js-tweet-text-container">', '</div>');
-        if (content == null) {
-            return null;
-        }
-
-        let text = $(content).text();
-        text = text.replace(/(?:\r\n|\r|\n)/g, ' ').trim();
-
-        if (text.length === 0) {
-            return null;
-        }
-
-        return this.extractOwner(text);
-    }
-
-    extractOwner(text: any): DTPIdentity {
-        const lower = text.toLocaleLowerCase();
-        if(lower.indexOf('#dtp') < 0) return null; // There has to be a #DTP tag
-        const id = this.findSubstring(text, lower, 'id:', ' ');
-        if(!id) return null;
-        const proof = this.findSubstring(text, lower, 'proof:', ' ');
-        if(!proof) return null;
-        const userId = this.findSubstring(text, lower, 'userid:', ' ');
-        if(!userId) return null;
-
-        const owner = new DTPIdentity({ ID: id, Proof: proof, PlatformID: userId });
-
-        if(!Crypto.Verify(owner, userId))
+        if(!dtp) 
             return null;
 
-        return owner;
+        return DTPIdentity.parse(dtp);
     }
 
-    getOwner($element: JQuery): DTPIdentity {
-        const $container = $element.find('.js-tweet-text-container');
-        const text = $container.text();
-        return this.extractOwner(text);
-    }
-
-
-
-    getData(path: string, dataType: any): JQueryPromise<any> {
+    getData(path: string): JQueryPromise<any> {
         let deferred = $.Deferred<any>();
 
-        let url = this.BaseUrl + path;
-        dataType = dataType || "json";
+        //let url = this.BaseUrl + path;
+        let url = path;
 
         $.ajax({
             type: "GET",
             url: url,
             headers: {
-                'accept': 'application/json, text/javascript, */*; q=0.01',
-                'X-Requested-With': 'XMLHttpRequest',
-                'x-twitter-active-user': 'yes'
+                'accept': 'application/json',
+                'contenttype': 'application/json; charset=utf-8',
+                'accept-language' : 'en-US,en;q=0.8'
             },
-            dataType: dataType,
         }).done((data, textStatus, jqXHR) => {
             deferred.resolve(data);
         }).fail((jqXHR, textStatus, errorThrown) => {
@@ -331,8 +280,8 @@ class Mastodon {
         if(!controller) {
             let profileView = new MastodonProfileView(this.settings);
 
-            controller = new ProfileController(profile, profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, this.trustGraphPopupClient, "twitter.com");
-            controller.updateProfilesCallBack = (profiles) => { return this.updateProfiles(profiles) };
+            controller = new ProfileController(profile, profileView, this.profileRepository, this.dtpService, this.subjectService, this.packageBuilder, this.trustGraphPopupClient, Mastodon.scope);
+            controller.updateProfileCallBack = (profile) => { return this.updateProfile(profile) };
             controller.trustSubmittedCallBack = (result) => { this.trustSubmitted(result); };
             this.controllers[controller.profile.userId] = controller;
         } 
@@ -347,7 +296,8 @@ class Mastodon {
     }
 
     createProfile(element: HTMLElement) : IProfile {
-        let status = element.querySelector('a.status__display-name:not(muted)') as HTMLAnchorElement;
+        let status = element.querySelector("div.status-public a.status__display-name:not(muted)") as HTMLAnchorElement;
+                                
         if(!status)
             return null;
 
@@ -381,10 +331,10 @@ class Mastodon {
         return doc.querySelectorAll("article");
     }
 
-    updateProfiles(profiles: Array<IProfile>): JQueryPromise<Array<IProfile>> {
-        return this.getProfilesDTP(profiles).then((html: string) => {
-            this.updateProfilesFromHtml(html, profiles);
-            return profiles;
+    updateProfile(profile: IProfile): JQueryPromise<IProfile> {
+        return this.getProfileDTP(profile).then((identity: any) => {
+            profile.owner = identity;
+            return profile;
         });
     }
 
@@ -401,7 +351,7 @@ class Mastodon {
             profiles.push(controller.profile);
         }
 
-        return this.dtpService.Query(profiles, window.location.hostname).done((response, result) => {
+        return this.dtpService.Query(profiles, Mastodon.scope).done((response, result) => {
             DTP['trace'](JSON.stringify(result, null, 2));
 
             // Process the result
@@ -418,7 +368,7 @@ class Mastodon {
         });
     }
 
-    private loadControllers(elements: Array<HTMLElement>) : JQueryPromise<ProfileController[]> {
+    private loadControllers(elements: any) : JQueryPromise<ProfileController[]> {
         let controllers = {};
 
         let promises : Array<JQueryPromise<ProfileController>> = [];
@@ -426,7 +376,8 @@ class Mastodon {
             let $element = $(element);
             let controller = $element.data("dtp-controller");
             if(controller)
-                controllers[controller.profile.userId] = controller;
+                return; // Ignore existing controllers
+                //controllers[controller.profile.userId] = controller;
             else {
                 const promise = this.processElement(element);
                 if(promise)
@@ -452,21 +403,21 @@ class Mastodon {
 
     private elements = [];
     
-    processElements() : void {
+    processElements(doc: Document) : void {
         if(this.wait)
             return;
 
         this.wait = true; // Now wait for timeout to complete
 
         setTimeout(() => {
+            // Get all elements all the time, things are slipping though
 
-            //let tweets = this.getTweets(); // Get all tweets!
-            //let elements = this.getElements(doc);
             console.log("Page Elements loaded: " + this.elements.length);
             const temp = this.elements;
+            const all = this.getElements(doc); // Load everything every time
             this.elements = [];
 
-            this.loadControllers(temp).then(controllers => {
+            this.loadControllers(all).then(controllers => {
                 let query = [];
                 for(let c of controllers)
                     if(!c.queried)
@@ -504,7 +455,7 @@ class Mastodon {
 
             this.elements.push(e.target);
 
-            this.processElements();
+            this.processElements(doc);
         });
     }
 
@@ -531,7 +482,7 @@ class Mastodon {
         //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
 
         let dialogData = {
-            scope: "twitter.com",
+            scope: Mastodon.scope,
             currentUser: Profile.CurrentUser,
             subjectProfileId: profile.userId,
             profiles: profiles,
@@ -540,32 +491,6 @@ class Mastodon {
 
         return dialogData;
 
-
-        // return this.profileRepository.getProfile(params.profileId).then(profile => {
-
-        //     // If profile is null?
-
-        //     let controller = this.controllers[profile.userId] as ProfileController;
-
-        //     let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
-        //     let claimCollections = this.trustStrategy.ProcessClaims(claims);
-
-        //     let profiles: object = {};
-        //     let trustResults = await this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
-
-        //     //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
-        //     //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
-
-        //     let dialogData = {
-        //         scope: "twitter.com",
-        //         currentUser: Profile.CurrentUser,
-        //         subjectProfileId: profile.userId,
-        //         profiles: profiles,
-        //         trustResults: trustResults
-        //     } as IGraphData;
-
-        //     return dialogData;
-        // });
     }
     
     loadCurrentUserProfile(context: any): JQueryPromise<void> {
@@ -584,8 +509,10 @@ class Mastodon {
             Profile.CurrentUser = profile;
             Profile.CurrentUser.update(user);
 
-            if (Profile.CurrentUser.owner == null)
-                this.updateProfiles([Profile.CurrentUser]);
+            // if (Profile.CurrentUser.owner == null)
+            //     this.getProfileDTP(Profile.CurrentUser).then(identity => {
+            //         Profile.CurrentUser.owner = identity;
+            //     })
 
             Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, user.userId).toString('base64') });
             
@@ -651,15 +578,17 @@ class Mastodon {
 
     ready(doc: Document): void {
 
-         this.loadPage(doc).then((controllers) => {
+         this.loadPage(doc).then(() => {
         //     this.queryDTP(controllers).done((queryContext) => {
         //         console.log("Page load completed");
         //     });
         //     this.attachNodeInserted(doc);
 
         //     // Bind events
-        //     this.trustGraphPopupClient.updateContentHandler = (params, sender) => { this.updateContentHandler(params, sender); };
-        //     this.trustGraphPopupClient.requestSubjectHandler = (params, sender) => { return this.requestSubjectHandler(params, sender); };
+            this.trustGraphPopupClient.updateContentHandler = (params, sender) => { this.updateContentHandler(params, sender); };
+            this.trustGraphPopupClient.requestSubjectHandler = (params, sender) => { return this.requestSubjectHandler(params, sender); };
+
+            this.processElements(doc);
         });
     }
     
@@ -681,8 +610,8 @@ $(document).ready( () =>{
             let dtpService = new DTPService(settings);
             let trustStrategy = new TrustStrategy(settings, profileRepository);
 
-            let mastodon = new Mastodon(settings, packageBuilder, subjectService, dtpService, profileRepository, trustGraphPopupClient, messageHandler, trustStrategy);
-            mastodon.ready(document);
+            DTP["mastodon"] = new Mastodon(settings, packageBuilder, subjectService, dtpService, profileRepository, trustGraphPopupClient, messageHandler, trustStrategy);
+            DTP["mastodon"].ready(document);
 
         });
     });

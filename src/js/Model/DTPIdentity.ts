@@ -1,6 +1,8 @@
 import Decorators = require("../Decorators");
 import IProfile from "../IProfile";
 import { ProfileStateEnum } from "./ProfileStateEnum";
+import Crypto = require('../Crypto');
+
 
 // function typeCheck(typeName: string) {
 //     return function (target: any, propertyKey: string) {
@@ -60,6 +62,50 @@ class DTPIdentity {
             owner.state = ProfileStateEnum.Changed;
         }
     }
+
+    public toString() :string {
+        let result = `id:${this.ID} proof:${this.Proof}`;
+        
+        if(this.PlatformID && this.PlatformID.length > 0)
+            result += ` userId:${this.PlatformID}`;
+
+        return result;
+    }
+
+    public static parse(text : string) : DTPIdentity {
+        text = text.replace(/(?:\r\n|\r|\n)/g, ' ').trim();
+        const lower = text.toLocaleLowerCase();
+
+        const id = DTPIdentity.findSubstring(text, lower, 'id:', ' ');
+        if(!id) return null;
+        const proof = DTPIdentity.findSubstring(text, lower, 'proof:', ' ');
+        if(!proof) return null;
+        const userId = DTPIdentity.findSubstring(text, lower, 'userid:', ' ');
+        const owner = new DTPIdentity({ ID: id, Proof: proof, PlatformID: userId });
+
+        if(!Crypto.Verify(owner, userId))
+            return null;
+
+        return owner;
+    }
+
+    private static findSubstring(text: string, lower: string, startText: string, endText: string) {
+        let start = lower.indexOf(startText);
+        if(start < 0)
+            return null;
+        start += startText.length; // Only return value!
+        
+        let end = lower.indexOf(endText, start);
+        if(end < 0) {
+            end = lower.indexOf('\n', start);
+            if(end < 0)
+                end = lower.length;
+        }
+   
+        return text.substring(start, end);
+    }
+
+
 
 }
 //Decorators.typeCheck(DTPIdentity.prototype, "PlatformID", "string");

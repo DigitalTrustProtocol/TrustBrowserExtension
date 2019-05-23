@@ -7,6 +7,7 @@ module.exports = {
   entry: {
     main: './src/js/content/main.ts',
     mastodon: './src/js/content/mastodon.ts',
+    mastodonProfile: './src/js/content/mastodonProfile.ts',
     popup: './src/js/content/popup.ts',
     trustgraph: ['./src/js/content/TrustGraph.ts','./src/lib/Notify/notify.min.js', './src/lib/bootstrap/dist/js/bootstrap.min.js'],
     twitteridentity: ['./src/js/content/IdentityPopupController.ts'],

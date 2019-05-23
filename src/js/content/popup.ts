@@ -19,6 +19,7 @@ import SettingsClient = require('../Shared/SettingsClient');
 import { MessageHandler } from '../Shared/MessageHandler';
 import Settings = require('../Shared/Settings');
 import * as $ from 'jquery';
+import DTPIdentity = require('../Model/DTPIdentity.js');
 
 
 class ExtensionpopupController {
@@ -28,6 +29,7 @@ class ExtensionpopupController {
     settings: ISettings;
     showIcon: boolean = true;
     contentTabId: any;
+    dtpIdentity: string;
 
     constructor(private $scope: ng.IScope) {
         //this.onStorageChanged();
@@ -73,7 +75,11 @@ class ExtensionpopupController {
                 this.settings.identicon = "data:image/svg+xml;base64," + identicon.toString();
                 this.showIcon = true;
             }
+
+            
+            //let identity = new DTPIdentity({id: this.settings.address, proof: this.settings.})
         }
+        
 
         if (this.settings.rememberme || state === 'rememberme') {
             this.settingsClient.saveSettings(this.settings);

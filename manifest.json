@@ -39,7 +39,19 @@
       "run_at": "document_end"
     },
     {
-      "matches": [ "*://*.bitcoinhackers.org/*" ],
+      "matches": [ "*://*/settings/profile" ],
+      "css": [
+        "css/content.css"
+      ],
+      "js": [
+        "js/common.js",
+        "mastodonProfile.js"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [ "*://*/web/getting-started"],
+      "exclude_globs": ["*settings/profile*"],
       "css": [
         "css/content.css"
       ],
