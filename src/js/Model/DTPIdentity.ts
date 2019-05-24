@@ -25,12 +25,32 @@ class DTPIdentity {
     public state: ProfileStateEnum = ProfileStateEnum.None; 
 
     constructor(source: any) {
+        let self= this;
+        Object.defineProperty(this, 'state', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'PlatformID', { enumerable: true,
+            get() : string {
+                return this.value;
+            },
+            set(val: string) : void {
+                if(val) {
+                    val = DTPIdentity.removeProtocol(val);
+                }
+                this.value = val;
+            }
+        }); // No serialize to json!
+
         this.ID = source.ID ;
         this.Proof = source.Proof;
 
         this.PlatformID = source.PlatformID;
 
-        Object.defineProperty(this, 'state', { enumerable: false, writable: true, value: null }); // No serialize to json!
+    }
+
+    public static removeProtocol(text : string) : string {
+        return text.replace(/(^\w+:|^)\/\//, '');
+    }
+    public static prefixProtocol(url: string, protocol: string = "https://") : string {
+        return (url.indexOf(protocol) == 0) ? url: protocol+url; // userId is missing https://
     }
 
     public static update(profile: IProfile, source: DTPIdentity) : boolean {
@@ -63,6 +83,14 @@ class DTPIdentity {
         }
     }
 
+    public sign(keyPair: any) : void {
+        this.Proof = Crypto.Sign(keyPair, this.PlatformID).toString('base64');
+    }
+
+    public verify() : boolean {
+        return Crypto.Verify(this.PlatformID, this.ID, this.Proof);
+    }
+
     public toString() :string {
         let result = `id:${this.ID} proof:${this.Proof}`;
         
@@ -82,8 +110,7 @@ class DTPIdentity {
         if(!proof) return null;
         const userId = DTPIdentity.findSubstring(text, lower, 'userid:', ' ');
         const owner = new DTPIdentity({ ID: id, Proof: proof, PlatformID: userId });
-
-        if(!Crypto.Verify(owner, userId))
+        if(!owner.verify())
             return null;
 
         return owner;

@@ -116,81 +116,19 @@ class Mastodon {
         return trustResults;
     }
 
-
-    // public getProfile(profile: IProfile, sender: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
-
-    //     return this.getData(url).then((html: string) => {
-
-    //         let result = this.extractDTP(html);
-
-    //         deferred.resolve(result);
-    //     });
-    // }
-
-
     getProfileDTP(profile: IProfile, sender?: Runtime.MessageSender): JQueryPromise<DTPIdentity> {
-
-        // https://bitcoinhackers.org/api/v1/accounts/37992
-        // https://bitcoinhackers.org/users/sophia
-
-        //let url = '/users/'+profile.screen_name.replace('@','');
         let url = profile.userId.replace('@','users/');
+        url = (url.indexOf("http") == 0) ? url: "https://"+url; // userId is missing https://
 
         return this.getData(url).then((data: any) => {
 
-            let result = this.extractDTP(data);
+            let owner = this.extractDTP(data);
+            if(!owner || profile.userId != owner.PlatformID)  // Check if it the same user id, otherwise it may just be a copied data from other sources.
+                return null;
 
-            return result;
+            return owner;
         });
     }
-
-    // getProfilesDTP(profiles : Array<IProfile>) : JQueryPromise<string>
-    // {
-    //     let deferred = $.Deferred<string>();
-
-
-
-    //     let userIds = profiles.map((profile)=>{ return 'UserID%3A'+profile.userId;});
-    //     let froms = profiles.map((profile)=>{ return profile.screen_name;});
-    //     let path = '/search?f=tweets&q=ID%20Proof%20'+ userIds.join('%20OR%20') +'%20%23DTP%20' + froms.join('%20OR%20') +'&src=typd';
-
-    //     this.getData(path, 'html').then((html: string) => {
-    //         deferred.resolve(html);
-    //     }).fail((error) => deferred.fail(error));
-
-    //     return deferred.promise();
-    // }
-
-    // updateProfilesFromHtml(html: string, profiles : Array<IProfile>) : number {
-    //     let $document = $(html);
-    //     let count = 0;
-
-    //     profiles.forEach((profile) => {
-    //         let $tweets = $document.find('div.tweet[data-user-id="'+ profile.userId +'"]')
-    //         let done = false;
-
-    //         $tweets.each((index, element) => {
-    //             let $tweet = $(element);
-    //             const owner = this.getOwner($tweet);
-    //             if(owner == null)
-    //                 return;
-
-    //             if(owner.PlatformID != profile.userId) {
-    //                 console.log("Invalid userID in tweet!");
-    //                 return;
-    //             }
-
-    //             DTPIdentity.update(profile, owner);
-    //             const avatarImage = $tweet.find('img.avatar').attr('src');
-    //             profile.updateProperty("avatarImage", avatarImage);
-    //             if(profile.state == ProfileStateEnum.Changed)
-    //                 this.profileRepository.setProfile(profile);
-    //             count ++;
-    //         });
-    //     });
-
-    //     return count;
-    // }
 
     extractDTP(data: any): DTPIdentity {
 
@@ -302,8 +240,8 @@ class Mastodon {
             return null;
 
         let profile = new Profile({});
-        profile.userId = status.href;
-        profile.screen_name = status.href.substr(status.href.lastIndexOf("/")+1);
+        profile.userId = DTPIdentity.removeProtocol(status.href); // Remove https
+        profile.screen_name = profile.userId.substr(profile.userId.lastIndexOf("/")+1);
         const aliasElement = status.querySelector('.display-name__html');
         profile.alias = (aliasElement) ? aliasElement.innerHTML : profile.screen_name;
         const divImage = status.querySelector('.account__avatar-overlay-base') as HTMLElement;

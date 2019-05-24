@@ -241,7 +241,7 @@ class Twitter {
 
         const owner = new DTPIdentity({ ID: id, Proof: proof, PlatformID: userId });
 
-        if(!Crypto.Verify(owner, userId))
+        if(!owner.verify())
             return null;
 
         return owner;
@@ -571,7 +571,7 @@ class Twitter {
             
             this.profileRepository.setProfile(Profile.CurrentUser); // Save the profile, locally and in DB
 
-            console.log(Crypto.Verify(Profile.CurrentUser.owner, user.userId));
+            console.log(Profile.CurrentUser.owner.verify());
         }).promise();
     }
 

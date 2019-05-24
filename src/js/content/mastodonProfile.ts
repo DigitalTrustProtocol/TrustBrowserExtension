@@ -96,17 +96,13 @@ class MastodonProfile {
     loadCurrentUserProfile(userId: string): JQueryPromise<IProfile> {
         return this.profileRepository.ensureProfile(userId).then(profile => {
             Profile.CurrentUser = profile;
-            //Profile.CurrentUser.update(user);
-            //Profile.CurrentUser.avatarImage = $('img.DashboardProfileCard-avatarImage').attr('src');
 
-            // if (Profile.CurrentUser.owner == null)
-            //     this.updateProfile(Profile.CurrentUser);
+            //userId = userId.replace(/(^\w+:|^)\/\//, ''); // Remove https://, but only on this page
 
-            Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, Proof: Crypto.Sign(this.settings.keyPair, userId).toString('base64') });
+            Profile.CurrentUser.owner = new DTPIdentity({ ID: this.settings.address, PlatformID: userId  });
+            Profile.CurrentUser.owner.sign(this.settings.keyPair);
             
-            this.profileRepository.setProfile(Profile.CurrentUser); // Save the profile, locally and in DB
-
-            console.log(Crypto.Verify(Profile.CurrentUser.owner, userId));
+            console.log(Profile.CurrentUser.owner.verify());
             return Profile.CurrentUser;
         }).promise();
     }

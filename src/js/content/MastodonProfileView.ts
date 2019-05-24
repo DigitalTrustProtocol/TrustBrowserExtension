@@ -187,11 +187,14 @@ class MastodonProfileView implements IProfileView {
     private showElement($element: JQuery) : void {
         $element.find('.status__content').show();
         $element.find('.status-card').show();
+        $element.find('.media-gallery').show();
     }
 
     private hideElement($element: JQuery) : void {
         $element.find('.status__content').hide();
         $element.find('.status-card').hide();
+        $element.find('.media-gallery').hide();
+        
     }
 
     private mute(controller: ProfileController, $element: JQuery) : void {

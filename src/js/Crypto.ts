@@ -10,16 +10,25 @@ class Crypto {
         return bitcoinMessage.sign(message, keyPair.privateKey, keyPair.compressed);
     }
 
-    static Verify(dtpIdentity: DTPIdentity, message: any): boolean
+    static Verify(message: any, address: string, signature: string): boolean
     {
         try {
-            //let buf = new Buffer(dtpIdentity.Proof, "base64");
-            //return bitcoinMessage.verify(message, dtpIdentity.ID, buf);
-            return bitcoinMessage.verify(message, dtpIdentity.ID, dtpIdentity.Proof);
+            return bitcoinMessage.verify(message, address, signature);
         } catch {
             return false;
         }
     }
+
+    // static Verify(dtpIdentity: DTPIdentity, message: any): boolean
+    // {
+    //     try {
+    //         //let buf = new Buffer(dtpIdentity.Proof, "base64");
+    //         //return bitcoinMessage.verify(message, dtpIdentity.ID, buf);
+    //         return bitcoinMessage.verify(message, dtpIdentity.ID, dtpIdentity.Proof);
+    //     } catch {
+    //         return false;
+    //     }
+    // }
     
     static Hash160(data: any) : any {
         if(typeof data === 'string')
