@@ -6,6 +6,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin')
 module.exports = {
   entry: {
     main: './src/js/content/main.ts',
+    twitterapp: './src/js/content/twitterapp.ts',
     mastodon: './src/js/content/mastodon.ts',
     mastodonProfile: './src/js/content/mastodonProfile.ts',
     popup: './src/js/content/popup.ts',

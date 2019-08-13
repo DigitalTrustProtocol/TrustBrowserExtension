@@ -66,6 +66,44 @@ class DTPService  {
         return obj;
     }
 
+
+    QuerySingle (target: string, scope: any) : JQueryPromise<any> {
+        let query = this.BuildQuerySingle(target, scope);
+        if(query == null) {
+            let deferred = $.Deferred();
+            deferred.resolve(null);
+            return deferred.promise();
+        }
+        //this.queryApi.basePath = this.settings.infoserver;
+        DTP['trace'](JSON.stringify(query, null, 2));
+        return this.queryApi.resolvePost(query);
+    }
+
+    BuildQuerySingle (target: string, scope: string) : DtpGraphCoreModelQueryRequest {
+        let subjects = new Array<string>();
+        subjects.push(target);
+    
+        let obj = <DtpGraphCoreModelQueryRequest>{
+            "issuer": { 
+                type: "address.dtp1",
+                id: this.settings.address }  ,
+            "subjects": subjects,
+    
+            // Scope is used to filter on trust resolvement. It can be any text
+            "scope": (scope) ? scope : undefined, // The scope could also be specefic to country, area, products, articles or social medias etc.
+    
+            // Claim made about the subject. The format is specified by the version property in the header section.
+            "types": [
+                "binary.trust.dtp1",
+                "id.identity.dtp1"
+              ],
+            "level": 0, // Use default level search (0)
+            //"flags": "LeafsOnly"
+        };
+
+        return obj;
+    }
+
     // GetTrustById (id) {
     //     let url ='/api/trust/get/'+id; // id = encoded byte array
     

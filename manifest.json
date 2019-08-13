@@ -34,7 +34,7 @@
       ],
       "js": [
         "js/common.js",
-        "main.js"
+        "twitterapp.js"
       ],
       "run_at": "document_end"
     },
@@ -60,7 +60,19 @@
         "mastodon.js"
       ],
       "run_at": "document_end"
-    }
+    },
+    {
+      "matches": [ "*://*/*" ],
+      "css": [
+        "css/content.css"
+      ],
+      "js": [
+        "js/common.js",
+        "main.js"
+      ],
+      "run_at": "document_start"
+    },
+
   ],
   "web_accessible_resources": [
     "/*",

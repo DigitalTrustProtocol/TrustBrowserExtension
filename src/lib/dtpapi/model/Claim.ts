@@ -17,15 +17,14 @@ export interface Claim {
 
     //id?: string;
 
-    root?: string;
+    //root?: string;
+    type?: string;
 
     created?: number;
 
     issuer?: models.IssuerIdentity;
 
     subject?: models.SubjectIdentity;
-
-    type?: string;
 
     value?: string;
 

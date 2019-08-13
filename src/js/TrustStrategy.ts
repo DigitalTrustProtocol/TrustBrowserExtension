@@ -31,6 +31,8 @@ class TrustStrategy implements ITrustStrategy {
 
         for(let key in trustResult.claims) {
             let claim = trustResult.claims[key];
+            if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
+                continue; // Ignore all cliams that is not BINARY_TRUST_DTP1
 
             this.processClaim(trustResult, claim);
         }
@@ -108,6 +110,17 @@ class TrustStrategy implements ITrustStrategy {
         }
     }
 
+    public ProcessSingleResult(queryContext : QueryContext) : BinaryTrustResult {
+        if(!queryContext || !queryContext.results || !queryContext.results.claims)
+            return;
+
+        let result = new BinaryTrustResult();
+        result.queryContext = queryContext;
+
+
+        this.calculateBinaryTrustResult(result);
+        return result;
+    }
 
 
     // public ProcessResult2(queryContext : QueryContext, controllers: Array<ProfileController>) : void {

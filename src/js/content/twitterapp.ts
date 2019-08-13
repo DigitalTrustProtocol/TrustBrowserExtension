@@ -1,7 +1,9 @@
 import SiteManager = require("../SiteManager");
 import PackageBuilder = require("../PackageBuilder");
 import SubjectService = require("../SubjectService");
+//import TwitterService = require("./TwitterService");
 import ProfileRepository = require("../ProfileRepository");
+import Twitter = require("./Twitter");
 import * as localforage from 'localforage';
 import { MessageHandler } from "../Shared/MessageHandler";
 import { StorageClient } from "../Shared/StorageClient";
@@ -11,9 +13,8 @@ import ISettings from "../Interfaces/Settings.interface";
 import DTPService = require("../DTPService");
 import * as $ from 'jquery';
 import TrustStrategy = require("../TrustStrategy");
-import UrlApp = require("./UrlApp");
 
-//$(document).ready( () =>{ 
+$(document).ready( () =>{ 
     // Start application
     let messageHandler = new MessageHandler();
     let storageClient = new StorageClient(messageHandler);
@@ -25,23 +26,14 @@ import UrlApp = require("./UrlApp");
         settingsClient.loadSettings( (settings: ISettings) => {
             let profileRepository = new ProfileRepository(storageClient);
             let packageBuilder = new PackageBuilder(settings);
+            let subjectService = new SubjectService(settings, packageBuilder);
+            let dtpService = new DTPService(settings);
+            let trustStrategy = new TrustStrategy(settings, profileRepository);
 
-            let config = {
-                settings: settings,
-                profileRepository : profileRepository,
-                packageBuilder: packageBuilder,
-                subjectService: new SubjectService(settings, packageBuilder),
-                dtpService: new DTPService(settings),
-                trustStrategy: new TrustStrategy(settings, profileRepository),
-                trustGraphPopupClient: trustGraphPopupClient,
-                messageHandler: messageHandler
-            };
-
-            let urlapp = new UrlApp(config);
-            urlapp.ready(document).then(() => {
-                
+            let twitter = new Twitter(settings, packageBuilder, subjectService, dtpService, profileRepository, trustGraphPopupClient, messageHandler, trustStrategy);
+            twitter.ready(document).then(() => {
             });
 
         });
     });
-//});
+});

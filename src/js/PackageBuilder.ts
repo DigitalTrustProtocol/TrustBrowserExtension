@@ -162,8 +162,10 @@ class PackageBuilder {
 
         addSringLowerCase(claim.issuer.type);
         addString(claim.issuer.id); // id may be base64 encoded
+        addString(claim.issuer.path); // 
         addSringLowerCase(claim.subject.type);
         addString(claim.subject.id);
+        addString(claim.subject.path);
 
         if(typeof claim.value != 'string' && claim.value != null && claim.value != undefined) 
         {

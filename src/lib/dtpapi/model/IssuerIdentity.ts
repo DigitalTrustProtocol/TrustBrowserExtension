@@ -17,6 +17,8 @@ export interface IssuerIdentity {
 
     id?: string;
 
+    path?: string;
+
     proof?: any;
 
 }

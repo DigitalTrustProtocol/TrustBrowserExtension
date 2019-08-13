@@ -17,6 +17,8 @@ export interface SubjectIdentity {
 
     id?: string;
 
+    path?: string;
+
     signature?: string;
 
 }
