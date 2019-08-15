@@ -1,0 +1,24 @@
+manifest.json
+
+    {
+      "matches": [ "*://*.twitter.com/*" ],
+      "css": [
+        "css/content.css"
+      ],
+      "js": [
+        "js/common.js",
+        "twitterapp.js"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "matches": [ "*://*/settings/profile" ],
+      "css": [
+        "css/content.css"
+      ],
+      "js": [
+        "js/common.js",
+        "mastodonProfile.js"
+      ],
+      "run_at": "document_end"
+    },

@@ -15,15 +15,18 @@
 
 <body ng-app="myApp" ng-controller="ExtensionpopupController as ct" ng-init="ct.init()"> 
 
+
+
+
     <div ng-controller="TabController">
     <nav class="navbar navbar-default" role="navigation">
         <div class="collapse navbar-collapse navbar-ex1-collapse">
             <ul class="nav navbar-nav" data-tabs="tabs">
-                <li ng-class="{ active: isSet(1) }"><a href="#usercontainer" ng-click="setTab(1)">Account</a></li>
-                <li ng-class="{ active: isSet(2) }"><a href="#settingscontainer" ng-click="setTab(2)">Settings</a></li>
-                <li ng-class="{ active: isSet(3) }"><a href="#servercontainer" ng-click="setTab(3)">Server</a></li>
-                <li ng-class="{ active: isSet(4) }"><a href="#profilecontainer" ng-click="setTab(5)">Profile</a></li>
-                <li ng-class="{ active: isSet(5) }"><a href="#aboutcontainer" ng-click="setTab(4)">About</a></li>
+                <li ng-class="{ active: isSet(1) }"><a href="#trustcontainer" ng-click="setTab(1)">Trust</a></li>
+                <li ng-class="{ active: isSet(2) }"><a href="#profilecontainer" ng-click="setTab(2)">Users</a></li>
+                <li ng-class="{ active: isSet(3) }"><a href="#usercontainer" ng-click="setTab(3)">Account</a></li>
+                <li ng-class="{ active: isSet(4) }"><a href="#servercontainer" ng-click="setTab(4)">Server</a></li>
+                <li ng-class="{ active: isSet(5) }"><a href="#aboutcontainer" ng-click="setTab(5)">About</a></li>
             </ul>
         </div>
     </nav>
@@ -32,7 +35,53 @@
     <section>
         <form class="form-signin">
             <div id="my-tab-content" class="tab-content">
-                <div id="usercontainer" class="tab-pane" ng-class="{ active: isSet(1) }">
+                <div id="settingscontainer" class="tab-pane" ng-class="{ active: isSet(1) }">
+                    <h3 class="form-signin-heading">Trust</h3>
+                    <p><b>Trust</b></p>
+                    <div>When the query result on a name is positive.</div>
+                    <div class="input-group">
+                        <!-- Show trust buttons -->
+                        <div class="">
+                            <div class="">
+                                <span class="float-left dtpModelText">
+                                    <div ng-show="ct.modalData.status.show">Status: <span ng-class="ct.modalData.status.cssClass" ng-bind="ct.modalData.status.text"></span></div>
+                                    <div ng-show="ct.modalData.score.show">
+                                        <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.trust > 0">Possitive claims: <span class="trusted" ng-bind="ct.modalData.profile.binaryTrustResult.trust"></span></div>
+                                        <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.distrust > 0" >Negative claims: <span class="distrusted" ng-bind="ct.modalData.profile.binaryTrustResult.distrust"></span></div>
+                                    </div>
+                                </span>
+                            </div>
+                            <div class="modal-footer" data-ng-show="ct.modalData.button.show" >
+                                <img src="{{ct.modalData.spinner}}" ng-show="ct.modalData.processing">
+                                <button type="button" ng-class="ct.modalData.button.trust.cssClass" ng-click="ct.trustClick()" ng-attr-title="{{ct.modalData.button.trust.title}}" ng-disabled="ct.modalData.button.trust.disabled">
+                                    Trust
+                                </button>
+                                <button type="button" ng-class="ct.modalData.button.untrust.cssClass" ng-click="ct.untrustClick()" ng-attr-title="{{ct.modalData.button.untrust.title}}" ng-disabled="ct.modalData.button.untrust.disabled">
+                                    Untrust
+                                </button>
+                                <button type="button" ng-class="ct.modalData.button.distrust.cssClass" ng-click="ct.distrustClick()" ng-attr-title="{{ct.modalData.button.distrust.title}}" ng-disabled="ct.modalData.button.distrust.disabled">
+                                    Distrust
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="profilecontainer" class="tab-pane" ng-class="{ active: isSet(2) }">
+                    <h3 class="form-signin-heading">Users</h3>
+                    <p>List of known entities in the DTP system.</p>
+                    <div class="input-group">
+                        <ul>
+                            <li>User 1</li>
+                            <li>User 2</li>
+                            <li>User 3</li>
+                            <li>User 4</li>
+                            <li>User 5</li>
+                        </ul>
+                    </div>
+                </div>
+    
+                <div id="usercontainer" class="tab-pane" ng-class="{ active: isSet(3) }">
                     <h3 class="form-signin-heading">User identity</h3>
                     <p>This is an alpha product. The user account ID is generated from the Password and the additional seed (optional). No signup is needed. NB! The password is not encrypted on the client and may be very insecure. The password and seed will never be submittet to the server.</p>
                     <div><label for="inputPassword">Password</label></div>
@@ -59,52 +108,11 @@
                         </div>
                     </div>
                 </div>
-
-                <div id="settingscontainer" class="tab-pane" ng-class="{ active: isSet(2) }">
-                    <h3 class="form-signin-heading">Trust settings</h3>
-                    <p><b>Trust</b></p>
-                    <div>When the query result on a name is positive.</div>
-                    <div class="input-group">
-                        <div class="radio" title="Will not perform any action on names that is trusted by your network.">
-                            <label><input type="radio" name="twittertrustradio" value="noaction" ng-model="ct.settings.twittertrust" ng-change="ct.modelChange('radio')">No action</label>
-                        </div>
-                        <div class="radio" title="Will automatically follow names that is trusted by your network.">
-                            <label><input type="radio" name="twittertrustradio" value="autofollow" ng-model="ct.settings.twittertrust" ng-change="ct.modelChange('radio')">Auto follow</label>
-                        </div>
-                    </div>
-                    <hr>
-                    <p><b>Distrust</b></p>
-                    <div>When the query result on a name from the DTP server is negative.</div>
-                    <div class="input-group">
-                        <div class="radio" title="Will not perform any action on names that is distrusted by your network.">
-                            <label><input type="radio" name="twitterdistrustradio" value="noaction" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">No action</label>
-                        </div>
-                        <div class="radio" title="Will automatically hide the content from names that is distrusted by your network.">
-                            <label><input type="radio" name="twitterdistrustradio" value="hidecontent" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">Hide content</label>
-                        </div>
-                        <div class="radio" title="Will automatically mute names that is distrusted by your network.">
-                            <label><input type="radio" name="twitterdistrustradio" value="automute" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">Auto mute</label>
-                        </div>
-                        <div class="radio" title="Will automatically block names that is distrusted by your network.">
-                            <label><input type="radio" name="twitterdistrustradio" value="autoblock" ng-model="ct.settings.twitterdistrust" ng-change="ct.modelChange()">Auto block</label>
-                        </div>
-                    </div>
-                </div>
-                <div id="servercontainer" class="tab-pane" ng-class="{ active: isSet(3) }">
+                <div id="servercontainer" class="tab-pane" ng-class="{ active: isSet(4) }">
                     <h3 class="form-signin-heading">Server</h3>
                     <div class="input-group">
                         <label for="trustserver">Trust server</label>
                         <input type="url" id="trustserver" class="form-control" placeholder="Trust server" ng-model="ct.settings.infoserver" ng-change="ct.modelChange()" required autofocus>
-                    </div>
-                </div>
-
-                <div id="profilecontainer" class="tab-pane" ng-class="{ active: isSet(4) }">
-                    <h3 class="form-signin-heading">Profile</h3>
-                    <p>Add the following to your platforms profile, enabling the DTP connect your platform ID with the DTP identity.</p>
-                    <div class="input-group">
-                        <label for="dtpIdentity">DTP Identity</label>
-                        <textarea id="dtpIdentity" class="form-control" ng-model="ct.settings.dtpIdentity" >
-                        </textarea>
                     </div>
                 </div>
 

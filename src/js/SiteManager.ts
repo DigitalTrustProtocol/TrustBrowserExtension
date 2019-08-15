@@ -9,21 +9,21 @@ class SiteManager {
         if (SiteManager.dtpUserContext)
             deferred.resolve(SiteManager.dtpUserContext);
 
-        const initData = $("#init-data");
-        if (initData.length > 0) {
-            const user = JSON.parse(initData[0]['value']);
+        // const initData = $("#init-data");
+        // if (initData.length > 0) {
+        //     const user = JSON.parse(initData[0]['value']);
 
-            const source = {
-                userId: user.userId,
-                screen_name: user.screenName,
-                alias: user.fullName,
-                formAuthenticityToken: user.formAuthenticityToken,
-                host: window.location.hostname
-            }
-            browser.storage.local.set({ context: source });
-            SiteManager.dtpUserContext = source;
-            deferred.resolve(source);
-        } else {
+        //     const source = {
+        //         userId: user.userId,
+        //         screen_name: user.screenName,
+        //         alias: user.fullName,
+        //         formAuthenticityToken: user.formAuthenticityToken,
+        //         host: window.location.hostname
+        //     }
+        //     browser.storage.local.set({ context: source });
+        //     SiteManager.dtpUserContext = source;
+        //     deferred.resolve(source);
+        // } else {
             browser.storage.local.get("context").then((result) => {
                 let context = result.context ||
                     {
@@ -36,7 +36,7 @@ class SiteManager {
                 SiteManager.dtpUserContext = context;
                 deferred.resolve(context);
             });
-        }
+        //}
         return deferred.promise();
     }
 }

@@ -19,6 +19,7 @@ class PackageBuilder {
    static IDENTITY_TYPE_ALPHANUMERIC = "alphanumeric";
    static IDENTITY_TYPE_URI = "uri";
    static IDENTITY_TYPE_STRING = "string";
+   static IDENTITY_TYPE_THING = "thing.dtp1";
    
     constructor(settings) {
         this.settings = settings;

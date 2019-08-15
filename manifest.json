@@ -12,9 +12,11 @@
   },
   "browser_action": {
     "default_icon": {
-      "19": "img/DTP48a.png",
-      "38": "img/DTP48a.png"
+      "16": "img/DTP16a.png",
+      "24": "img/DTP48a.png",
+      "32": "img/DTP48a.png"
     },
+    "default_title": "DTP Browser Extension",
     "default_popup": "popup.html"
   },
   "permissions": [
@@ -27,28 +29,6 @@
     "scripts": ["background.js"]
   },
   "content_scripts": [
-    {
-      "matches": [ "*://*.twitter.com/*" ],
-      "css": [
-        "css/content.css"
-      ],
-      "js": [
-        "js/common.js",
-        "twitterapp.js"
-      ],
-      "run_at": "document_end"
-    },
-    {
-      "matches": [ "*://*/settings/profile" ],
-      "css": [
-        "css/content.css"
-      ],
-      "js": [
-        "js/common.js",
-        "mastodonProfile.js"
-      ],
-      "run_at": "document_end"
-    },
     {
       "matches": [ "*://*/web/getting-started"],
       "exclude_globs": ["*settings/profile*"],
@@ -71,7 +51,7 @@
         "main.js"
       ],
       "run_at": "document_start"
-    },
+    }
 
   ],
   "web_accessible_resources": [

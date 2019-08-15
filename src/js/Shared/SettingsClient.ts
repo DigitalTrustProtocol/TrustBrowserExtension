@@ -45,7 +45,8 @@ class SettingsClient {
 
 
     private getCacheKey(key: string) : string {
-        return this.context.host+this.context.userId+key;
+        //return this.context.host+this.context.userId+key;
+        return "url"+key;
     }
 
     public buildKey(settings: ISettings) : any {

@@ -85,7 +85,7 @@ class DTPService  {
     
         let obj = <DtpGraphCoreModelQueryRequest>{
             "issuer": { 
-                type: "address.dtp1",
+                type: "secp256k1-pkh",
                 id: this.settings.address }  ,
             "subjects": subjects,
     
@@ -94,8 +94,7 @@ class DTPService  {
     
             // Claim made about the subject. The format is specified by the version property in the header section.
             "types": [
-                "binary.trust.dtp1",
-                "id.identity.dtp1"
+                "binary.trust.dtp1"
               ],
             "level": 0, // Use default level search (0)
             //"flags": "LeafsOnly"

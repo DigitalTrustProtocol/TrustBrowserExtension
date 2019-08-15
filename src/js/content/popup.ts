@@ -20,6 +20,8 @@ import { MessageHandler } from '../Shared/MessageHandler';
 import Settings = require('../Shared/Settings');
 import * as $ from 'jquery';
 import DTPIdentity = require('../Model/DTPIdentity.js');
+import ProfileModal = require('../Model/ProfileModal');
+import { browser, Runtime } from "webextension-polyfill-ts";
 
 
 class ExtensionpopupController {
@@ -30,28 +32,102 @@ class ExtensionpopupController {
     showIcon: boolean = true;
     contentTabId: any;
     dtpIdentity: string;
+    modalData: ProfileModal;
+    packageBuilder: PackageBuilder;
+    subjectService: SubjectService;
+    dtpService: DTPService;
+
+
+    private noop = (reason) => { alert(reason); };
 
     constructor(private $scope: ng.IScope) {
         //this.onStorageChanged();
     }
 
     init() {
+        console.log("Init");
         this.messageHandler = new MessageHandler();
         
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsClient = new SettingsClient(this.messageHandler, userContext);
-            this.settingsClient.loadSettings().then((items: ISettings) => {
-                items = items || new Settings();
-                this.settings = items;
+            this.settingsClient.loadSettings().then((settings: ISettings) => {
+                settings = settings || new Settings();
+                this.settings = settings;
+
+                this.packageBuilder = new PackageBuilder(settings);
+                this.subjectService = new SubjectService(settings, this.packageBuilder);
+                this.dtpService = new DTPService(settings);
 
                 this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true : false;
-
-                this.$scope.$apply();
-
+                console.log("Before getProfile");
+                chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+                    let tabId = tabs[0].id;
+                    console.log("Tab id: "+tabId);
+        
+                    this.getProfile(tabId).then(profile => {
+                        console.log("getProfile: " + JSON.stringify(profile, null, 2));
+                        if(profile)
+                            this.updateModalData(profile);
+                        this.$scope.$apply();
+                    })
+                });
             });
         });
     }
+
+    getProfile(tabId: any) : Promise<IProfile> {
+        let command = {
+            handler: "profileHandler",
+            action: "getProfile"
+        }
+
+        const promise = browser.tabs.sendMessage(tabId, command);
+        promise.catch(this.noop);
+        return promise;
+    }
+
+    updateModalData(profile: IProfile) : void {
+        this.modalData = new ProfileModal(profile, profile, null);
+    }
+
+    trustClick(): boolean {
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, "true", 0, this.modalData.profile.alias + " trusted");
+        return false;
+    };
+
+    distrustClick(): boolean {
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, "false", 0, this.modalData.profile.alias + " distrusted");
+        return false;
+    }
+
+    untrustClick(): boolean {
+        this.buildAndSubmitBinaryTrust(this.modalData.profile, null, 1, this.modalData.profile.alias + " untrusted");
+
+        return false;
+    }
     
+
+    buildAndSubmitBinaryTrust (profile: IProfile, value: string, expire: number, message: string): JQueryPromise<any> {
+        //this.modalData.disableButtons();
+        this.modalData.processing = true;
+        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, undefined, profile.scope, expire);
+        this.packageBuilder.SignPackage(trustPackage);
+        return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
+            console.log("Posting package is a "+trustResult.status);
+           
+            //$["notify"](message, 'success');
+
+            //this.updateNetwork(trustPackage);
+
+            //this.trustGraphPopupClient.updateContent(this.contentTabId, profile);
+           
+            //this.hideModal(); 
+        }).fail((trustResult) => { 
+            //$["notify"]("Adding trust failed: " +trustResult.message,"fail");
+            //this.hideModal(); 
+        });
+    }
+
     // onStorageChanged(): void {
     //     chrome.storage.onChanged.addListener(function(changes, namespace) {
     //         for (var key in changes) {

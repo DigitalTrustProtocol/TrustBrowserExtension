@@ -29,10 +29,10 @@ class Profile implements IProfile {
 
     constructor(source: any) { 
         Object.defineProperty(this, 'address', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        Object.defineProperty(this, 'scope', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        //Object.defineProperty(this, 'scope', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'controller', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'formAuthenticityToken', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        Object.defineProperty(this, 'trustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        //Object.defineProperty(this, 'trustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'state', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
         this.update(source);
@@ -45,6 +45,8 @@ class Profile implements IProfile {
         this.updateProperty("screen_name", source.screen_name, source.userId);
         this.updateProperty("alias", source.alias);
         this.updateProperty("avatarImage", source.avatarImage);
+        this.updateProperty("scope", source.scope);
+        this.updateProperty("trustResult", source.trustResult);
         this.updateProperty("identiconData16", source.identiconData16);
         this.updateProperty("formAuthenticityToken", source.formAuthenticityToken);
         DTPIdentity.update(this, source.owner);

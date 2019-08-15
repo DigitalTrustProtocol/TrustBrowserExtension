@@ -30,7 +30,7 @@ class SubjectService  {
             this.settings.address, 
             this.SCRIPT,
             profile.userId,
-            PackageBuilder.IDENTITY_TYPE_STRING,
+            PackageBuilder.IDENTITY_TYPE_THING,
             PackageBuilder.BINARY_TRUST_DTP1,
             scope,
             value, 
@@ -41,37 +41,37 @@ class SubjectService  {
 
         let trustpackage = this.packageBuilder.CreatePackage(claim);
 
-        if(profile.owner && profile.owner.ID) {
-            let ownerClaim = this.packageBuilder.CreateClaim(
-                this.settings.address, 
-                this.SCRIPT, 
-                profile.owner.ID, 
-                PackageBuilder.IDENTITY_TYPE_DTPAddress,
-                PackageBuilder.BINARY_TRUST_DTP1,
-                scope,
-                value, 
-                0,
-                expire,
-                metadata);
+        // if(profile.owner && profile.owner.ID) {
+        //     let ownerClaim = this.packageBuilder.CreateClaim(
+        //         this.settings.address, 
+        //         this.SCRIPT, 
+        //         profile.owner.ID, 
+        //         PackageBuilder.IDENTITY_TYPE_DTPAddress,
+        //         PackageBuilder.BINARY_TRUST_DTP1,
+        //         scope,
+        //         value, 
+        //         0,
+        //         expire,
+        //         metadata);
 
-                trustpackage.claims.push(ownerClaim);
+        //         trustpackage.claims.push(ownerClaim);
 
-            if(!this.isNullOrWhitespace(profile.screen_name)) { 
-                let idClaim = this.packageBuilder.CreateClaim(
-                    this.settings.address,
-                    this.SCRIPT, 
-                    profile.owner.ID, // Subject
-                    PackageBuilder.IDENTITY_TYPE_DTPAddress, 
-                    PackageBuilder.ID_IDENTITY_DTP1,
-                    scope,
-                    profile.userId, // Value
-                    0,
-                    expire,
-                    metadata);
+        //     if(!this.isNullOrWhitespace(profile.screen_name)) { 
+        //         let idClaim = this.packageBuilder.CreateClaim(
+        //             this.settings.address,
+        //             this.SCRIPT, 
+        //             profile.owner.ID, // Subject
+        //             PackageBuilder.IDENTITY_TYPE_DTPAddress, 
+        //             PackageBuilder.ID_IDENTITY_DTP1,
+        //             scope,
+        //             profile.userId, // Value
+        //             0,
+        //             expire,
+        //             metadata);
 
-                    trustpackage.claims.push(idClaim);
-            }
-        }
+        //             trustpackage.claims.push(idClaim);
+        //     }
+        // }
         return trustpackage;
     }
 }
