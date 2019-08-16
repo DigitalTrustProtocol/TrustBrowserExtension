@@ -9,6 +9,7 @@
 
 
     <!-- Cascading Style Sheets -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.8/css/select2.min.css" rel="stylesheet" />
     <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
     <link href="css/bootstrap.custom.css" rel="stylesheet" media="screen">
 </head>
@@ -23,7 +24,7 @@
         <div class="collapse navbar-collapse navbar-ex1-collapse">
             <ul class="nav navbar-nav" data-tabs="tabs">
                 <li ng-class="{ active: isSet(1) }"><a href="#trustcontainer" ng-click="setTab(1)">Trust</a></li>
-                <li ng-class="{ active: isSet(2) }"><a href="#profilecontainer" ng-click="setTab(2)">Users</a></li>
+                <li ng-class="{ active: isSet(2) }"><a href="#profilecontainer" ng-click="setTab(2)">Subjects</a></li>
                 <li ng-class="{ active: isSet(3) }"><a href="#usercontainer" ng-click="setTab(3)">Account</a></li>
                 <li ng-class="{ active: isSet(4) }"><a href="#servercontainer" ng-click="setTab(4)">Server</a></li>
                 <li ng-class="{ active: isSet(5) }"><a href="#aboutcontainer" ng-click="setTab(5)">About</a></li>
@@ -37,8 +38,9 @@
             <div id="my-tab-content" class="tab-content">
                 <div id="settingscontainer" class="tab-pane" ng-class="{ active: isSet(1) }">
                     <h3 class="form-signin-heading">Trust</h3>
-                    <p><b>Trust</b></p>
-                    <div>When the query result on a name is positive.</div>
+                    <div>Subject:</div>
+                    <select class="userSelectContainer js-states form-control" name="state">
+                    </select>
                     <div class="input-group">
                         <!-- Show trust buttons -->
                         <div class="">
@@ -65,19 +67,13 @@
                             </div>
                         </div>
                     </div>
+                    
                 </div>
 
                 <div id="profilecontainer" class="tab-pane" ng-class="{ active: isSet(2) }">
                     <h3 class="form-signin-heading">Users</h3>
-                    <p>List of known entities in the DTP system.</p>
+                    <p>Find subject in the DTP system</p>
                     <div class="input-group">
-                        <ul>
-                            <li>User 1</li>
-                            <li>User 2</li>
-                            <li>User 3</li>
-                            <li>User 4</li>
-                            <li>User 5</li>
-                        </ul>
                     </div>
                 </div>
     

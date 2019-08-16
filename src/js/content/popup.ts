@@ -22,6 +22,7 @@ import * as $ from 'jquery';
 import DTPIdentity = require('../Model/DTPIdentity.js');
 import ProfileModal = require('../Model/ProfileModal');
 import { browser, Runtime } from "webextension-polyfill-ts";
+import 'select2';
 
 
 class ExtensionpopupController {
@@ -46,8 +47,10 @@ class ExtensionpopupController {
 
     init() {
         console.log("Init");
+
         this.messageHandler = new MessageHandler();
-        
+        //this.initSubjectSelect();
+       
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsClient = new SettingsClient(this.messageHandler, userContext);
             this.settingsClient.loadSettings().then((settings: ISettings) => {
@@ -71,8 +74,61 @@ class ExtensionpopupController {
                         this.$scope.$apply();
                     })
                 });
+  
+                this.initSubjectSelect();
+
             });
         });
+    }
+
+    initSubjectSelect() : void {
+        let self = this;
+        $('.userSelectContainer').select2({
+            ajax: {
+                url: this.settings.infoserver+'/api/Identity',
+                dataType: 'json',
+                delay: 0,
+                processResults: function (data) {
+                    return { results: $.map(data, function(el) { 
+                        if(typeof el === 'string')
+                            return { id: el, text: el, alias: '' };
+                        else
+                            return el;
+                    })};
+                },
+                cache: true,
+                transport: function (params, success, failure) {
+                    if(!params.data.term || params.data.term.length == 0) {
+                        let arr = [];
+                        arr.push({id: self.modalData.profile.userId, alias: self.modalData.profile.alias});
+
+                        var deferred = $.Deferred().resolve(arr);
+                        deferred.then(success);
+                        deferred.fail(failure);
+    
+                        return deferred.promise();
+                    }
+
+                    var $request = $.ajax(params);
+                    $request.then(success);
+                    $request.fail(failure);
+                
+                    return $request;
+                  }
+            },
+            placeholder: 'Search for a subject',
+            minimumInputLength: 0,
+            templateResult: this.formatSubjectSelect,
+            templateSelection: this.formatSubjectSelection
+        });
+    }
+
+    formatSubjectSelect(item) {
+        return item.alias || item.text;
+    }
+      
+    formatSubjectSelection(item) : string {
+        return item.alias || item.text;
     }
 
     getProfile(tabId: any) : Promise<IProfile> {
