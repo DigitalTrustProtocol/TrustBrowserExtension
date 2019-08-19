@@ -14,8 +14,8 @@ import * as $ from 'jquery';
 import TrustStrategy = require("../TrustStrategy");
 import UrlApp = require("./UrlApp");
 
-//$(document).ready( () =>{ 
-    // Start application
+$(document).ready( () =>{ 
+    //Start application
     let messageHandler = new MessageHandler();
     let storageClient = new StorageClient(messageHandler);
     let trustGraphPopupClient = new TrustGraphPopupClient(messageHandler);
@@ -45,4 +45,4 @@ import UrlApp = require("./UrlApp");
 
         });
     });
-//});
+});

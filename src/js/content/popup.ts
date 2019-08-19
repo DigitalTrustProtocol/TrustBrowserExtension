@@ -19,10 +19,17 @@ import SettingsClient = require('../Shared/SettingsClient');
 import { MessageHandler } from '../Shared/MessageHandler';
 import Settings = require('../Shared/Settings');
 import * as $ from 'jquery';
-import DTPIdentity = require('../Model/DTPIdentity.js');
 import ProfileModal = require('../Model/ProfileModal');
-import { browser, Runtime } from "webextension-polyfill-ts";
+import { browser, Windows, Runtime, Tabs } from "webextension-polyfill-ts";
 import 'select2';
+import { StorageClient } from "../Shared/StorageClient";
+import { QueryContext } from '../../../dist/lib/dtpapi/model/QueryContext';
+import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
+import { Claim } from '../../../dist/lib/dtpapi/model/Claim';
+import IGraphData from './IGraphData';
+import IOpenDialogResult from '../Model/OpenDialogResult.interface';
+import { TrustGraphPopupServer } from '../background/TrustGraphPopupServer';
+import DTPIdentity = require('../Model/DTPIdentity');
 
 
 class ExtensionpopupController {
@@ -37,7 +44,14 @@ class ExtensionpopupController {
     packageBuilder: PackageBuilder;
     subjectService: SubjectService;
     dtpService: DTPService;
+    profileRepository: ProfileRepository;
+    storageClient: StorageClient;
+    trustStrategy: TrustStrategy;
+    trustGraphPopupClient: TrustGraphPopupClient;
 
+
+
+    profiles: Array<IProfile> = [];
 
     private noop = (reason) => { alert(reason); };
 
@@ -46,11 +60,10 @@ class ExtensionpopupController {
     }
 
     init() {
-        console.log("Init");
-
         this.messageHandler = new MessageHandler();
-        //this.initSubjectSelect();
-       
+        this.storageClient = new StorageClient(this.messageHandler);
+        this.profileRepository = new ProfileRepository(this.storageClient);
+
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsClient = new SettingsClient(this.messageHandler, userContext);
             this.settingsClient.loadSettings().then((settings: ISettings) => {
@@ -60,29 +73,37 @@ class ExtensionpopupController {
                 this.packageBuilder = new PackageBuilder(settings);
                 this.subjectService = new SubjectService(settings, this.packageBuilder);
                 this.dtpService = new DTPService(settings);
-
+                this.trustStrategy = new TrustStrategy(settings, this.profileRepository);
                 this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true : false;
-                console.log("Before getProfile");
+                this.trustGraphPopupClient = new TrustGraphPopupClient(this.messageHandler);
+                // Bind events
+                this.trustGraphPopupClient.updateContentHandler = (params, sender) => { this.updateContentHandler(params, sender); };
+                this.trustGraphPopupClient.requestSubjectHandler = (params, sender) => { return this.requestSubjectHandler(params, sender); };
+
+                this.initSubjectSelect();
+
                 chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-                    let tabId = tabs[0].id;
-                    console.log("Tab id: "+tabId);
-        
-                    this.getProfile(tabId).then(profile => {
-                        console.log("getProfile: " + JSON.stringify(profile, null, 2));
-                        if(profile)
-                            this.updateModalData(profile);
-                        this.$scope.$apply();
+                    
+                    this.getProfiles(tabs[0].id).then(profiles => {
+
+                        this.profiles = profiles;
+                        let profile = profiles[0];
+
+                        // Set select2 default value
+                        var newOption = new Option(profile.alias, profile.userId, true, true);
+                        $('.userSelectContainer').append(newOption).trigger('change.select2');
+
+                        this.selectProfile(profile);
                     })
                 });
   
-                this.initSubjectSelect();
-
             });
         });
     }
 
     initSubjectSelect() : void {
         let self = this;
+
         $('.userSelectContainer').select2({
             ajax: {
                 url: this.settings.infoserver+'/api/Identity',
@@ -99,8 +120,7 @@ class ExtensionpopupController {
                 cache: true,
                 transport: function (params, success, failure) {
                     if(!params.data.term || params.data.term.length == 0) {
-                        let arr = [];
-                        arr.push({id: self.modalData.profile.userId, alias: self.modalData.profile.alias});
+                        let arr = $.map(self.profiles, (p,i) => { return {id:p.userId, alias: p.alias || p.screen_name}; });
 
                         var deferred = $.Deferred().resolve(arr);
                         deferred.then(success);
@@ -121,6 +141,8 @@ class ExtensionpopupController {
             templateResult: this.formatSubjectSelect,
             templateSelection: this.formatSubjectSelection
         });
+
+        $('.userSelectContainer').on('select2:select', e => this.selectProfileID(e.params.data.id));
     }
 
     formatSubjectSelect(item) {
@@ -131,10 +153,48 @@ class ExtensionpopupController {
         return item.alias || item.text;
     }
 
-    getProfile(tabId: any) : Promise<IProfile> {
+    selectProfile(profile: IProfile) : void {
+        if(!profile.trustResult) {
+            this.queryProfiles([profile]).then(() => {
+                this.updateModalData(profile);
+                this.updateIcon(profile.trustResult);
+            })
+        } else {
+            this.updateModalData(profile);
+            this.updateIcon(profile.trustResult);
+        }
+    }
+
+    selectProfileID(id: string) : void {
+        let f =  this.profiles.filter(x => x.userId === id);
+        if(f.length > 0) {
+            this.selectProfile(f[0]);
+        }
+        else
+            // Try getting the profile from storage
+            this.profileRepository.ensureProfile(id).then(p => {
+
+                // Query the profile then 
+                this.selectProfile(p);
+                this.profiles.push(p); 
+            });
+    }
+
+    updateIcon(result: BinaryTrustResult) : void {
+        let state = (result) ? result.state : undefined;
+
+        chrome.runtime.sendMessage({
+            handler: 'extensionHandler',
+            action: 'updateIcon',
+            value: state
+        });
+    }
+
+
+    getProfiles(tabId: any) : Promise<Array<IProfile>> {
         let command = {
             handler: "profileHandler",
-            action: "getProfile"
+            action: "getProfiles"
         }
 
         const promise = browser.tabs.sendMessage(tabId, command);
@@ -144,6 +204,7 @@ class ExtensionpopupController {
 
     updateModalData(profile: IProfile) : void {
         this.modalData = new ProfileModal(profile, profile, null);
+        this.$scope.$apply();
     }
 
     trustClick(): boolean {
@@ -162,6 +223,13 @@ class ExtensionpopupController {
         return false;
     }
     
+    queryProfiles(profiles: Array<IProfile>) : JQueryPromise<void> {
+        let scope = "url";
+        return this.dtpService.Query(profiles, scope).then((response, queryResult) => {
+            this.trustStrategy.UpdateProfiles(queryResult, profiles);
+        });
+    }
+
 
     buildAndSubmitBinaryTrust (profile: IProfile, value: string, expire: number, message: string): JQueryPromise<any> {
         //this.modalData.disableButtons();
@@ -171,16 +239,17 @@ class ExtensionpopupController {
         return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
             console.log("Posting package is a "+trustResult.status);
            
-            //$["notify"](message, 'success');
+            let q = <QueryContext>{
+                issuerCount: 1,
+                subjectCount: 1,
+                results: trustPackage,
+                errors: []
+            } 
 
-            //this.updateNetwork(trustPackage);
+            this.trustStrategy.UpdateProfiles(q, [profile]);
+            this.selectProfile(profile); // Update the screen
 
-            //this.trustGraphPopupClient.updateContent(this.contentTabId, profile);
-           
-            //this.hideModal(); 
         }).fail((trustResult) => { 
-            //$["notify"]("Adding trust failed: " +trustResult.message,"fail");
-            //this.hideModal(); 
         });
     }
 
@@ -231,6 +300,122 @@ class ExtensionpopupController {
 
         return deferred.promise();
     }
+
+
+    private async buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Promise<Object> {
+        if(profiles[id])
+            return; // Exist, then it has been processed.
+
+        profiles[id] = profile;
+
+        if(!trustResult)
+            return trustResults;
+            
+        trustResults[id] = trustResult;
+        
+        for(let key in trustResult.claims) {
+            let claim = trustResult.claims[key] as Claim;
+
+            // Get a profile from the Issuer ID, as only profiles with a DTP id can be retrived.
+            // The profile may not be in index, but in DB, but it will be up to the popup window to handle this.
+            //let parentProfile = this.profileRepository.index[claim.issuer.id] as IProfile;
+            let parentProfile = await this.profileRepository.getProfileByIndex(claim.issuer.id);
+            if(!parentProfile) { // Do profile exist?
+                parentProfile = new Profile({userId: "?", screen_name: "Unknown", alias: "Unknown"}) as IProfile;
+                parentProfile.owner = new DTPIdentity({ ID: claim.issuer.id });
+            }
+            let parentTrustResult = claimCollections[parentProfile.owner.ID] as BinaryTrustResult; 
+            
+            await this.buildGraph(parentProfile, parentProfile.owner.ID, parentTrustResult, profiles, trustResults, claimCollections);
+        }
+        return trustResults;
+    }
+
+
+    public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
+        let profile = await this.profileRepository.getProfile(params.profileId);
+
+        // If profile is null?
+
+        //let controller = this.controllers[profile.userId] as ProfileController;
+
+        //let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
+        //let claimCollections = this.trustStrategy.ProcessClaims(claims);
+
+        let profiles: object = {};
+        let trustResults = null; //await this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
+
+        //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
+        //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
+
+        let dialogData = {
+            scope: "url",
+            currentUser: null,
+            subjectProfileId: profile.userId,
+            profiles: this.profiles,
+            trustResults: trustResults
+        } as IGraphData;
+
+        return dialogData;
+    }
+
+    updateContentHandler(params, sender) : void {
+        //let controller = this.getController(params.profile);
+    }
+
+    openGraphClick(eventObject: JQueryEventObject) : boolean {
+        this.createDialog(this.modalData.profile);
+        eventObject.stopPropagation();
+        return false;
+    }
+
+    private popupTab = null;
+    private popupWindow = null;
+
+
+
+    private createDialog(profile: IProfile) : Promise<IOpenDialogResult>
+    {
+        let wLeft = window.screenLeft ? window.screenLeft : window.screenX;
+        let wTop = window.screenTop ? window.screenTop : window.screenY;
+        let w = 800;
+        let h = 800;
+        let opt = 
+        {
+            w: w,
+            h: h,
+            left: Math.floor((window.screen.availWidth / 2) - (w / 2)),
+            top: Math.floor((window.screen.availHeight / 2) - (h / 2))
+        };
+
+        let url =  browser.extension.getURL('trustgraph.html')+'?profileId='+profile.userId;
+        return browser.tabs.create({
+            url: url, 
+            active: false
+        }).then((tab) => {
+            this.popupTab = tab;
+            // After the tab has been created, open a window to inject the tab
+            let param = {
+                tabId: tab.id,
+                type: 'popup',
+                top: opt.top,
+                left: opt.left,
+                width: opt.w,
+                height: opt.h
+                // incognito, top, left, ...
+            } as Windows.CreateCreateDataType;
+            
+            browser.windows.create(param).then((window) => {
+                    this.popupWindow = window;
+            });
+            return {
+                tabId: tab.id,
+                profileId: profile.userId,
+                alreadyOpen: false
+            } as IOpenDialogResult;
+        });
+    }
+
 }
 
 
@@ -247,3 +432,15 @@ app.controller('TabController', ['$scope', function($scope) {
       return $scope.tab === tabNum;
     };
 }]);
+app.config( [
+    '$compileProvider',
+    function( $compileProvider )
+    {   
+        //$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
+        $compileProvider.imgSrcSanitizationWhitelist(/^\s*(https?|local|data|chrome-extension):/);
+    }
+]);
+
+
+
+

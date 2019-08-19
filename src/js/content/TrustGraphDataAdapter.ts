@@ -90,19 +90,19 @@ class TrustGraphDataAdapter {
 
 
     private createNode(profile: IProfile) : any {
-        let hasUserId = !(profile.userId == "?");
-        let userId = hasUserId ? profile.userId : profile.owner.ID;
+        //let hasUserId = !(profile.userId == "?");
+        //let hasAlias = (profile.alias) ? profile.userId : profile.owner.ID;
 
         if(!profile.avatarImage) {
-            let hash = Crypto.toDTPAddress(Crypto.Hash160(userId));
-            let icon = new Identicon(hash, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
+            //let hash = Crypto.toDTPAddress(Crypto.Hash160(userId));
+            let icon = new Identicon(profile.userId, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
             profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
         }
 
         let node = {
-            id: userId,
+            id: profile.userId,
             image: profile.avatarImage,
-            label: '*'+profile.alias+ (hasUserId) ? '*\n_@'+profile.screen_name+'_' : '',
+            label: '*'+profile.userId+ (profile.alias) ? '*\n_'+profile.alias+'_' : '',
         }
         return node;
     }

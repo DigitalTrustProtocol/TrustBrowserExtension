@@ -36,7 +36,6 @@ class TrustStrategy implements ITrustStrategy {
 
             this.processClaim(trustResult, claim);
         }
-        trustResult.state = trustResult.trust - trustResult.distrust;
     }
 
     private processClaim(trustResult: BinaryTrustResult, claim: Claim) : void {
@@ -52,7 +51,7 @@ class TrustStrategy implements ITrustStrategy {
             trustResult.direct = true;
             trustResult.directValue = claim.value;
         }
-
+        trustResult.state = trustResult.trust - trustResult.distrust;
     }
 
 
@@ -80,9 +79,9 @@ class TrustStrategy implements ITrustStrategy {
                 trustResult = new BinaryTrustResult();
                 trustResult.time = checkTime;
                 results[claim.subject.id] = trustResult;
-
             } 
             trustResult.claims.push(claim);
+            this.processClaim(trustResult, claim);
         });
 
         return results;
@@ -120,6 +119,15 @@ class TrustStrategy implements ITrustStrategy {
 
         this.calculateBinaryTrustResult(result);
         return result;
+    }
+
+
+    public UpdateProfiles(queryContext : QueryContext, profiles: Array<IProfile>) : void {
+        if(queryContext && queryContext.results && queryContext.results.claims) {
+            let trustResults = this.ProcessClaims(queryContext.results.claims);
+            profiles.forEach(p => p.trustResult = trustResults[p.userId] || new BinaryTrustResult());
+        } else
+            profiles.forEach(p => p.trustResult = new BinaryTrustResult());
     }
 
 

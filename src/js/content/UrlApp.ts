@@ -10,26 +10,11 @@ import Profile = require("../Profile");
 class UrlApp {
 
     public config: IConfig = null;
-    public profile : IProfile = new Profile({}); // Make sure that we do not have an empty object
+    public defaultProfile : IProfile = new Profile({}); // Make sure that we do not have an empty object
+    public profiles: Array<IProfile> = new Array<IProfile>();
 
     constructor(config:IConfig) {
         this.config = config;
-    }
-
-
-    querySingle(value: string, scope: string): JQueryPromise<BinaryTrustResult> {
-        if(value  == null || value.length == 0)
-            return $.Deferred<BinaryTrustResult>().resolve(null).promise();
-
-        return this.config.dtpService.QuerySingle(value, scope).then((response, queryResult) => {
-            // Process the result
-            DTP.trace("Query result: "+JSON.stringify(queryResult, null, 2));
-
-            let trustResult = this.config.trustStrategy.ProcessSingleResult(queryResult);
-            DTP.trace("Trust result: "+JSON.stringify(trustResult, null, 2));
-
-             return trustResult;
-        });
     }
 
     bindEvents(): void {
@@ -49,7 +34,7 @@ class UrlApp {
 
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'visible') {
-                this.updateIcon(this.profile.trustResult);
+                this.updateIcon(this.defaultProfile.trustResult);
             } else {
 //                this.updateIcon("dtp");
             }
@@ -57,10 +42,9 @@ class UrlApp {
 
         browser.runtime.onMessage.addListener(async (request, sender) => {
             if(request.handler === "profileHandler") {
-                if(request.action === "getProfile") {
-                    DTP.trace("Popup asked for profile: "+JSON.stringify(this.profile, null, 2));
-                    //return this.requestProfileHandler(request, sender);
-                    return this.profile;
+                if(request.action === "getProfiles") {
+                    DTP.trace("Popup asked for profiles");
+                    return this.profiles;
                 }
             }
         });
@@ -68,24 +52,33 @@ class UrlApp {
     }
 
     public async requestProfileHandler(params: any, sender: Runtime.MessageSender) : Promise<IProfile> {
-        return this.profile;
+        return this.defaultProfile;
     }
 
 
 
-    buildProfile() : void {
+    buildProfiles() : void {
         let url = this.getSanitizedUrl();
-        let urlHash = Crypto.toDTPAddress(Crypto.Hash160(this.getSanitizedUrl()));
-        // Check url even that doc is not ready!
-        this.profile = new Profile(<IProfile>{
-            userId: urlHash,
-            screen_name: url,
+
+        this.defaultProfile = new Profile(<IProfile>{
+            userId: Crypto.toDTPAddress(Crypto.Hash160(url)),
+            screen_name: window.location.hostname,
             alias: url,
             scope: "url"
         });
+        this.profiles.push(this.defaultProfile);
+        this.config.profileRepository.setProfile(this.defaultProfile);
 
-        DTP.trace("SanitizedUrl: "+this.profile.screen_name);
-        DTP.trace("Url hash: "+this.profile.userId);
+        
+        let hostnameProfile = new Profile(<IProfile>{
+            userId: Crypto.toDTPAddress(Crypto.Hash160(window.location.hostname)),
+            screen_name: window.location.hostname,
+            alias: window.location.hostname,
+            scope: "url"
+        });
+        this.profiles.push(hostnameProfile);
+        this.config.profileRepository.setProfile(hostnameProfile);
+
     }
 
     updateIcon(result: BinaryTrustResult) : void {
@@ -98,12 +91,15 @@ class UrlApp {
         });
     }
 
-    queryProfile() : void {
-        let url: string = this.profile.userId;
-        DTP.trace("Check url: "+url);
-        this.querySingle(url, "url").then( (result : BinaryTrustResult) => {
-            this.profile.trustResult = result; // Save the result on content page
-            this.updateIcon(result);
+    queryProfiles() : JQueryPromise<void> {
+        DTP.trace("Query profiles");
+        let scope = "url";
+        return this.config.dtpService.Query(this.profiles, scope).then((response, queryResult) => {
+            // Process the result
+            DTP.trace("Query result: "+JSON.stringify(queryResult, null, 2));
+            
+            this.config.trustStrategy.UpdateProfiles(queryResult, this.profiles);
+            this.updateIcon(this.profiles[0].trustResult);
         });
     }
 
@@ -113,9 +109,9 @@ class UrlApp {
 
     ready(doc: Document): JQueryPromise<void> {
         
-        this.buildProfile();
+        this.buildProfiles();
 
-        this.queryProfile();
+        this.queryProfiles();
 
         return $(doc).ready($=> {
             DTP.trace("Document ready");

@@ -60,7 +60,7 @@ export class TrustGraphPopupClient {
             action: "requestSubject",
             profileId: profileId
         };
-        return this.messageHandler.sendTab(tabId, TrustGraphPopupServer.handlerName, message);     
+        return this.messageHandler.send(TrustGraphPopupServer.handlerName, message);     
     }
 
     

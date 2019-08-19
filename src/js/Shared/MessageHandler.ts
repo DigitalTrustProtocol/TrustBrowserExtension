@@ -38,9 +38,9 @@ export class MessageHandler {
                 return callback(request.params, sender);
     }
 
-    public send(name: string, params?: any, callback?: (value: any) => any) : Promise<any> {
+    public send(handler: string, params?: any, callback?: (value: any) => any) : Promise<any> {
         const data = {
-            handler: name,
+            handler: handler,
             params
         };
         const promise = browser.runtime.sendMessage(data);

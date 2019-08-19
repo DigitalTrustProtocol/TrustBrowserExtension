@@ -1,5 +1,5 @@
 import IProfile from "../IProfile";
-
+import Identicon = require('identicon.js');
 
 class TrustGraphScoreModel {
     public show: boolean = false;
@@ -50,6 +50,8 @@ class ProfileModal
     }    
 
     public setup() : void {
+        this.EnsureAvatarImage();
+        
         if(this.profile.userId == this.subjectProfile.userId) {
             this.setupSubjectProfile();
             return;
@@ -62,6 +64,13 @@ class ProfileModal
 
         this.isSomeoneElse();
 
+    }
+
+    public EnsureAvatarImage() : void {
+        if(!this.profile.avatarImage) {
+            let icon = new Identicon(this.profile.userId, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
+            this.profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
+        }
     }
 
     public disableButtons() : void {

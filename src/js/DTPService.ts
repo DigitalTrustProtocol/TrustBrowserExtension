@@ -4,6 +4,7 @@ import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
 import * as $ from 'jquery';
 
+
 class DTPService  {
     settings: ISettings;
 
@@ -16,31 +17,18 @@ class DTPService  {
         this.queryApi = new QueryApi(settings.infoserver);
     } 
 //{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }
-    Query (targets: Array<IProfile>, scope: any) : JQueryPromise<any> {
+    Query (targets: Array<IProfile>, scope: any) : JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext;  }> {
         let query = this.BuildQuery(targets, scope);
-        if(query == null) {
-            let deferred = $.Deferred();
-            deferred.resolve(null);
-            return deferred.promise();
-        }
+        if(query == null) 
+            return $.Deferred<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext;  }>().resolve(null, null).promise();
+
         //this.queryApi.basePath = this.settings.infoserver;
-        DTP['trace'](JSON.stringify(query, null, 2));
+        //DTP['trace'](JSON.stringify(query, null, 2));
         return this.queryApi.resolvePost(query);
     }
 
     BuildQuery (targets: Array<IProfile>, scope: string) : DtpGraphCoreModelQueryRequest {
-        let subjects = new Array<string>();
-        //targets.forEach((target, index) => {
-        for (let key in targets) {
-            if (!targets.hasOwnProperty(key))
-                continue;            
-            let target = targets[key];
-            
-            subjects.push(target.userId);
-            if(target.owner && target.owner.ID) {
-                subjects.push(target.owner.ID);
-            }
-        }
+        let subjects = $.map(targets, p => p.userId);
 
         if(subjects.length == 0)
             return null;
@@ -67,41 +55,41 @@ class DTPService  {
     }
 
 
-    QuerySingle (target: string, scope: any) : JQueryPromise<any> {
-        let query = this.BuildQuerySingle(target, scope);
-        if(query == null) {
-            let deferred = $.Deferred();
-            deferred.resolve(null);
-            return deferred.promise();
-        }
-        //this.queryApi.basePath = this.settings.infoserver;
-        DTP['trace'](JSON.stringify(query, null, 2));
-        return this.queryApi.resolvePost(query);
-    }
+    // QuerySingle (target: string, scope: any) : JQueryPromise<any> {
+    //     let query = this.BuildQuerySingle(target, scope);
+    //     if(query == null) {
+    //         let deferred = $.Deferred();
+    //         deferred.resolve(null);
+    //         return deferred.promise();
+    //     }
+    //     //this.queryApi.basePath = this.settings.infoserver;
+    //     DTP['trace'](JSON.stringify(query, null, 2));
+    //     return this.queryApi.resolvePost(query);
+    // }
 
-    BuildQuerySingle (target: string, scope: string) : DtpGraphCoreModelQueryRequest {
-        let subjects = new Array<string>();
-        subjects.push(target);
+    // BuildQuerySingle (target: string, scope: string) : DtpGraphCoreModelQueryRequest {
+    //     let subjects = new Array<string>();
+    //     subjects.push(target);
     
-        let obj = <DtpGraphCoreModelQueryRequest>{
-            "issuer": { 
-                type: "secp256k1-pkh",
-                id: this.settings.address }  ,
-            "subjects": subjects,
+    //     let obj = <DtpGraphCoreModelQueryRequest>{
+    //         "issuer": { 
+    //             type: "secp256k1-pkh",
+    //             id: this.settings.address }  ,
+    //         "subjects": subjects,
     
-            // Scope is used to filter on trust resolvement. It can be any text
-            "scope": (scope) ? scope : undefined, // The scope could also be specefic to country, area, products, articles or social medias etc.
+    //         // Scope is used to filter on trust resolvement. It can be any text
+    //         "scope": (scope) ? scope : undefined, // The scope could also be specefic to country, area, products, articles or social medias etc.
     
-            // Claim made about the subject. The format is specified by the version property in the header section.
-            "types": [
-                "binary.trust.dtp1"
-              ],
-            "level": 0, // Use default level search (0)
-            //"flags": "LeafsOnly"
-        };
+    //         // Claim made about the subject. The format is specified by the version property in the header section.
+    //         "types": [
+    //             "binary.trust.dtp1"
+    //           ],
+    //         "level": 0, // Use default level search (0)
+    //         //"flags": "LeafsOnly"
+    //     };
 
-        return obj;
-    }
+    //     return obj;
+    // }
 
     // GetTrustById (id) {
     //     let url ='/api/trust/get/'+id; // id = encoded byte array

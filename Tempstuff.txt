@@ -22,3 +22,17 @@ manifest.json
       ],
       "run_at": "document_end"
     },
+    {
+      "matches": [ "*://*/web/getting-started"],
+      "exclude_globs": ["*settings/profile*"],
+      "css": [
+        "css/content.css"
+      ],
+      "js": [
+        "js/common.js",
+        "mastodon.js"
+      ],
+      "run_at": "document_end"
+    },
+
+
