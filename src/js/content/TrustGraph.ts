@@ -49,6 +49,9 @@ class TrustGraphController {
 
     modalData: ProfileModal;
     source: IGraphData;
+    profileIndex: object;
+    trustResults: object;
+
 
     dataAdapter: TrustGraphDataAdapter;
     messageHandler: MessageHandler;
@@ -75,13 +78,11 @@ class TrustGraphController {
                 this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
 
                 this.trustGraphPopupClient.showSubjectHandler = (params: any, sender: Runtime.MessageSender) => { 
-                    this.contentTabId = sender.tab.id;
                     this.loadOnData(params.data);
                 };
 
                 let url = new Url(location.href, true);
-                this.contentTabId = parseInt(url.query.tabId);
-                this.trustGraphPopupClient.requestSubject(this.contentTabId, url.query.profileId).then(data => {
+                this.trustGraphPopupClient.requestSubject(url.query.profileId).then(data => {
                     this.loadOnData(data);
                 });
             });
@@ -95,32 +96,56 @@ class TrustGraphController {
     private buildNetwork(source: IGraphData) : any {
 
         this.source = source;
-        this.currentUser = source.currentUser || this.currentUser;
-        this.source.profiles[this.currentUser.userId] = this.currentUser;
-        if(this.currentUser.owner)
-            this.source.profiles[this.currentUser.owner.ID] = this.currentUser;
 
-        this.selectedProfile = source.profiles[source.subjectProfileId] as IProfile;
+        this.buildProfiles(source).then(() => {
 
-        this.dataAdapter = new TrustGraphDataAdapter(source);
-        this.dataAdapter.load();
+            this.dataAdapter = new TrustGraphDataAdapter(source, this.profileIndex);
+            this.dataAdapter.load();
 
-        let options = this.buildOptions();
-        let container = document.getElementById('networkContainer');
+            let options = this.networkOptions();
+            let container = document.getElementById('networkContainer');
 
-        let nw = new vis2.Network(container, this.dataAdapter.getGraph(), options);
+            let nw = new vis2.Network(container, this.dataAdapter.getGraph(), options);
 
-        nw.on("select", (params) => {
-            if(params.nodes.length == 0)
-                this.hideModal();
-            else 
-                this.showModal(params.nodes[0]);
+            nw.on("select", (params) => {
+                if(params.nodes.length == 0)
+                    this.hideModal();
+                else 
+                    this.showModal(params.nodes[0]);
+            });
+
+            return nw;
         });
 
-        return nw;
     }
 
-    private buildOptions() : any {
+    private async buildProfiles(source: IGraphData) : Promise<void> {
+
+        this.trustResults = this.trustStrategy.ProcessClaims(source.queryResult.results.claims);
+
+        this.profileIndex = {};
+        this.currentUser = await this.profileRepository.getProfile(source.currentUserId); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
+        if(!this.currentUser) {
+            this.currentUser = new Profile({userId: source.currentUserId, alias: "(You)" });
+        }
+        this.profileIndex[source.currentUserId] = this.currentUser;
+
+        this.selectedProfile = source.profiles.filter(p=>p.userId == source.subjectProfileId).pop();
+        this.profileIndex[source.subjectProfileId] = this.selectedProfile;
+
+
+        for(let key in this.trustResults) {
+            let profile = source.profiles.filter(p=>p.userId === key).pop();
+            if(!profile) {
+                profile = await this.profileRepository.getProfile(key);
+                this.profileIndex[key] = profile;
+            }
+
+            profile.trustResult = this.trustResults[key];
+        }
+    }
+
+    private networkOptions() : any {
         var options = {
             layout: {
                 hierarchical: {
@@ -162,17 +187,16 @@ class TrustGraphController {
 
     showModal(profileId: any) : void {
 
-        let profile = this.source.profiles[profileId];
+        let profile = this.profileIndex[profileId];
         if(!profile.trustResult) {
-            profile.trustResult = this.source.trustResults[profileId] || new BinaryTrustResult();
-            let arr = {};
-            for(let key in profile.trustResult.claims) {
-                let claim = profile.trustResult.claims[key] as Claim;
-                arr[claim.issuer.id] = claim;
-            }
-            profile.trustResult.claims = arr;
+            profile.trustResult = this.trustResults[profileId] || new BinaryTrustResult();
+            // let arr = {};
+            // for(let key in profile.trustResult.claims) {
+            //     let claim = profile.trustResult.claims[key] as Claim;
+            //     arr[claim.issuer.id] = claim;
+            // }
+            // profile.trustResult.claims = arr;
         }
-        this.trustStrategy.calculateBinaryTrustResult(profile.trustResult);
 
         this.modalData = new ProfileModal(profile, this.selectedProfile, this.currentUser);
     
@@ -211,7 +235,7 @@ class TrustGraphController {
         //this.modalData.disableButtons();
         this.modalData.processing = true;
         profile.scope = this.source.scope;
-        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, undefined, "twitter.com", expire);
+        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, undefined, this.source.scope, expire);
         this.packageBuilder.SignPackage(trustPackage);
         return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
             console.log("Posting package is a "+trustResult.status);
@@ -219,8 +243,12 @@ class TrustGraphController {
             $["notify"](message, 'success');
 
             this.updateNetwork(trustPackage);
+            profile.queryResult.results = trustPackage;
+            profile.trustResult = new BinaryTrustResult();
+            profile.trustResult.claims.push(trustPackage.claims[0]);
+            profile.trustResult.processClaim(profile.trustResult.claims[0], this.source.currentUserId);
 
-            this.trustGraphPopupClient.updateContent(this.contentTabId, profile);
+            this.trustGraphPopupClient.updateContent(profile);
            
             this.hideModal(); 
         }).fail((trustResult) => { 

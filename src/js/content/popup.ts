@@ -69,6 +69,7 @@ class ExtensionpopupController {
             this.settingsClient.loadSettings().then((settings: ISettings) => {
                 settings = settings || new Settings();
                 this.settings = settings;
+                Profile.CurrentUser = new Profile({ userId: this.settings.address, alias: "You" });
 
                 this.packageBuilder = new PackageBuilder(settings);
                 this.subjectService = new SubjectService(settings, this.packageBuilder);
@@ -84,10 +85,11 @@ class ExtensionpopupController {
 
                 chrome.tabs.query({active: true, currentWindow: true}, tabs => {
                     
-                    this.getProfiles(tabs[0].id).then(profiles => {
+                    this.getProfiles(tabs[0].id).then((data: IGraphData) => {
 
-                        this.profiles = profiles;
-                        let profile = profiles[0];
+                        this.profiles = data.profiles;
+                        this.profiles.forEach(p=>p.queryResult = data.queryResult);
+                        let profile = this.profiles[0];
 
                         // Set select2 default value
                         var newOption = new Option(profile.alias, profile.userId, true, true);
@@ -191,7 +193,7 @@ class ExtensionpopupController {
     }
 
 
-    getProfiles(tabId: any) : Promise<Array<IProfile>> {
+    getProfiles(tabId: any) : Promise<IGraphData> {
         let command = {
             handler: "profileHandler",
             action: "getProfiles"
@@ -302,38 +304,42 @@ class ExtensionpopupController {
     }
 
 
-    private async buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Promise<Object> {
-        if(profiles[id])
-            return; // Exist, then it has been processed.
+    // private async buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Promise<Object> {
+    //     if(profiles[id])
+    //         return; // Exist, then it has been processed.
 
-        profiles[id] = profile;
+    //     profiles[id] = profile;
 
-        if(!trustResult)
-            return trustResults;
+    //     if(!trustResult)
+    //         return trustResults;
             
-        trustResults[id] = trustResult;
+    //     trustResults[id] = trustResult;
         
-        for(let key in trustResult.claims) {
-            let claim = trustResult.claims[key] as Claim;
+    //     for(let key in trustResult.claims) {
+    //         let claim = trustResult.claims[key] as Claim;
 
-            // Get a profile from the Issuer ID, as only profiles with a DTP id can be retrived.
-            // The profile may not be in index, but in DB, but it will be up to the popup window to handle this.
-            //let parentProfile = this.profileRepository.index[claim.issuer.id] as IProfile;
-            let parentProfile = await this.profileRepository.getProfileByIndex(claim.issuer.id);
-            if(!parentProfile) { // Do profile exist?
-                parentProfile = new Profile({userId: "?", screen_name: "Unknown", alias: "Unknown"}) as IProfile;
-                parentProfile.owner = new DTPIdentity({ ID: claim.issuer.id });
-            }
-            let parentTrustResult = claimCollections[parentProfile.owner.ID] as BinaryTrustResult; 
+    //         // Get a profile from the Issuer ID, as only profiles with a DTP id can be retrived.
+    //         // The profile may not be in index, but in DB, but it will be up to the popup window to handle this.
+    //         //let parentProfile = this.profileRepository.index[claim.issuer.id] as IProfile;
+    //         let parentProfile = await this.profileRepository.getProfileByIndex(claim.issuer.id);
+    //         if(!parentProfile) { // Do profile exist?
+    //             parentProfile = new Profile({userId: claim.issuer.id, screen_name: "Unknown", alias: "Unknown"}) as IProfile;
+    //         }
+    //         let parentTrustResult = claimCollections[parentProfile.owner.ID] as BinaryTrustResult; 
             
-            await this.buildGraph(parentProfile, parentProfile.owner.ID, parentTrustResult, profiles, trustResults, claimCollections);
-        }
-        return trustResults;
-    }
+    //         await this.buildGraph(parentProfile, parentProfile.owner.ID, parentTrustResult, profiles, trustResults, claimCollections);
+    //     }
+    //     return trustResults;
+    // }
 
 
     public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
-        let profile = await this.profileRepository.getProfile(params.profileId);
+        //let profile = await this.profileRepository.getProfile(params.profileId);
+
+        // let profiles = {};
+        // this.profiles.forEach(p=> profiles[p.userId] = p);
+        let profile = this.profiles.filter(p=>p.userId === params.profileId).pop();
+
 
         // If profile is null?
 
@@ -342,80 +348,34 @@ class ExtensionpopupController {
         //let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
         //let claimCollections = this.trustStrategy.ProcessClaims(claims);
 
-        let profiles: object = {};
-        let trustResults = null; //await this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
+        //let profiles: object = {};
+        //let trustResults = null; //await this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
 
         //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
         //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
+        //let trustResults = this.trustStrategy.ProcessClaims(profile.trustResult.queryContext.results.claims);
 
         let dialogData = {
             scope: "url",
-            currentUser: null,
-            subjectProfileId: profile.userId,
+            currentUserId: Profile.CurrentUser.userId,
+            subjectProfileId: params.profileId,
             profiles: this.profiles,
-            trustResults: trustResults
+            queryResult: profile.queryResult,
         } as IGraphData;
 
         return dialogData;
     }
 
     updateContentHandler(params, sender) : void {
-        //let controller = this.getController(params.profile);
+        this.selectProfile(params.profile);
     }
 
     openGraphClick(eventObject: JQueryEventObject) : boolean {
-        this.createDialog(this.modalData.profile);
+        this.trustGraphPopupClient.openPopup({profileId: this.modalData.profile.userId});
+
         eventObject.stopPropagation();
         return false;
     }
-
-    private popupTab = null;
-    private popupWindow = null;
-
-
-
-    private createDialog(profile: IProfile) : Promise<IOpenDialogResult>
-    {
-        let wLeft = window.screenLeft ? window.screenLeft : window.screenX;
-        let wTop = window.screenTop ? window.screenTop : window.screenY;
-        let w = 800;
-        let h = 800;
-        let opt = 
-        {
-            w: w,
-            h: h,
-            left: Math.floor((window.screen.availWidth / 2) - (w / 2)),
-            top: Math.floor((window.screen.availHeight / 2) - (h / 2))
-        };
-
-        let url =  browser.extension.getURL('trustgraph.html')+'?profileId='+profile.userId;
-        return browser.tabs.create({
-            url: url, 
-            active: false
-        }).then((tab) => {
-            this.popupTab = tab;
-            // After the tab has been created, open a window to inject the tab
-            let param = {
-                tabId: tab.id,
-                type: 'popup',
-                top: opt.top,
-                left: opt.left,
-                width: opt.w,
-                height: opt.h
-                // incognito, top, left, ...
-            } as Windows.CreateCreateDataType;
-            
-            browser.windows.create(param).then((window) => {
-                    this.popupWindow = window;
-            });
-            return {
-                tabId: tab.id,
-                profileId: profile.userId,
-                alreadyOpen: false
-            } as IOpenDialogResult;
-        });
-    }
-
 }
 
 

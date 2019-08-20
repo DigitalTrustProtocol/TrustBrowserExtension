@@ -22,9 +22,11 @@ class TrustGraphDataAdapter {
     private subjectProfileID: string;
 
     private source: IGraphData;
+    private profileIndex: object;
 
-    constructor(data: IGraphData) {
+    constructor(data: IGraphData, profileIndex: object) {
         this.source = data;
+        this.profileIndex = profileIndex;
     }
 
 
@@ -32,34 +34,33 @@ class TrustGraphDataAdapter {
         this.graph.nodes.clear();
         this.graph.edges.clear();
 
-        let subjectProfile = this.source.profiles[this.source.subjectProfileId] as IProfile;
+        let subjectProfile = this.profileIndex[this.source.subjectProfileId] as IProfile;
 
-        let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
-        this.loadNodes(subjectProfile, result);
+        //let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
+        this.loadNodes(subjectProfile);
     }
 
-    private loadNodes(profile: IProfile, result: BinaryTrustResult) : void {
+    private loadNodes(profile: IProfile) : void {
         if(this.graph.nodes.get(profile.userId))
              return; // Do not re-process the node
 
         this.addNode(profile);
 
-        if(profile.userId == this.source.currentUser.userId)
+        if(profile.userId == this.source.currentUserId)
              return; // Stop with oneself
 
-        if(!result)
+        if(!profile.trustResult)
             return;
              
-        for(let key in result.claims) {
-            let claim = result.claims[key];
+        
+        for(let key in profile.trustResult.claims) {
+            let claim = profile.trustResult.claims[key];
 
-            let parentProfile = this.source.profiles[claim.issuer.id] as IProfile;
+            let parentProfile = this.profileIndex[claim.issuer.id] as IProfile;
 
             this.addEdge(parentProfile, profile, claim.value);
 
-            let subResult = this.source.trustResults[parentProfile.owner.ID];
-            
-            this.loadNodes(parentProfile, subResult);
+            this.loadNodes(parentProfile);
         }
     }
 
@@ -69,8 +70,8 @@ class TrustGraphDataAdapter {
     }
 
     public updateWithClaim(claim : Claim) : void {
-        let from = this.source.profiles[claim.issuer.id] || this.source.currentUser;
-        let to = this.source.profiles[claim.subject.id];
+        let from = this.profileIndex[claim.issuer.id] || this.profileIndex[this.source.currentUserId];
+        let to = this.profileIndex[claim.subject.id];
         
         to.trustResult.claims[claim.issuer.id] = claim;
 

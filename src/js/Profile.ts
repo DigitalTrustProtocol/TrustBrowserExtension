@@ -6,6 +6,7 @@ import { jsonIgnoreReplacer, jsonIgnore } from 'json-ignore';
 import BinaryTrustResult = require("./Model/BinaryTrustResult");
 import Decorators = require("./Decorators");
 import { ProfileStateEnum } from "./Model/ProfileStateEnum";
+import { QueryContext } from '../../dist/lib/dtpapi/model/QueryContext';
 
 
 
@@ -24,6 +25,7 @@ class Profile implements IProfile {
     public controller: ProfileController;
     public formAuthenticityToken: string;
     public trustResult : BinaryTrustResult;
+    public queryResult : QueryContext; 
 
     public state: ProfileStateEnum = ProfileStateEnum.None; 
 
@@ -32,8 +34,9 @@ class Profile implements IProfile {
         //Object.defineProperty(this, 'scope', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'controller', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'formAuthenticityToken', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        //Object.defineProperty(this, 'trustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'trustResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'state', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'queryResult', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
         this.update(source);
     }
@@ -47,6 +50,7 @@ class Profile implements IProfile {
         this.updateProperty("avatarImage", source.avatarImage);
         this.updateProperty("scope", source.scope);
         this.updateProperty("trustResult", source.trustResult);
+        this.updateProperty("queryResult", source.queryResult);
         this.updateProperty("identiconData16", source.identiconData16);
         this.updateProperty("formAuthenticityToken", source.formAuthenticityToken);
         DTPIdentity.update(this, source.owner);

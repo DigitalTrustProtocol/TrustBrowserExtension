@@ -55,7 +55,7 @@ export class TrustGraphPopupClient {
     }
 
     
-    public requestSubject(tabId: number, profileId: any): Promise<any> {
+    public requestSubject(profileId: any): Promise<any> {
         let message = {
             action: "requestSubject",
             profileId: profileId
@@ -65,13 +65,13 @@ export class TrustGraphPopupClient {
 
     
 
-    public updateContent(tabId: any, profile: IProfile, callback?: (err: any, value: any) => void) : Promise<any>
+    public updateContent(profile: IProfile, callback?: (err: any, value: any) => void) : Promise<any>
     {
         let message = { 
                 action: "updateContent",
                 profile
         };
-        return this.messageHandler.sendTab(tabId, TrustGraphPopupServer.handlerName, message, result => {
+        return this.messageHandler.send(TrustGraphPopupServer.handlerName, message, result => {
             if(callback)
                 callback(null, result);
         });     
@@ -98,11 +98,11 @@ export class TrustGraphPopupClient {
         
         opt['w'] = 800;
         opt['h'] = 800;
-        var wLeft = window.screenLeft ? window.screenLeft : window.screenX;
-        var wTop = window.screenTop ? window.screenTop : window.screenY;
+        let wLeft = window.screenLeft ? window.screenLeft : window.screenX;
+        let wTop = window.screenTop ? window.screenTop : window.screenY;
 
-        opt['left'] = Math.floor(wLeft + (window.innerWidth / 2) - (opt['w'] / 2));
-        opt['top'] = Math.floor(wTop + (window.innerHeight / 2) - (opt['h'] / 2));
+        opt['left'] = Math.floor((window.screen.availWidth / 2) - (opt['w'] / 2));
+        opt['top'] = Math.floor((window.screen.availHeight / 2) - (opt['h'] / 2));
 
         for (var key in source) {
             if (source.hasOwnProperty(key)) opt[key] = source[key];

@@ -1,5 +1,6 @@
 import { QueryContext, Claim } from "../../lib/dtpapi/model/models";
 import IProfile from "../IProfile";
+import PackageBuilder = require("../PackageBuilder");
 
 class BinaryTrustResult {
     public direct : boolean = false;
@@ -17,6 +18,7 @@ class BinaryTrustResult {
 
     public Clean() {
         Object.defineProperty(this, 'claims', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'queryContext', { enumerable: false, writable: true, value: null }); // No serialize to json!
 
         this.direct = false;
         this.directValue = 0;
@@ -31,6 +33,27 @@ class BinaryTrustResult {
 
     public calculateState() {
     }
+
+    public processClaim(claim: Claim, address: string) : void {
+
+        if(claim.type === PackageBuilder.BINARY_TRUST_DTP1) {
+            if(claim.value === "true" || claim.value === "1")
+                this.trust++;
+            
+            if(claim.value === "false" || claim.value === "0")
+                this.distrust++;
+
+            // IssuerAddress is base64
+            if(claim.issuer.id == address)
+            {
+                this.direct = true;
+                this.directValue = claim.value;
+            }
+            this.state = this.trust - this.distrust;
+        }
+    }
+
+
 
     public isEqual(source: BinaryTrustResult) : boolean {
         if(!source)

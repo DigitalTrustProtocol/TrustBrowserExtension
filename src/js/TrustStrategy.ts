@@ -34,25 +34,29 @@ class TrustStrategy implements ITrustStrategy {
             if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
                 continue; // Ignore all cliams that is not BINARY_TRUST_DTP1
 
-            this.processClaim(trustResult, claim);
+            trustResult.processClaim(claim, this.settings.address);
         }
     }
 
-    private processClaim(trustResult: BinaryTrustResult, claim: Claim) : void {
-        if(claim.value === "true" || claim.value === "1")
-            trustResult.trust++;
-        
-        if(claim.value === "false" || claim.value === "0")
-            trustResult.distrust++;
+    // private processClaim(trustResult: BinaryTrustResult, claim: Claim) : void {
 
-        // IssuerAddress is base64
-        if(claim.issuer.id == this.settings.address)
-        {
-            trustResult.direct = true;
-            trustResult.directValue = claim.value;
-        }
-        trustResult.state = trustResult.trust - trustResult.distrust;
-    }
+    //     if(claim.type === PackageBuilder.BINARY_TRUST_DTP1) {
+    //         if(claim.value === "true" || claim.value === "1")
+    //             trustResult.trust++;
+            
+    //         if(claim.value === "false" || claim.value === "0")
+    //             trustResult.distrust++;
+
+    //         // IssuerAddress is base64
+    //         if(claim.issuer.id == this.settings.address)
+    //         {
+    //             trustResult.direct = true;
+    //             trustResult.directValue = claim.value;
+    //         }
+    //         trustResult.state = trustResult.trust - trustResult.distrust;
+    //     }
+    // }
+
 
 
     private CreateSubjectIndex(claims : Array<Claim>) : object {
@@ -68,20 +72,14 @@ class TrustStrategy implements ITrustStrategy {
 
     public ProcessClaims(claims : Array<Claim>) : object {
         let results = {};
-        const checkTime = Math.round(Date.now()/1000.0);
-
         claims.forEach((claim) => {
-            if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
-                return; // Ignore all cliams that is not BINARY_TRUST_DTP1
-
+            // Include all claims in trust result
             let trustResult = results[claim.subject.id] as BinaryTrustResult;
             if(!trustResult) {
-                trustResult = new BinaryTrustResult();
-                trustResult.time = checkTime;
-                results[claim.subject.id] = trustResult;
+                trustResult = results[claim.subject.id] = new BinaryTrustResult();
             } 
             trustResult.claims.push(claim);
-            this.processClaim(trustResult, claim);
+            trustResult.processClaim(claim, this.settings.address);
         });
 
         return results;
@@ -125,7 +123,10 @@ class TrustStrategy implements ITrustStrategy {
     public UpdateProfiles(queryContext : QueryContext, profiles: Array<IProfile>) : void {
         if(queryContext && queryContext.results && queryContext.results.claims) {
             let trustResults = this.ProcessClaims(queryContext.results.claims);
-            profiles.forEach(p => p.trustResult = trustResults[p.userId] || new BinaryTrustResult());
+            profiles.forEach(p => { 
+                    p.trustResult = trustResults[p.userId] || new BinaryTrustResult();
+                    p.queryResult = queryContext;
+                });
         } else
             profiles.forEach(p => p.trustResult = new BinaryTrustResult());
     }

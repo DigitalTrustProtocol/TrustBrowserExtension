@@ -5,6 +5,7 @@ import * as $ from 'jquery';
 import Crypto = require('../Crypto');
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models';
 import IProfile from "../IProfile";
+import IGraphData from './IGraphData';
 import Profile = require("../Profile");
 
 class UrlApp {
@@ -44,7 +45,10 @@ class UrlApp {
             if(request.handler === "profileHandler") {
                 if(request.action === "getProfiles") {
                     DTP.trace("Popup asked for profiles");
-                    return this.profiles;
+                    return {
+                        profiles: this.profiles,
+                        queryResult: this.profiles[0].queryResult
+                    }; 
                 }
             }
         });
@@ -69,16 +73,17 @@ class UrlApp {
         this.profiles.push(this.defaultProfile);
         this.config.profileRepository.setProfile(this.defaultProfile);
 
-        
-        let hostnameProfile = new Profile(<IProfile>{
-            userId: Crypto.toDTPAddress(Crypto.Hash160(window.location.hostname)),
-            screen_name: window.location.hostname,
-            alias: window.location.hostname,
-            scope: "url"
-        });
-        this.profiles.push(hostnameProfile);
-        this.config.profileRepository.setProfile(hostnameProfile);
-
+        let hostname = window.location.hostname;
+        if(hostname != url) {
+            let hostnameProfile = new Profile(<IProfile>{
+                userId: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
+                screen_name: hostname,
+                alias: hostname,
+                scope: "url"
+            });
+            this.profiles.push(hostnameProfile);
+            this.config.profileRepository.setProfile(hostnameProfile);
+        }
     }
 
     updateIcon(result: BinaryTrustResult) : void {
@@ -104,7 +109,10 @@ class UrlApp {
     }
 
     getSanitizedUrl() : string {
-        return window.location.href.substring(window.location.protocol.length+2);
+        let url = window.location.href.substring(window.location.protocol.length+2);
+        while(url.length > 0 && url[url.length-1] === '/') 
+            url = url.slice(0, -1);
+        return url;
     }
 
     ready(doc: Document): JQueryPromise<void> {
