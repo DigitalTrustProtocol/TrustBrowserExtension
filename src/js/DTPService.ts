@@ -35,8 +35,9 @@ class DTPService  {
     
         let obj = <DtpGraphCoreModelQueryRequest>{
             "issuer": { 
-                type: "address.dtp1",
-                id: this.settings.address }  ,
+                type: "thing",
+                id: this.settings.address 
+            },
             "subjects": subjects,
     
             // Scope is used to filter on trust resolvement. It can be any text
@@ -44,8 +45,7 @@ class DTPService  {
     
             // Claim made about the subject. The format is specified by the version property in the header section.
             "types": [
-                "binary.trust.dtp1",
-                "id.identity.dtp1"
+                "binarytrust"
               ],
             "level": 0, // Use default level search (0)
             //"flags": "LeafsOnly"

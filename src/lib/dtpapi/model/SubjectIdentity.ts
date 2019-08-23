@@ -15,10 +15,12 @@ import * as models from './models';
 export interface SubjectIdentity {
     type?: string;
 
+    algorithm?: string;
+
     id?: string;
 
     path?: string;
 
-    signature?: string;
+    proof?: string;
 
 }

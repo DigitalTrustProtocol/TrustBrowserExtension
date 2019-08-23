@@ -13,12 +13,11 @@
 import * as models from './models';
 
 export interface Claim {
-    //algorithm?: string;
-
     //id?: string;
-
     //root?: string;
     type?: string;
+
+    algorithm?: string;
 
     created?: number;
 

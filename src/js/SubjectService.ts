@@ -13,6 +13,7 @@ class SubjectService  {
     settings: ISettings;
     packageBuilder: PackageBuilder;
     subjects: Array<ISubject> = [];
+
     constructor(settings: ISettings, packageBuilder: PackageBuilder) {
         this.SCRIPT = "secp256k1-pkh";
         this.settings = settings;
@@ -27,10 +28,10 @@ class SubjectService  {
         let claim: Claim = null;
         if(profile.userId) {
             claim = this.packageBuilder.CreateClaim(
-            this.settings.address, 
-            this.SCRIPT,
+            this.settings.address,
+            PackageBuilder.IDENTITY_ENTITY_DTP1,
             profile.userId,
-            PackageBuilder.IDENTITY_TYPE_THING,
+            PackageBuilder.IDENTITY_THING_DTP1,
             PackageBuilder.BINARY_TRUST_DTP1,
             scope,
             value, 

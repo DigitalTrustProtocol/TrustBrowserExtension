@@ -7,10 +7,12 @@ Buffer.prototype.toJSON = function() {
 }
 class PackageBuilder {
    settings: any;
-   static BINARY_TRUST_DTP1: string = "binary.trust.dtp1";
+   static BINARY_TRUST_DTP1: string = "binarytrust";
    static CONFIRM_TRUST_DTP1: string = "confirm.trust.dtp1";
    static RATING_TRUST_DTP1: string = "rating.trust.dtp1";
-   static IDENTITY_DTP1: string = "identity.dtp1";
+   static IDENTITY_DTP1: string = "entity";
+   static IDENTITY_ENTITY_DTP1: string = "entity";
+   static IDENTITY_THING_DTP1: string = "thing";
    static ID_IDENTITY_DTP1: string = "id.identity.dtp1";
    static ALIAS_IDENTITY_DTP1: string = "alias.identity.dtp1";
    static IDENTITY_TYPE_NAME = "name";
@@ -19,7 +21,7 @@ class PackageBuilder {
    static IDENTITY_TYPE_ALPHANUMERIC = "alphanumeric";
    static IDENTITY_TYPE_URI = "uri";
    static IDENTITY_TYPE_STRING = "string";
-   static IDENTITY_TYPE_THING = "thing.dtp1";
+   static IDENTITY_TYPE_THING = "thing";
    
     constructor(settings) {
         this.settings = settings;
@@ -62,7 +64,7 @@ class PackageBuilder {
     //     return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.ID_IDENTITY_DTP1, scope, value, activate, expire, metadata);
     // }
 
-    CreateClaim (issuer: any, script, subject, subjectType, type, scope, value: string, activate, expire, metadata? : string) : Claim {
+    CreateClaim (issuer: any, issuerType, subject, subjectType, type, scope, value: string, activate, expire, metadata? : string) : Claim {
         if(typeof scope != 'string')
             scope = JSON.stringify(scope);
 
@@ -73,7 +75,7 @@ class PackageBuilder {
 
         let claim : Claim = {
             issuer : <IssuerIdentity>{ 
-                type: script,
+                type: issuerType,
                 id: issuer
             },
             subject : <SubjectIdentity>{

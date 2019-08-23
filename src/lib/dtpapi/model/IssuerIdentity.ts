@@ -14,6 +14,8 @@ import * as models from './models';
 
 export interface IssuerIdentity {
     type?: string;
+    
+    algorithm?: string;
 
     id?: string;
 

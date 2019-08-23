@@ -1,47 +1,54 @@
 <!doctype html>
-<html>
+<html lang="en">
+
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Trust Chrome Extension for handling trust">
     <meta name="author" content="Carsten Keutmann">
-
     <title>Trust Chrome Extension</title>
 
-
-    <!-- Cascading Style Sheets -->
+    <!-- Bootstrap core CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.8/css/select2.min.css" rel="stylesheet" />
-    <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"> -->
-    <link href="css/bootstrap.custom.css" rel="stylesheet" media="screen">
-
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
     <style>
-        html,
+        .breakContent {
+            word-wrap: break-word;
+            /* All browsers since IE 5.5+ */
+            overflow-wrap: break-word;
+            /* Renamed property in CSS3 draft spec */
+            width: 100%;
+        }
+        .col-lg-4 {
+            text-align: center;
+            }
+
         body {
-            font-size: 12px;
-            height: 100%;
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+        color: #5a5a5a;
+        height: 100%;
+        }
+        .trustIcon {
+            font-size: 40pt; 
+            padding: 5pt;
         }
 
-        .container {
-            min-height: 100%;
-        }
-
-        .fill {
-            min-height: 100%;
-            height: 100%;
-        }
-
-        .min-100 {
-            min-height: 100%;
-        }
-
-        .trusted {
+        .trust {
             color: green;
         }
-
-        .distrusted {
-            color: red;
+        .distrust {
+            color: white;
+            background-color: red;
+        }
+        .neutral {
+            color:darkorange;
+        }
+        
+        .none {
+            color:blue;
         }
 
         .dtpModelText {
@@ -49,152 +56,152 @@
             font-size: 9pt;
         }
 
-        #networkContainer {
-            width: 100%;
-            height: 100%;
+        .container {
             min-height: 100%;
-            background-color: whitesmoke;
         }
 
-        .dtp-avatarImg {
-            border: black;
-            border-width: 2px;
-            margin: 5px;
-
+        .subjectBlock {
+            background-color: #777;
+            color: white;
+            padding-bottom: 5px;
+            padding-top: 5px;
         }
-
-        .trustSpinner24 {
-            background-image: url('chrome-extension://__MSG_@@extension_id__/img/Spinner24px.gif') !important;
-        }
-
     </style>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css"
+        integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
 
 </head>
 
 <body ng-app="myApp" ng-controller="ExtensionpopupController as ct" ng-init="ct.init()"> 
+    <header>
+        <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+            <a class="navbar-brand" href="#">Trust</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#" data-toggle="modal" data-target="#userModal">User</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Server</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
 
+    <main role="main">
 
-
-
-    <div ng-controller="TabController">
-    <nav class="navbar navbar-default" role="navigation">
-        <div class="collapse navbar-collapse navbar-ex1-collapse">
-            <ul class="nav navbar-nav" data-tabs="tabs">
-                <li ng-class="{ active: isSet(1) }"><a href="#trustcontainer" ng-click="setTab(1)">Trust</a></li>
-                <li ng-class="{ active: isSet(2) }"><a href="#usercontainer" ng-click="setTab(2)">Account</a></li>
-                <li ng-class="{ active: isSet(3) }"><a href="#settingscontainer" ng-click="setTab(3)">Settings</a></li>
-                <li ng-class="{ active: isSet(4) }"><a href="#servercontainer" ng-click="setTab(4)">Server</a></li>
-                <li ng-class="{ active: isSet(5) }"><a href="#aboutcontainer" ng-click="setTab(5)">About</a></li>
-            </ul>
+        <div class="subjectBlock">
+            <div style="padding-top: 5px;padding-bottom: 5px;">
+            <select class="userSelectContainer js-states form-control" name="state" style="width: 100%;">
+            </div>
         </div>
-    </nav>
 
-    
-    <section>
-        <form class="form-signin">
-            <div id="my-tab-content" class="tab-content">
-                <div id="trustcontainer" class="tab-pane" ng-class="{ active: isSet(1) }">
-                    <h3 class="form-signin-heading">Trust</h3>
-                    <div>Subject:</div>
-                    <select class="userSelectContainer js-states form-control" name="state">
-                        </select>
-                        <div style="margin-top: 10px">
-                            <!-- Show trust buttons -->
-                            <img ng-src="{{ ct.modalData.profile.avatarImage }}" class="rounded-circle dtp-avatarImg float-left" ng-click="ct.openGraphClick($event)">
-                            <div class="">
-                                <h5>{{ ct.modalData.profile.userId }}</br><small>{{ ct.modalData.profile.alias }}</small></h5>
-                                <span class="dtpModelText">
-                                    <div ng-show="ct.modalData.status.show">Status: <span ng-class="ct.modalData.status.cssClass" ng-bind="ct.modalData.status.text"></span></div>
-                                    <div ng-show="ct.modalData.score.show">
-                                        <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.trust > 0">Possitive claims: <span class="trusted" ng-bind="ct.modalData.profile.binaryTrustResult.trust"></span></div>
-                                        <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.distrust > 0" >Negative claims: <span class="distrusted" ng-bind="ct.modalData.profile.binaryTrustResult.distrust"></span></div>
-                                    </div>
-                                </span>
-                                <div style="margin-top: 10px" data-ng-show="ct.modalData.button.show" >
-                                    <button type="button" ng-class="ct.modalData.button.trust.cssClass" ng-click="ct.trustClick()" ng-attr-title="{{ct.modalData.button.trust.title}}" ng-disabled="ct.modalData.button.trust.disabled">
-                                        Trust
-                                    </button>
-                                    <button type="button" ng-class="ct.modalData.button.untrust.cssClass" ng-click="ct.untrustClick()" ng-attr-title="{{ct.modalData.button.untrust.title}}" ng-disabled="ct.modalData.button.untrust.disabled">
-                                        Untrust
-                                    </button>
-                                    <button type="button" ng-class="ct.modalData.button.distrust.cssClass" ng-click="ct.distrustClick()" ng-attr-title="{{ct.modalData.button.distrust.title}}" ng-disabled="ct.modalData.button.distrust.disabled">
-                                        Distrust
-                                    </button>
-                                    <img ng-src="{{ct.modalData.spinner}}" ng-show="ct.modalData.processing">
-                                </div>
-                            </div>
-    
-                        </div>
-                </div>
+        <!-- Marketing messaging and featurettes
+      ================================================== -->
+        <!-- Wrap the rest of the page in another container to center all the content. -->
 
-                <div id="usercontainer" class="tab-pane" ng-class="{ active: isSet(2) }">
-                    <h3 class="form-signin-heading">User identity</h3>
-                    <p>This is an alpha product. The user account ID is generated from the Password and the additional seed (optional). No signup is needed. NB! The password is not encrypted on the client and may be very insecure. The password and seed will never be submittet to the server.</p>
-                    <div><label for="inputPassword">Password</label></div>
-                    <div class="input-group">
-                        <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-                        <input id="inputPassword" type="password" class="form-control" name="inputPassword" placeholder="Password" required autofocus ng-model="ct.settings.password" ng-trim="false" ng-change="ct.modelChange('identicon')">
-                    </div>
-                    <label for="inputSeed">Additional seed - Fill in for better security.</label>
-                    <div class="input-group">
-                        <span class="input-group-addon">Text</span>
-                        <input type="text" id="inputSeed" class="form-control" ng-model="ct.settings.seed" ng-trim="false" placeholder="E-mail / Phone / Pin or any text" ng-change="ct.modelChange('identicon')">
-                    </div>
-                    <div class="input-group">
-                        <img id="identicon" style="float: left; padding: 5px;" ng-src="{{ ct.settings.identicon }}" ng-show="ct.showIcon">
-                        <div style="float: left; padding: 5px;">
-                            <label for="address">Address: </label><br><span id="address" ng-bind="ct.settings.address"></span>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <div class="checkbox">
-                            <label>
-                                <input id="rememberMe" type="checkbox" value="remember-me" ng-model="ct.settings.rememberme" ng-change="ct.modelChange('rememberme')" checked>Remember me
-                            </label>
-                        </div>
-                    </div>
-                </div>
+        <div class="container">
 
-                <div id="settingscontainer" class="tab-pane" ng-class="{ active: isSet(3) }">
-                        <h3 class="form-signin-heading">Users</h3>
-                        <p>Find subject in the DTP system</p>
-                        <div class="input-group">
-                        </div>
-                    </div>
-        
-    
-                <div id="servercontainer" class="tab-pane" ng-class="{ active: isSet(4) }">
-                    <h3 class="form-signin-heading">Server</h3>
-                    <div class="input-group">
-                        <label for="trustserver">Trust server</label>
-                        <input type="url" id="trustserver" class="form-control" placeholder="Trust server" ng-model="ct.settings.infoserver" ng-change="ct.modelChange()" required autofocus>
-                    </div>
-                </div>
-
-                <div id="aboutcontainer" class="tab-pane" ng-class="{ active: isSet(5) }">
-                    <h3 class="form-signin-heading">About</h3>
-                    <h4>Version 0.2.20190110</h4>
-                    <div>Alpha release.</div>
-                    <h4>Terms and conditions</h4>
-                    <div>
-                        By using this product, you agree that the data that you submit to the server will be available to everyone including anonymous entities under the MIT license.
-                        There is no encryption of data or privacy, therefore anyone may use this data as they see fit.
-                        Do not submit data that you do not want to share with everyone. Submitting personal identifiable data is not allowed.
-                        This is an open platform where the sharing of “Trust” is the basics of the system.
-                        Data stored on client is for caching and efficiency purposes and may not be safe against data mining.
-                    </div>
-                    <div>
-                        <h4>Github repositories</h4>
-                        <div><a href="https://github.com/DigitalTrustProtocol/Whitepaper" target="_blank">Whitepaper</a></div>
-                        <div><a href="https://github.com/DigitalTrustProtocol/TrustBrowserExtension" target="_blank">DTP Browser Extension</a></div>
-                        <div><a href="https://github.com/DigitalTrustProtocol/DtpSolution" target="_blank">DTP Server</a></div>
-                    </div>
+            <div class="row">
+                    <div class="col-lg-4 subjectBlock">
+                        <img ng-src="{{ ct.modalData.profile.avatarImage }}" class="rounded-circle dtp-avatarImg" ng-click="ct.openGraphClick($event)">
+                    <div class="breakContent" style="font-weight: bold">{{ ct.modalData.profile.alias }}</div>
+                    <div>{{ ct.modalData.profile.userId }}</div>
                 </div>
             </div>
-        </form>
-        <div>
-            <!-- <button id="savebtn" class="btn btn-lg btn-primary btn-block" type="button">Save</button> -->
+            <!-- Three columns of text below the carousel -->
+            <div class="row">
+                <div class="col-lg-4">
+                    <h5>Reputation</h5>
+                    <div class="fas fa-check-circle trustIcon trust"></div>
+                    <!-- <div class="fas fa-ban rounded-circle trustIcon distrust"></div>
+                    <div class="fas fa-exclamation-circle trustIcon neutral"></div>
+                    <div class="fas fa-question-circle trustIcon none"></div> -->
+                    <div class="dtpModelText">
+                        <div ng-show="ct.modalData.status.show">Status: <span ng-class="ct.modalData.status.cssClass" ng-bind="ct.modalData.status.text"></span></div>
+                        <div ng-show="ct.modalData.score.show">
+                            <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.trust > 0">Possitive claims: <span class="trusted" ng-bind="ct.modalData.profile.binaryTrustResult.trust"></span></div>
+                            <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.distrust > 0" >Negative claims: <span class="distrusted" ng-bind="ct.modalData.profile.binaryTrustResult.distrust"></span></div>
+                        </div>
+                    </div>
+                </div><!-- /.col-lg-4 -->
+            </div><!-- /.row -->
+            <div class="row">
+                <div class="col-lg-4">
+                    <button type="button" ng-class="tc.modalData.button.trust.cssClass" ng-click="tc.trustClick()"
+                        ng-attr-title="{{tc.modalData.button.trust.title}}"
+                        ng-disabled="tc.modalData.button.trust.disabled">
+                        Trust
+                    </button>
+                    <button type="button" ng-class="tc.modalData.button.untrust.cssClass" ng-click="tc.untrustClick()"
+                        ng-attr-title="{{tc.modalData.button.untrust.title}}"
+                        ng-disabled="tc.modalData.button.untrust.disabled">
+                        Untrust
+                    </button>
+                    <button type="button" ng-class="tc.modalData.button.distrust.cssClass" ng-click="tc.distrustClick()"
+                        ng-attr-title="{{tc.modalData.button.distrust.title}}"
+                        ng-disabled="tc.modalData.button.distrust.disabled">
+                        Distrust
+                    </button>
+                </div>
+            </div>
+        </div><!-- /.container -->
+    </main>
+
+    <div class="modal fade" id="userModal" tabindex="-1" role="dialog" aria-labelledby="userModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">User settings</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <h3 class="form-signin-heading">User identity</h3>
+                        <p>This is an alpha product. The user account ID is generated from the Password and the additional seed (optional). No signup is needed. NB! The password is not encrypted on the client and may be very insecure. The password and seed will never be submittet to the server.</p>
+                        <div><label for="inputPassword">Password</label></div>
+                        <div class="input-group">
+                            <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
+                            <input id="inputPassword" type="password" class="form-control" name="inputPassword" placeholder="Password" required autofocus ng-model="ct.settings.password" ng-trim="false" ng-change="ct.modelChange('identicon')">
+                        </div>
+                        <label for="inputSeed">Additional seed - Fill in for better security.</label>
+                        <div class="input-group">
+                            <span class="input-group-addon">Text</span>
+                            <input type="text" id="inputSeed" class="form-control" ng-model="ct.settings.seed" ng-trim="false" placeholder="E-mail / Phone / Pin or any text" ng-change="ct.modelChange('identicon')">
+                        </div>
+                        <div class="input-group">
+                            <img id="identicon" style="float: left; padding: 5px;" ng-src="{{ ct.settings.identicon }}" ng-show="ct.showIcon">
+                            <div style="float: left; padding: 5px;">
+                                <label for="address">Address: </label><br><span id="address" ng-bind="ct.settings.address"></span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <div class="checkbox">
+                                <label>
+                                    <input id="rememberMe" type="checkbox" value="remember-me" ng-model="ct.settings.rememberme" ng-change="ct.modelChange('rememberme')" checked>Remember me
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">Save</button>
+                </div>
+            </div>
         </div>
-    </section>
     </div>
+</body>
+
 </html>

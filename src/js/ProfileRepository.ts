@@ -90,6 +90,7 @@ class ProfileRepository {
             if (!profile) {
                 const data = (source) ? source : { userId: id};
                 profile = new Profile(data);
+                
                 this.setProfile(profile);
                 //DTP['trace']('Profile ' + profile.userId + ' created');
             }
