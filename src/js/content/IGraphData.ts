@@ -1,5 +1,6 @@
 import IProfile from "../IProfile";
-import { QueryContext } from '../../../dist/lib/dtpapi/model/QueryContext';
+import { QueryContext } from "../../lib/dtpapi/model/models";
+
 
 export default interface IGraphData {
     scope?: string;

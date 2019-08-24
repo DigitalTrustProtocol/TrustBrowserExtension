@@ -3,7 +3,7 @@ import ProfileController = require("./ProfileController");
 import { jsonIgnoreReplacer, jsonIgnore } from 'json-ignore';
 import BinaryTrustResult = require("./Model/BinaryTrustResult");
 import { ProfileStateEnum } from "./Model/ProfileStateEnum";
-import { QueryContext } from '../../dist/lib/dtpapi/model/QueryContext';
+import { QueryContext } from "../lib/dtpapi/model/models";
 
 export default interface IProfile {
     userId: string;

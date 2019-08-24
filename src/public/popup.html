@@ -12,6 +12,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.8/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css"
+        integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+
 
     <style>
         .breakContent {
@@ -21,34 +24,43 @@
             /* Renamed property in CSS3 draft spec */
             width: 100%;
         }
+
         .col-lg-4 {
             text-align: center;
-            }
+        }
+
+        html,
+        body {
+            height: 500px;
+            width: 550px;
+        }
 
         body {
-        padding-top: 3rem;
-        padding-bottom: 3rem;
-        color: #5a5a5a;
-        height: 100%;
+            padding-top: 3rem;
+            padding-bottom: 3rem;
+            color: #5a5a5a;
         }
+
         .trustIcon {
-            font-size: 40pt; 
+            font-size: 40pt;
             padding: 5pt;
         }
 
         .trust {
             color: green;
         }
+
         .distrust {
             color: white;
             background-color: red;
         }
+
         .neutral {
-            color:darkorange;
+            color: darkorange;
         }
-        
+
         .none {
-            color:blue;
+            color: blue;
         }
 
         .dtpModelText {
@@ -66,13 +78,16 @@
             padding-bottom: 5px;
             padding-top: 5px;
         }
+
+        dtp-avatarImg {
+            width: 10pt;
+            height: 10pt;
+        }
     </style>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css"
-        integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
 
 </head>
 
-<body ng-app="myApp" ng-controller="ExtensionpopupController as ct" ng-init="ct.init()"> 
+<body ng-app="myApp" ng-controller="ExtensionpopupController as ct" ng-init="ct.init()">
     <header>
         <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
             <a class="navbar-brand" href="#">Trust</a>
@@ -81,15 +96,15 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarCollapse">
-                <ul class="navbar-nav mr-auto">
+                <ul class="navbar-nav mr-auto" data-toggle="collapse" data-target="#navbarCollapse">
                     <li class="nav-item active">
                         <a class="nav-link" href="#" data-toggle="modal" data-target="#userModal">User</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Server</a>
+                        <a class="nav-link" href="#" data-toggle="modal" data-target="#serverModal">Server</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">About</a>
+                        <a class="nav-link" href="#" data-toggle="modal" data-target="#aboutModal">About</a>
                     </li>
                 </ul>
             </div>
@@ -100,7 +115,7 @@
 
         <div class="subjectBlock">
             <div style="padding-top: 5px;padding-bottom: 5px;">
-            <select class="userSelectContainer js-states form-control" name="state" style="width: 100%;">
+                <select class="userSelectContainer js-states form-control" name="state" style="width: 100%;">
             </div>
         </div>
 
@@ -111,10 +126,12 @@
         <div class="container">
 
             <div class="row">
-                    <div class="col-lg-4 subjectBlock">
-                        <img ng-src="{{ ct.modalData.profile.avatarImage }}" class="rounded-circle dtp-avatarImg" ng-click="ct.openGraphClick($event)">
+                <div class="col-lg-4 subjectBlock">
                     <div class="breakContent" style="font-weight: bold">{{ ct.modalData.profile.alias }}</div>
-                    <div>{{ ct.modalData.profile.userId }}</div>
+
+                    <div><img ng-src="{{ ct.modalData.profile.avatarImage }}" class="rounded-circle dtp-avatarImg"
+                            ng-click="ct.openGraphClick($event)">
+                        <span>{{ ct.modalData.profile.userId }}</span></div>
                 </div>
             </div>
             <!-- Three columns of text below the carousel -->
@@ -126,10 +143,16 @@
                     <div class="fas fa-exclamation-circle trustIcon neutral"></div>
                     <div class="fas fa-question-circle trustIcon none"></div> -->
                     <div class="dtpModelText">
-                        <div ng-show="ct.modalData.status.show">Status: <span ng-class="ct.modalData.status.cssClass" ng-bind="ct.modalData.status.text"></span></div>
+                        <div ng-show="ct.modalData.status.show">Status: <span ng-class="ct.modalData.status.cssClass"
+                                ng-bind="ct.modalData.status.text"></span></div>
                         <div ng-show="ct.modalData.score.show">
-                            <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.trust > 0">Possitive claims: <span class="trusted" ng-bind="ct.modalData.profile.binaryTrustResult.trust"></span></div>
-                            <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.distrust > 0" >Negative claims: <span class="distrusted" ng-bind="ct.modalData.profile.binaryTrustResult.distrust"></span></div>
+                            <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.trust > 0">
+                                Possitive claims: <span class="trusted"
+                                    ng-bind="ct.modalData.profile.binaryTrustResult.trust"></span></div>
+                            <div
+                                ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.distrust > 0">
+                                Negative claims: <span class="distrusted"
+                                    ng-bind="ct.modalData.profile.binaryTrustResult.distrust"></span></div>
                         </div>
                     </div>
                 </div><!-- /.col-lg-4 -->
@@ -168,29 +191,42 @@
                 </div>
                 <div class="modal-body">
                     <form>
-                        <h3 class="form-signin-heading">User identity</h3>
-                        <p>This is an alpha product. The user account ID is generated from the Password and the additional seed (optional). No signup is needed. NB! The password is not encrypted on the client and may be very insecure. The password and seed will never be submittet to the server.</p>
-                        <div><label for="inputPassword">Password</label></div>
-                        <div class="input-group">
-                            <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-                            <input id="inputPassword" type="password" class="form-control" name="inputPassword" placeholder="Password" required autofocus ng-model="ct.settings.password" ng-trim="false" ng-change="ct.modelChange('identicon')">
+                        <p>The user ID is generated and stored on the client only. No signup is needed.<br>
+                            <small style="display: none">NB! The password is not encrypted on the client and may be very
+                                insecure. The password and seed will never be submittet to the server.</small>
+                        </p>
+                        <div class="input-group mb-3 input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            </div>
+                            <input id="inputPassword" type="password" class="form-control" name="inputPassword"
+                                placeholder="Password" required autofocus ng-model="ct.settings.password"
+                                ng-trim="false" ng-change="ct.modelChange('identicon')">
                         </div>
                         <label for="inputSeed">Additional seed - Fill in for better security.</label>
-                        <div class="input-group">
-                            <span class="input-group-addon">Text</span>
-                            <input type="text" id="inputSeed" class="form-control" ng-model="ct.settings.seed" ng-trim="false" placeholder="E-mail / Phone / Pin or any text" ng-change="ct.modelChange('identicon')">
-                        </div>
-                        <div class="input-group">
-                            <img id="identicon" style="float: left; padding: 5px;" ng-src="{{ ct.settings.identicon }}" ng-show="ct.showIcon">
-                            <div style="float: left; padding: 5px;">
-                                <label for="address">Address: </label><br><span id="address" ng-bind="ct.settings.address"></span>
+                        <div class="input-group mb-3 input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">Optional</span>
                             </div>
+                            <input type="text" id="inputSeed" class="form-control" ng-model="ct.settings.seed"
+                                ng-trim="false" placeholder="E-mail / Phone / Pin or any text"
+                                ng-change="ct.modelChange('identicon')">
                         </div>
                         <div class="input-group">
                             <div class="checkbox">
                                 <label>
-                                    <input id="rememberMe" type="checkbox" value="remember-me" ng-model="ct.settings.rememberme" ng-change="ct.modelChange('rememberme')" checked>Remember me
+                                    <input id="rememberMe" type="checkbox" value="remember-me"
+                                        ng-model="ct.settings.rememberme" ng-change="ct.modelChange('rememberme')"
+                                        checked>Remember me
                                 </label>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <img id="identicon" style="float: left; padding: 5px;" ng-src="{{ ct.settings.identicon }}"
+                                ng-show="ct.showIcon">
+                            <div style="float: left; padding: 5px;">
+                                <label for="address">User ID: </label><br><span id="address"
+                                    ng-bind="ct.settings.address"></span>
                             </div>
                         </div>
                     </form>
@@ -198,6 +234,81 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="serverModal" tabindex="-1" role="dialog" aria-labelledby="serverModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Server settings</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form>
+
+                        <p>Specify a url to a Trust server.
+                        </p>
+                        <div class="input-group mb-3 input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-server"></i></span>
+                            </div>
+                            <input type="url" id="trustserver" class="form-control" placeholder="Trust server url"
+                                ng-model="ct.settings.infoserver" ng-change="ct.modelChange()" required autofocus>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="aboutModal" tabindex="-1" role="dialog" aria-labelledby="aboutModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">About DTP <small>Ver 0.3.20190824 - Alpha</small></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6>Terms and conditions</h6>
+                    <p><small>
+                            By using this product, you agree that the data that you submit to the server will be
+                            available to everyone including anonymous entities under the MIT license.
+                            There is no encryption of data or privacy, therefore anyone may use this data as they see
+                            fit.
+                            Do not submit data that you do not want to share with everyone. Submitting personal
+                            identifiable data is not allowed.
+                            This is an open platform where the sharing of “Trust” is the basics of the system.
+                            Data stored on client is for caching and efficiency purposes and may not be safe against
+                            data mining.</small>
+                    </p>
+                    <p>
+                        <h6>Resources</h6>
+                        <small>
+                            <div><a href="https://github.com/DigitalTrustProtocol/Whitepaper"
+                                    target="_blank">Whitepaper</a></div>
+                            <div><a href="https://github.com/DigitalTrustProtocol/TrustBrowserExtension"
+                                    target="_blank">DTP Browser Extension</a></div>
+                            <div><a href="https://github.com/DigitalTrustProtocol/DtpSolution" target="_blank">DTP
+                                    Server</a></div>
+                        </small>
+                    </p>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
                 </div>
             </div>
         </div>

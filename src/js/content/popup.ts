@@ -24,7 +24,6 @@ import { browser, Windows, Runtime, Tabs } from "webextension-polyfill-ts";
 import 'select2';
 import { StorageClient } from "../Shared/StorageClient";
 import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
-import { Claim } from '../../../dist/lib/dtpapi/model/Claim';
 import IGraphData from './IGraphData';
 import IOpenDialogResult from '../Model/OpenDialogResult.interface';
 import { TrustGraphPopupServer } from '../background/TrustGraphPopupServer';
