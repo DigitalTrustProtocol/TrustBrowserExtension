@@ -13,8 +13,8 @@
   "browser_action": {
     "default_icon": {
       "16": "img/DTP16a.png",
-      "24": "img/DTP48a.png",
-      "32": "img/DTP48a.png"
+      "24": "img/DTP24a.png",
+      "32": "img/DTP32a.png"
     },
     "default_title": "DTP Browser Extension",
     "default_popup": "popup.html"

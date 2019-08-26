@@ -1,3 +1,32 @@
+Trust network
+dr1
+1DdRttLan2qXiQ2Q3Jdmh8N5rZbu81tu1X
+trust www.dr.dk
+
+dr2
+1NnEpJ1XCAnMg7kVhPawQJRRQpUakvj8fn
+trust www.dr.dk
+
+dr3
+18fatHLmykaZpreQo4xox4vWjjsNPQccz5
+distrust www.dr.dk
+
+
+mid1
+1Gysji5NWDCagQcXjYReaKkSmZPXXg26Ft
+trust dr1 and dr2
+
+
+mid2
+1F5JAvP7f39zawGtRUJtgtCYEqJB5Z2G1S
+trust dr3
+
+ck
+1QEw3JUFNzKEW1N4MnsBzS1PHuaMksW7MX
+trust mid1 and mid2
+
+
+
 manifest.json
 
     {

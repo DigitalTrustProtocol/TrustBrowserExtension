@@ -14,22 +14,24 @@ storageServer.ready().then(() => {
 });
 
 function updateIcon(val: number) : void {
-    if(val === undefined || val == 0) {
-        chrome.browserAction.setIcon({path: "img/DTP16a.png"});
-        return;
-    }
+    let icon = "";
 
-    if (val >0) { // if val not undefined!
-        chrome.browserAction.setIcon({path: "img/Trust24a.png"});
-        return;
-    }
-    
-    if(val < 0) {
-        chrome.browserAction.setIcon({path: "img/Distrust24a.png"});
-        return;
-    }
+    if(val == 0)
+        icon = "neutral";
 
+    if (val > 0)
+        icon = "trust";
     
+    if(val < 0) 
+        icon = "distrust";
+
+    chrome.browserAction.setIcon({
+        path : {
+          "16": `img/DTP${icon}16a.png`,
+          "24": `img/DTP${icon}24a.png`,
+          "32": `img/DTP${icon}32a.png`
+        }
+      });
 }
 
 

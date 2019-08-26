@@ -10,6 +10,7 @@ class TrustGraphStatusModel {
     public cssClass: string;
     public text: string;
     public show: boolean;
+    public iconClass: string;
 }
 
 class TrustGraphButtonModel {
@@ -20,8 +21,6 @@ class TrustGraphButtonModel {
 
 class ProfileModal
 {
-    
-
     public profile: IProfile;
     public subjectProfile: IProfile;
     public currentUser: IProfile;
@@ -86,7 +85,7 @@ class ProfileModal
     }
 
     private setupCurrentUser() : void {
-        this.status = { cssClass: "", text: "Current user", show: true };
+        this.status = { cssClass: "", text: "Current user", show: true, iconClass:"fas fa-question-circle trustIcon none" };
         this.isCurrentUser = true;
     }
 
@@ -96,19 +95,27 @@ class ProfileModal
     }
 
     private setupStatus() : void {
+        let trustGiven = false;
         if(this.profile.trustResult) {
+
             let postText = this.profile.trustResult.direct ? " directly" : "";
 
+            trustGiven = this.profile.trustResult.trust > 0 || this.profile.trustResult.distrust > 0;
             this.score.result = this.profile.trustResult.trust - this.profile.trustResult.distrust;
             if(this.score.result < 0)
-                this.status = { cssClass: "distrusted", text: "Distrusted" + postText, show: true};
+                this.status = { cssClass: "distrusted", text: "Distrusted" + postText, show: true, iconClass:"fas fa-stop-circle trustIcon distrust"};
 
             if(this.score.result > 0)
-                this.status = { cssClass: "trusted", text: "Trusted" + postText, show: true};
+                this.status = { cssClass: "trusted", text: "Trusted" + postText, show: true, iconClass:"fas fa-check-circle trustIcon trust"};
+
         }
 
-        if(this.score.result == 0)
-            this.status = { cssClass: "", text: "No trust given", show: true};
+        if(this.score.result == 0 && trustGiven)
+            this.status = { cssClass: "", text: "Evenly trusted", show: true, iconClass:"fas fa-exclamation-circle trustIcon neutral"};
+        else
+            if(this.score.result == 0 && !trustGiven)
+            this.status = { cssClass: "", text: "Not trusted yet", show: true, iconClass:"fas fa-question-circle trustIcon none"};
+
     }
     
     private setupScore() : void {

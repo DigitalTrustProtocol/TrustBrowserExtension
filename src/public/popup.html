@@ -51,8 +51,8 @@
         }
 
         .distrust {
-            color: white;
-            background-color: red;
+            color: red;
+            /*background-color: red;*/
         }
 
         .neutral {
@@ -138,7 +138,7 @@
             <div class="row">
                 <div class="col-lg-4">
                     <h5>Reputation</h5>
-                    <div class="fas fa-check-circle trustIcon trust"></div>
+                    <div ng-class="ct.modalData.status.iconClass"></div>
                     <!-- <div class="fas fa-ban rounded-circle trustIcon distrust"></div>
                     <div class="fas fa-exclamation-circle trustIcon neutral"></div>
                     <div class="fas fa-question-circle trustIcon none"></div> -->
@@ -159,19 +159,19 @@
             </div><!-- /.row -->
             <div class="row">
                 <div class="col-lg-4">
-                    <button type="button" ng-class="tc.modalData.button.trust.cssClass" ng-click="tc.trustClick()"
-                        ng-attr-title="{{tc.modalData.button.trust.title}}"
-                        ng-disabled="tc.modalData.button.trust.disabled">
+                    <button type="button" ng-class="ct.modalData.button.trust.cssClass" ng-click="ct.trustClick()"
+                        ng-attr-title="{{ct.modalData.button.trust.title}}"
+                        ng-disabled="ct.modalData.button.trust.disabled">
                         Trust
                     </button>
-                    <button type="button" ng-class="tc.modalData.button.untrust.cssClass" ng-click="tc.untrustClick()"
-                        ng-attr-title="{{tc.modalData.button.untrust.title}}"
-                        ng-disabled="tc.modalData.button.untrust.disabled">
+                    <button type="button" ng-class="ct.modalData.button.untrust.cssClass" ng-click="ct.untrustClick()"
+                        ng-attr-title="{{ct.modalData.button.untrust.title}}"
+                        ng-disabled="ct.modalData.button.untrust.disabled">
                         Untrust
                     </button>
-                    <button type="button" ng-class="tc.modalData.button.distrust.cssClass" ng-click="tc.distrustClick()"
-                        ng-attr-title="{{tc.modalData.button.distrust.title}}"
-                        ng-disabled="tc.modalData.button.distrust.disabled">
+                    <button type="button" ng-class="ct.modalData.button.distrust.cssClass" ng-click="ct.distrustClick()"
+                        ng-attr-title="{{ct.modalData.button.distrust.title}}"
+                        ng-disabled="ct.modalData.button.distrust.disabled">
                         Distrust
                     </button>
                 </div>
@@ -185,7 +185,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="userModalLabel">User settings</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="ct.cancelClick()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -200,7 +200,7 @@
                                 <span class="input-group-text"><i class="fas fa-lock"></i></span>
                             </div>
                             <input id="inputPassword" type="password" class="form-control" name="inputPassword"
-                                placeholder="Password" required autofocus ng-model="ct.settings.password"
+                                placeholder="Password" required autofocus ng-model="ct.tempSettings.password"
                                 ng-trim="false" ng-change="ct.modelChange('identicon')">
                         </div>
                         <label for="inputSeed">Additional seed - Fill in for better security.</label>
@@ -208,7 +208,7 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text">Optional</span>
                             </div>
-                            <input type="text" id="inputSeed" class="form-control" ng-model="ct.settings.seed"
+                            <input type="text" id="inputSeed" class="form-control" ng-model="ct.tempSettings.seed"
                                 ng-trim="false" placeholder="E-mail / Phone / Pin or any text"
                                 ng-change="ct.modelChange('identicon')">
                         </div>
@@ -216,24 +216,24 @@
                             <div class="checkbox">
                                 <label>
                                     <input id="rememberMe" type="checkbox" value="remember-me"
-                                        ng-model="ct.settings.rememberme" ng-change="ct.modelChange('rememberme')"
+                                        ng-model="ct.tempSettings.rememberme" ng-change="ct.modelChange('rememberme')"
                                         checked>Remember me
                                 </label>
                             </div>
                         </div>
                         <div class="input-group">
-                            <img id="identicon" style="float: left; padding: 5px;" ng-src="{{ ct.settings.identicon }}"
+                            <img id="identicon" style="float: left; padding: 5px;" ng-src="{{ ct.tempSettings.identicon }}"
                                 ng-show="ct.showIcon">
                             <div style="float: left; padding: 5px;">
                                 <label for="address">User ID: </label><br><span id="address"
-                                    ng-bind="ct.settings.address"></span>
+                                    ng-bind="ct.tempSettings.address"></span>
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-click="ct.cancelClick()">Cancel</button>
+                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()" data-dismiss="modal">Save</button>
                 </div>
             </div>
         </div>
@@ -245,7 +245,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="userModalLabel">Server settings</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="ct.cancelClick()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -259,13 +259,13 @@
                                 <span class="input-group-text"><i class="fas fa-server"></i></span>
                             </div>
                             <input type="url" id="trustserver" class="form-control" placeholder="Trust server url"
-                                ng-model="ct.settings.infoserver" ng-change="ct.modelChange()" required autofocus>
+                                ng-model="ct.tempSettings.infoserver" ng-change="ct.modelChange()" required autofocus>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-click="ct.cancelClick()">Cancel</button>
+                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()" data-dismiss="modal">Save</button>
                 </div>
             </div>
         </div>

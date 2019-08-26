@@ -88,6 +88,8 @@ class UrlApp {
 
     updateIcon(result: BinaryTrustResult) : void {
         let state = (result) ? result.state : undefined;
+        if(result.state == 0 && result.trust == 0)
+            state = undefined; // No trust given
 
         chrome.runtime.sendMessage({
             handler: 'extensionHandler',

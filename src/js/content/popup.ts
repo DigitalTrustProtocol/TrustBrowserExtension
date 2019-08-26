@@ -37,6 +37,7 @@ class ExtensionpopupController {
     messageHandler: MessageHandler;
     settingsClient: SettingsClient;
     settings: ISettings;
+    tempSettings: ISettings;
     showIcon: boolean = true;
     contentTabId: any;
     dtpIdentity: string;
@@ -67,14 +68,15 @@ class ExtensionpopupController {
         SiteManager.GetUserContext().then((userContext) => {
             this.settingsClient = new SettingsClient(this.messageHandler, userContext);
             this.settingsClient.loadSettings().then((settings: ISettings) => {
-                settings = settings || new Settings();
-                this.settings = settings;
+                this.settings = settings || new Settings();
+                this.tempSettings = $.extend({},this.settings);
+
                 Profile.CurrentUser = new Profile({ userId: this.settings.address, alias: "You" });
 
-                this.packageBuilder = new PackageBuilder(settings);
-                this.subjectService = new SubjectService(settings, this.packageBuilder);
-                this.dtpService = new DTPService(settings);
-                this.trustStrategy = new TrustStrategy(settings, this.profileRepository);
+                this.packageBuilder = new PackageBuilder(this.settings);
+                this.subjectService = new SubjectService(this.settings, this.packageBuilder);
+                this.dtpService = new DTPService(this.settings);
+                this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
                 this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true : false;
                 this.trustGraphPopupClient = new TrustGraphPopupClient(this.messageHandler);
                 // Bind events
@@ -210,6 +212,23 @@ class ExtensionpopupController {
         this.$scope.$apply();
     }
 
+    saveClick() : boolean {
+        let profileChanged = this.settings.address != this.tempSettings.address;
+        this.settings = $.extend(this.settings, this.tempSettings);
+        if (this.settings.rememberme)
+            this.settingsClient.saveSettings(this.settings);
+        
+        if(profileChanged)
+            this.selectProfileID(this.settings.address);
+
+        return false;
+    }
+
+    cancelClick() : boolean {
+        this.tempSettings = $.extend(this.tempSettings, this.settings);
+        return false;
+    }
+
     trustClick(): boolean {
         this.buildAndSubmitBinaryTrust(this.modalData.profile, "true", 0, this.modalData.profile.alias + " trusted");
         return false;
@@ -272,11 +291,11 @@ class ExtensionpopupController {
    
     modelChange(state?: string) {
         if (state === 'identicon') {
-            this.settingsClient.buildKey(this.settings);
+            this.settingsClient.buildKey(this.tempSettings);
 
-            var identicon = new Identicon(this.settings.address, { margin: 0.1, size: 64, format: 'svg' }).toString();
+            var identicon = new Identicon(this.tempSettings.address, { margin: 0.1, size: 64, format: 'svg' }).toString();
             if (identicon.length > 0) {
-                this.settings.identicon = "data:image/svg+xml;base64," + identicon.toString();
+                this.tempSettings.identicon = "data:image/svg+xml;base64," + identicon.toString();
                 this.showIcon = true;
             }
 
@@ -285,9 +304,9 @@ class ExtensionpopupController {
         }
         
 
-        if (this.settings.rememberme || state === 'rememberme') {
-            this.settingsClient.saveSettings(this.settings);
-        }
+        // if (this.settings.rememberme || state === 'rememberme') {
+        //     this.settingsClient.saveSettings(this.settings);
+        // }
     }
 
     getSiteInfo() : JQueryPromise<ISiteInformation> {
