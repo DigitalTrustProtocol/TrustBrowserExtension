@@ -52,7 +52,7 @@ class ExtensionpopupController {
 
 
 
-    profiles: Array<IProfile> = [];
+    sessionProfiles: Array<IProfile> = [];
 
     private noop = (reason) => { alert(reason); };
 
@@ -89,9 +89,12 @@ class ExtensionpopupController {
                     
                     this.getProfiles(tabs[0].id).then((data: IGraphData) => {
 
-                        this.profiles = data.profiles;
-                        this.profiles.forEach(p=>p.queryResult = data.queryResult);
-                        let profile = this.profiles[0];
+                        if(!data)
+                            return;
+
+                        this.sessionProfiles = data.profiles;
+                        this.sessionProfiles.forEach(p=>p.queryResult = data.queryResult);
+                        let profile = this.sessionProfiles[0];
 
                         // Set select2 default value
                         var newOption = new Option(profile.alias, profile.userId, true, true);
@@ -124,7 +127,7 @@ class ExtensionpopupController {
                 cache: true,
                 transport: function (params, success, failure) {
                     if(!params.data.term || params.data.term.length == 0) {
-                        let arr = $.map(self.profiles, (p,i) => { return {id:p.userId, alias: p.alias || p.screen_name}; });
+                        let arr = $.map(self.sessionProfiles, (p,i) => { return {id:p.userId, alias: p.alias || p.screen_name}; });
 
                         var deferred = $.Deferred().resolve(arr);
                         deferred.then(success);
@@ -170,7 +173,7 @@ class ExtensionpopupController {
     }
 
     selectProfileID(id: string) : void {
-        let f =  this.profiles.filter(x => x.userId === id);
+        let f =  this.sessionProfiles.filter(x => x.userId === id);
         if(f.length > 0) {
             this.selectProfile(f[0]);
         }
@@ -181,7 +184,7 @@ class ExtensionpopupController {
                 // Query the profile then 
                 this.selectProfile(p);
 
-                this.profiles.push(p); 
+                this.sessionProfiles.push(p); 
             });
     }
 
@@ -214,12 +217,19 @@ class ExtensionpopupController {
 
     saveClick() : boolean {
         let profileChanged = this.settings.address != this.tempSettings.address;
+        this.settingsClient.buildKey(this.tempSettings);
+
         this.settings = $.extend(this.settings, this.tempSettings);
+
         if (this.settings.rememberme)
             this.settingsClient.saveSettings(this.settings);
         
         if(profileChanged)
             this.selectProfileID(this.settings.address);
+
+        
+
+        //this.profileRepository.setProfile()
 
         return false;
     }
@@ -275,19 +285,6 @@ class ExtensionpopupController {
         });
     }
 
-    // onStorageChanged(): void {
-    //     chrome.storage.onChanged.addListener(function(changes, namespace) {
-    //         for (var key in changes) {
-    //           var storageChange = changes[key];
-    //           console.log('Storage key "%s" in namespace "%s" changed. ' +
-    //                       'Old value was "%s", new value is "%s".',
-    //                       key,
-    //                       namespace,
-    //                       storageChange.oldValue,
-    //                       storageChange.newValue);
-    //         }
-    //       });
-    // }
    
     modelChange(state?: string) {
         if (state === 'identicon') {
@@ -298,88 +295,20 @@ class ExtensionpopupController {
                 this.tempSettings.identicon = "data:image/svg+xml;base64," + identicon.toString();
                 this.showIcon = true;
             }
-
-            
-            //let identity = new DTPIdentity({id: this.settings.address, proof: this.settings.})
         }
-        
-
-        // if (this.settings.rememberme || state === 'rememberme') {
-        //     this.settingsClient.saveSettings(this.settings);
-        // }
-    }
-
-    getSiteInfo() : JQueryPromise<ISiteInformation> {
-        let deferred = $.Deferred<ISiteInformation>();
-
-        console.log("RequestData send to background page");
-        // chrome.runtime.sendMessage({ command: 'getSiteInformation', tabId: this.contentTabId, profileIDs: ids }, (response) => {
-        //     console.log("RequestData response from background page");
-        //     console.log(response);
-        //     console.log('tabid', response.contentTabId)
-        //     deferred.resolve(response.data.profiles);
-        // });
-
-        return deferred.promise();
     }
 
 
-    // private async buildGraph(profile: IProfile, id: string, trustResult: BinaryTrustResult, profiles: any, trustResults: any, claimCollections: any) : Promise<Object> {
-    //     if(profiles[id])
-    //         return; // Exist, then it has been processed.
-
-    //     profiles[id] = profile;
-
-    //     if(!trustResult)
-    //         return trustResults;
-            
-    //     trustResults[id] = trustResult;
-        
-    //     for(let key in trustResult.claims) {
-    //         let claim = trustResult.claims[key] as Claim;
-
-    //         // Get a profile from the Issuer ID, as only profiles with a DTP id can be retrived.
-    //         // The profile may not be in index, but in DB, but it will be up to the popup window to handle this.
-    //         //let parentProfile = this.profileRepository.index[claim.issuer.id] as IProfile;
-    //         let parentProfile = await this.profileRepository.getProfileByIndex(claim.issuer.id);
-    //         if(!parentProfile) { // Do profile exist?
-    //             parentProfile = new Profile({userId: claim.issuer.id, screen_name: "Unknown", alias: "Unknown"}) as IProfile;
-    //         }
-    //         let parentTrustResult = claimCollections[parentProfile.owner.ID] as BinaryTrustResult; 
-            
-    //         await this.buildGraph(parentProfile, parentProfile.owner.ID, parentTrustResult, profiles, trustResults, claimCollections);
-    //     }
-    //     return trustResults;
-    // }
 
 
     public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
-        //let profile = await this.profileRepository.getProfile(params.profileId);
-
-        // let profiles = {};
-        // this.profiles.forEach(p=> profiles[p.userId] = p);
-        let profile = this.profiles.filter(p=>p.userId === params.profileId).pop();
-
-
-        // If profile is null?
-
-        //let controller = this.controllers[profile.userId] as ProfileController;
-
-        //let claims = (controller.trustResult && controller.trustResult.queryContext && controller.trustResult.queryContext.results) ? controller.trustResult.queryContext.results.claims : [];
-        //let claimCollections = this.trustStrategy.ProcessClaims(claims);
-
-        //let profiles: object = {};
-        //let trustResults = null; //await this.buildGraph(profile, profile.userId, controller.trustResult, profiles, {}, claimCollections);
-
-        //let adapter = new TrustGraphDataAdapter(this.trustStrategy, this.controllers);
-        //adapter.build(trustResult.claims, profile, Profile.CurrentUser);
-        //let trustResults = this.trustStrategy.ProcessClaims(profile.trustResult.queryContext.results.claims);
+        let profile = this.sessionProfiles.filter(p=>p.userId === params.profileId).pop();
 
         let dialogData = {
             scope: "url",
             currentUserId: Profile.CurrentUser.userId,
             subjectProfileId: params.profileId,
-            profiles: this.profiles,
+            profiles: this.sessionProfiles,
             queryResult: profile.queryResult,
         } as IGraphData;
 

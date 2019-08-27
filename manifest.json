@@ -30,9 +30,8 @@
   },
   "content_scripts": [
     {
-      "matches": [ "*://*/*" ],
+      "matches": [ "<all_urls>" ],
       "css": [
-        "css/content.css"
       ],
       "js": [
         "js/common.js",

@@ -103,7 +103,7 @@ class TrustGraphDataAdapter {
         let node = {
             id: profile.userId,
             image: profile.avatarImage,
-            label: '*'+profile.userId+ (profile.alias) ? '*\n_'+profile.alias+'_' : '',
+            label: '*'+profile.userId + (profile.alias) ? '*\n_'+profile.alias+'_' : '',
         }
         return node;
     }

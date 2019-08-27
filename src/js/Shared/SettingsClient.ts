@@ -50,13 +50,17 @@ class SettingsClient {
     }
 
     public buildKey(settings: ISettings) : any {
-        let keystring = settings.password + settings.seed;
+        let keystring = (settings.password) ? settings.password : '' + (settings.seed) ? settings.seed : '';
         let hash = Crypto.Hash256(keystring);
                 
         settings.keyPair = bitcoin.ECPair.fromPrivateKey(hash);
 
         const { address } = bitcoin.payments.p2pkh({ pubkey: settings.keyPair.publicKey });
         settings.address = address;
+        if(settings.alias) {
+            let buf = Crypto.Sign(settings.keyPair, settings.alias);
+            settings.aliasProof = buf.toString('base64');
+        }
         return settings.keyPair;
     }
 }

@@ -12,7 +12,7 @@ class UrlApp {
 
     public config: IConfig = null;
     public defaultProfile : IProfile = new Profile({}); // Make sure that we do not have an empty object
-    public profiles: Array<IProfile> = new Array<IProfile>();
+    public sessionProfiles: Array<IProfile> = new Array<IProfile>();
 
     constructor(config:IConfig) {
         this.config = config;
@@ -44,10 +44,10 @@ class UrlApp {
         browser.runtime.onMessage.addListener(async (request, sender) => {
             if(request.handler === "profileHandler") {
                 if(request.action === "getProfiles") {
-                    DTP.trace("Popup asked for profiles");
+
                     return {
-                        profiles: this.profiles,
-                        queryResult: this.profiles[0].queryResult
+                        profiles: this.sessionProfiles,
+                        queryResult: this.sessionProfiles[0].queryResult
                     }; 
                 }
             }
@@ -70,7 +70,7 @@ class UrlApp {
             alias: url,
             scope: "url"
         });
-        this.profiles.push(this.defaultProfile);
+        this.sessionProfiles.push(this.defaultProfile);
         this.config.profileRepository.setProfile(this.defaultProfile);
 
         let hostname = window.location.hostname;
@@ -81,9 +81,38 @@ class UrlApp {
                 alias: hostname,
                 scope: "url"
             });
-            this.profiles.push(hostnameProfile);
+            this.sessionProfiles.push(hostnameProfile);
             this.config.profileRepository.setProfile(hostnameProfile);
         }
+
+        this.buildHtmlEntities();
+    }
+
+
+    buildHtmlEntities() : any {
+        let profiles = {};
+        $("[itemtype='http://digitaltrustprotocol.org/entity']").each((i, element) => {
+            let profile = new Profile();
+            profile.alias = $(element).find("[itemprop='alias']").text();
+            profile.userId = $(element).find("[itemprop='entityId']").text();
+            profile.aliasProof = $(element).find("[itemprop='aliasProof']").attr('itemvalue');
+            profile.avatarImage = $(element).find("[itemprop='avatarImage']").attr('itemvalue');
+
+            if(profile.alias && profile.userId && profile.aliasProof) {
+                let valid = Crypto.Verify(profile.alias, profile.userId, profile.aliasProof);
+                if(!valid) {
+                    console.log(`Entity profile ${profile.alias} (${profile.userId}) do not have a valid signature ${profile.aliasProof}`);
+                    return;
+                }
+            }
+            if(profile.userId)
+                profiles[profile.userId] = profile;
+        });
+
+        $.each(profiles, (name, value) => {
+            this.sessionProfiles.push(value);
+            this.config.profileRepository.setProfile(value);
+        })
     }
 
     updateIcon(result: BinaryTrustResult) : void {
@@ -101,14 +130,15 @@ class UrlApp {
     queryProfiles() : JQueryPromise<void> {
         DTP.trace("Query profiles");
         let scope = "url";
-        return this.config.dtpService.Query(this.profiles, scope).then((response, queryResult) => {
+        return this.config.dtpService.Query(this.sessionProfiles, scope).then((response, queryResult) => {
             // Process the result
             DTP.trace("Query result: "+JSON.stringify(queryResult, null, 2));
             
-            this.config.trustStrategy.UpdateProfiles(queryResult, this.profiles);
-            this.updateIcon(this.profiles[0].trustResult);
+            this.config.trustStrategy.UpdateProfiles(queryResult, this.sessionProfiles);
+            this.updateIcon(this.sessionProfiles[0].trustResult);
         });
     }
+
 
     getSanitizedUrl() : string {
         let url = window.location.href.substring(window.location.protocol.length+2);
@@ -122,7 +152,7 @@ class UrlApp {
         this.buildProfiles();
 
         this.queryProfiles();
-
+        
         return $(doc).ready($=> {
             DTP.trace("Document ready");
             this.bindEvents();

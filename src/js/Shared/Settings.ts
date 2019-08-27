@@ -1,6 +1,8 @@
 import ISettings from "../Interfaces/Settings.interface";
 
 class Settings implements ISettings {
+    alias: string = "";
+    aliasProof: string = "";
     password: string = "";
     seed: string = "";
     rememberme: boolean = true;
@@ -19,6 +21,8 @@ class Settings implements ISettings {
 
     public static copy(source : ISettings) : Settings {
         let target = new Settings();
+        target.alias = source.alias;
+        target.aliasProof = source.aliasProof;
         target.password = source.password;
         target.seed = source.seed;
         target.rememberme = source.rememberme;

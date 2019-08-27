@@ -101,6 +101,9 @@
                         <a class="nav-link" href="#" data-toggle="modal" data-target="#userModal">User</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="#" data-toggle="modal" data-target="#snippetsModal">Snippets</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="#" data-toggle="modal" data-target="#serverModal">Server</a>
                     </li>
                     <li class="nav-item">
@@ -185,7 +188,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="userModalLabel">User settings</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="ct.cancelClick()">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                        ng-click="ct.cancelClick()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -195,6 +199,15 @@
                             <small style="display: none">NB! The password is not encrypted on the client and may be very
                                 insecure. The password and seed will never be submittet to the server.</small>
                         </p>
+                        <label for="inputAlias">User alias, used for easier identification</label>
+                        <div class="input-group mb-3 input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                            </div>
+                            <input id="inputAlias" type="text" class="form-control" name="inputAlias"
+                                placeholder="Alias / Name / Nickname (Optional)" required autofocus
+                                ng-model="ct.tempSettings.alias" ng-trim="true">
+                        </div>
                         <div class="input-group mb-3 input-group-sm">
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fas fa-lock"></i></span>
@@ -222,8 +235,8 @@
                             </div>
                         </div>
                         <div class="input-group">
-                            <img id="identicon" style="float: left; padding: 5px;" ng-src="{{ ct.tempSettings.identicon }}"
-                                ng-show="ct.showIcon">
+                            <img id="identicon" style="float: left; padding: 5px;"
+                                ng-src="{{ ct.tempSettings.identicon }}" ng-show="ct.showIcon">
                             <div style="float: left; padding: 5px;">
                                 <label for="address">User ID: </label><br><span id="address"
                                     ng-bind="ct.tempSettings.address"></span>
@@ -232,8 +245,10 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-click="ct.cancelClick()">Cancel</button>
-                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()" data-dismiss="modal">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        ng-click="ct.cancelClick()">Cancel</button>
+                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()"
+                        data-dismiss="modal">Save</button>
                 </div>
             </div>
         </div>
@@ -245,7 +260,8 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="userModalLabel">Server settings</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" ng-click="ct.cancelClick()">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                        ng-click="ct.cancelClick()">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -264,8 +280,10 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-click="ct.cancelClick()">Cancel</button>
-                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()" data-dismiss="modal">Save</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        ng-click="ct.cancelClick()">Cancel</button>
+                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()"
+                        data-dismiss="modal">Save</button>
                 </div>
             </div>
         </div>
@@ -313,6 +331,33 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="snippetsModal" tabindex="-1" role="dialog" aria-labelledby="snippetsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Snippets</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <h6>User proof</h6>
+                    <pre><code>&lt;div itemscope itemtype=&quot;http://digitaltrustprotocol.org/entity&quot;&gt; 
+    &lt;div itemprop=&quot;alias&quot;&gt;<span ng-bind="ct.tempSettings.alias"></span>&lt;/div&gt;
+    &lt;div itemprop=&quot;entityId&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
+    &lt;span itemprop=&quot;aliasProof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

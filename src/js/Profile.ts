@@ -16,6 +16,7 @@ class Profile implements IProfile {
 
     public screen_name: string;
     public alias: string;
+    public aliasProof: string;
     public owner: DTPIdentity;
     public userId: string;
     public avatarImage: string;
@@ -30,7 +31,9 @@ class Profile implements IProfile {
 
     public state: ProfileStateEnum = ProfileStateEnum.None; 
 
-    constructor(source: any) { 
+
+
+    constructor(source: any = {}) { 
         Object.defineProperty(this, 'address', { enumerable: false, writable: true, value: null }); // No serialize to json!
         //Object.defineProperty(this, 'scope', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'controller', { enumerable: false, writable: true, value: null }); // No serialize to json!
@@ -48,6 +51,7 @@ class Profile implements IProfile {
         this.updateProperty("userId", source.userId);
         this.updateProperty("screen_name", source.screen_name, source.userId);
         this.updateProperty("alias", source.alias);
+        this.updateProperty("aliasProof", source.aliasProof);
         this.updateProperty("avatarImage", source.avatarImage);
         this.updateProperty("scope", source.scope);
         this.updateProperty("trustResult", source.trustResult);

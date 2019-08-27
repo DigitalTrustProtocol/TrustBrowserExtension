@@ -80,7 +80,6 @@ class ProfileController {
         if (this.profile.state == ProfileStateEnum.Changed) {
             return this.profileRepository.setProfile(this.profile);
         }
-        //return $.when(this.profile).promise();
         return $.Deferred<IProfile>().resolve(this.profile).promise();
     }
 
