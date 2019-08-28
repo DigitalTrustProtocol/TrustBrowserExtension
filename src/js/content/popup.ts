@@ -30,6 +30,8 @@ import { TrustGraphPopupServer } from '../background/TrustGraphPopupServer';
 import DTPIdentity = require('../Model/DTPIdentity');
 import 'bootstrap';
 import { QueryContext } from '../../lib/dtpapi/model/models.js';
+import IProfileView from './IProfileView';
+import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models.js';
 
 
 class ExtensionpopupController {
@@ -52,7 +54,7 @@ class ExtensionpopupController {
 
 
 
-    sessionProfiles: Array<IProfile> = [];
+    sessionProfiles: Array<ProfileModal> = [];
 
     private noop = (reason) => { alert(reason); };
 
@@ -87,20 +89,25 @@ class ExtensionpopupController {
 
                 chrome.tabs.query({active: true, currentWindow: true}, tabs => {
                     
-                    this.getProfiles(tabs[0].id).then((data: IGraphData) => {
+                    this.getProfiles(tabs[0].id).then((data: Array<ProfileModal>) => {
 
-                        if(!data)
+                        if(!data || data.length == 0)
                             return;
 
-                        this.sessionProfiles = data.profiles;
-                        this.sessionProfiles.forEach(p=>p.queryResult = data.queryResult);
-                        let profile = this.sessionProfiles[0];
 
+                        //let trustResults = this.trustStrategy.createTrustResults(data[0].queryResult) || [];
+                        this.sessionProfiles = data;
+
+                        // data.profiles.forEach(p=> { 
+                        //     this.sessionProfiles.push(new ProfileModal(p, trustResults[p.userId] || new BinaryTrustResult(), data.queryResult).setup());
+                        // });
+                        let profileView = this.sessionProfiles[0];
+                        
                         // Set select2 default value
-                        var newOption = new Option(profile.alias, profile.userId, true, true);
+                        var newOption = new Option(profileView.profile.alias, profileView.profile.userId, true, true);
                         $('.userSelectContainer').append(newOption).trigger('change.select2');
 
-                        this.selectProfile(profile);
+                        this.selectProfile(profileView);
                     })
                 });
   
@@ -127,7 +134,7 @@ class ExtensionpopupController {
                 cache: true,
                 transport: function (params, success, failure) {
                     if(!params.data.term || params.data.term.length == 0) {
-                        let arr = $.map(self.sessionProfiles, (p,i) => { return {id:p.userId, alias: p.alias || p.screen_name}; });
+                        let arr = $.map(self.sessionProfiles, (pv,i) => { return {id:pv.profile.userId, alias: pv.profile.alias || pv.profile.screen_name}; });
 
                         var deferred = $.Deferred().resolve(arr);
                         deferred.then(success);
@@ -160,31 +167,36 @@ class ExtensionpopupController {
         return item.alias || item.text;
     }
 
-    selectProfile(profile: IProfile) : void {
-        if(!profile.trustResult) {
-            this.queryProfiles([profile]).then(() => {
-                this.updateModalData(profile);
-                this.updateIcon(profile.trustResult);
+    selectProfile(profileView: ProfileModal) : void {
+        if(!profileView.queryResult) {
+            this.queryProfiles([profileView.profile]).then(({queryResult, trustResults}) => {
+                profileView.trustResult = trustResults[profileView.profile.userId] || new BinaryTrustResult();
+                profileView.queryResult = queryResult;
+                profileView.setup();
+                this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
+                this.updateIcon(profileView.trustResult);
+                this.$scope.$apply();
             })
         } else {
-            this.updateModalData(profile);
-            this.updateIcon(profile.trustResult);
+            this.updateIcon(profileView.trustResult);
+            this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
+            this.$scope.$apply();
         }
     }
 
+
+
     selectProfileID(id: string) : void {
-        let f =  this.sessionProfiles.filter(x => x.userId === id);
+        let f =  this.sessionProfiles.filter(x => x.profile.userId === id);
         if(f.length > 0) {
             this.selectProfile(f[0]);
         }
         else
             // Try getting the profile from storage
             this.profileRepository.ensureProfile(id, { userId: id, scope: "url"}).then(p => {
-
-                // Query the profile then 
-                this.selectProfile(p);
-
-                this.sessionProfiles.push(p); 
+                let pm = new ProfileModal(p, undefined, undefined);
+                this.sessionProfiles.push(pm);
+                this.selectProfile(pm);
             });
     }
 
@@ -199,7 +211,7 @@ class ExtensionpopupController {
     }
 
 
-    getProfiles(tabId: any) : Promise<IGraphData> {
+    getProfiles(tabId: any) : Promise<Array<ProfileModal>> {
         let command = {
             handler: "profileHandler",
             action: "getProfiles"
@@ -210,10 +222,6 @@ class ExtensionpopupController {
         return promise;
     }
 
-    updateModalData(profile: IProfile) : void {
-        this.modalData = new ProfileModal(profile, profile, null);
-        this.$scope.$apply();
-    }
 
     saveClick() : boolean {
         let profileChanged = this.settings.address != this.tempSettings.address;
@@ -239,34 +247,33 @@ class ExtensionpopupController {
         return false;
     }
 
-    trustClick(): boolean {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, "true", 0, this.modalData.profile.alias + " trusted");
+    trustClick(profileView: ProfileModal): boolean {
+        this.buildAndSubmitBinaryTrust(profileView, "true", 0, profileView.profile.alias + " trusted");
         return false;
     };
 
-    distrustClick(): boolean {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, "false", 0, this.modalData.profile.alias + " distrusted");
+    distrustClick(profileView: ProfileModal): boolean {
+        this.buildAndSubmitBinaryTrust(profileView, "false", 0, profileView.profile.alias + " distrusted");
         return false;
     }
 
-    untrustClick(): boolean {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, null, 1, this.modalData.profile.alias + " untrusted");
-
+    untrustClick(profileView: ProfileModal): boolean {
+        this.buildAndSubmitBinaryTrust(profileView, null, 1, profileView.profile.alias + " untrusted");
         return false;
     }
     
-    queryProfiles(profiles: Array<IProfile>) : JQueryPromise<void> {
+    queryProfiles(profiles: Array<IProfile>) : JQueryPromise<{queryResult: DtpGraphCoreModelQueryContext, trustResults: object}> {
         let scope = "url";
         return this.dtpService.Query(profiles, scope).then((response, queryResult) => {
-            this.trustStrategy.UpdateProfiles(queryResult, profiles);
+            return { queryResult: queryResult, trustResults : this.trustStrategy.createTrustResults(queryResult)};
         });
     }
 
 
-    buildAndSubmitBinaryTrust (profile: IProfile, value: string, expire: number, message: string): JQueryPromise<any> {
+    buildAndSubmitBinaryTrust (profileView: ProfileModal, value: string, expire: number, message: string): JQueryPromise<any> {
         //this.modalData.disableButtons();
-        this.modalData.processing = true;
-        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, undefined, "url", expire);
+        profileView.processing = true;
+        var trustPackage = this.subjectService.BuildBinaryClaim(profileView.profile, value, undefined, "url", expire);
         this.packageBuilder.SignPackage(trustPackage);
         return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
             console.log("Posting package is a "+trustResult.status);
@@ -277,10 +284,11 @@ class ExtensionpopupController {
                 results: trustPackage,
                 errors: []
             } 
-
-            this.trustStrategy.UpdateProfiles(q, [profile]);
-            this.selectProfile(profile); // Update the screen
-
+            let results = this.trustStrategy.createTrustResults(q);
+            profileView.trustResult = results[profileView.profile.userId];
+            profileView.setup();
+            this.updateIcon(profileView.trustResult);
+            this.$scope.$apply();
         }).fail((trustResult) => { 
         });
     }
@@ -302,13 +310,14 @@ class ExtensionpopupController {
 
 
     public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
-        let profile = this.sessionProfiles.filter(p=>p.userId === params.profileId).pop();
+        let profile = this.sessionProfiles.filter(pv=>pv.profile.userId === params.profileId).pop();
+
 
         let dialogData = {
             scope: "url",
             currentUserId: Profile.CurrentUser.userId,
             subjectProfileId: params.profileId,
-            profiles: this.sessionProfiles,
+            profiles: this.sessionProfiles.map(pv => pv.profile),
             queryResult: profile.queryResult,
         } as IGraphData;
 
@@ -319,8 +328,8 @@ class ExtensionpopupController {
         this.selectProfile(params.profile);
     }
 
-    openGraphClick(eventObject: JQueryEventObject) : boolean {
-        this.trustGraphPopupClient.openPopup({profileId: this.modalData.profile.userId});
+    openGraphClick(eventObject: JQueryEventObject, pv: ProfileModal) : boolean {
+        this.trustGraphPopupClient.openPopup({profileId: pv.profile.userId});
 
         eventObject.stopPropagation();
         return false;

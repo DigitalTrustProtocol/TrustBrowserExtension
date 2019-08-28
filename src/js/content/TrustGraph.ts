@@ -198,7 +198,7 @@ class TrustGraphController {
             // profile.trustResult.claims = arr;
         }
 
-        this.modalData = new ProfileModal(profile, this.selectedProfile, this.currentUser);
+        this.modalData = new ProfileModal(profile, profile["trustResult"], profile["queryResult"]);
     
         this.$scope.$apply();
         // Show dtpbar
@@ -206,6 +206,7 @@ class TrustGraphController {
         //$("#networkModal").finish().show();
         $('#networkModal').modal('show');
     }
+    
 
     hideModal(): void {
         if($('#networkModal').is(':visible'))

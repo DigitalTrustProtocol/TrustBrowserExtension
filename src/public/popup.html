@@ -127,56 +127,57 @@
         <!-- Wrap the rest of the page in another container to center all the content. -->
 
         <div class="container">
+            <div ng-repeat="(key, pv) in ct.sessionProfiles" ng-show="pv.visible">
+                <div class="row">
+                    <div class="col-lg-4 subjectBlock">
+                        <div class="breakContent" style="font-weight: bold">{{ pv.profile.alias }}</div>
 
-            <div class="row">
-                <div class="col-lg-4 subjectBlock">
-                    <div class="breakContent" style="font-weight: bold">{{ ct.modalData.profile.alias }}</div>
-
-                    <div><img ng-src="{{ ct.modalData.profile.avatarImage }}" class="rounded-circle dtp-avatarImg"
-                            ng-click="ct.openGraphClick($event)">
-                        <span>{{ ct.modalData.profile.userId }}</span></div>
-                </div>
-            </div>
-            <!-- Three columns of text below the carousel -->
-            <div class="row">
-                <div class="col-lg-4">
-                    <h5>Reputation</h5>
-                    <div ng-class="ct.modalData.status.iconClass"></div>
-                    <!-- <div class="fas fa-ban rounded-circle trustIcon distrust"></div>
-                    <div class="fas fa-exclamation-circle trustIcon neutral"></div>
-                    <div class="fas fa-question-circle trustIcon none"></div> -->
-                    <div class="dtpModelText">
-                        <div ng-show="ct.modalData.status.show">Status: <span ng-class="ct.modalData.status.cssClass"
-                                ng-bind="ct.modalData.status.text"></span></div>
-                        <div ng-show="ct.modalData.score.show">
-                            <div ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.trust > 0">
-                                Possitive claims: <span class="trusted"
-                                    ng-bind="ct.modalData.profile.binaryTrustResult.trust"></span></div>
-                            <div
-                                ng-show="ct.modalData.score.show && ct.modalData.profile.binaryTrustResult.distrust > 0">
-                                Negative claims: <span class="distrusted"
-                                    ng-bind="ct.modalData.profile.binaryTrustResult.distrust"></span></div>
-                        </div>
+                        <div><img ng-src="{{ pv.profile.avatarImage }}" class="rounded-circle dtp-avatarImg"
+                                ng-click="ct.openGraphClick($event, pv)">
+                            <span>{{ pv.profile.userId }}</span></div>
                     </div>
-                </div><!-- /.col-lg-4 -->
-            </div><!-- /.row -->
-            <div class="row">
-                <div class="col-lg-4">
-                    <button type="button" ng-class="ct.modalData.button.trust.cssClass" ng-click="ct.trustClick()"
-                        ng-attr-title="{{ct.modalData.button.trust.title}}"
-                        ng-disabled="ct.modalData.button.trust.disabled">
-                        Trust
-                    </button>
-                    <button type="button" ng-class="ct.modalData.button.untrust.cssClass" ng-click="ct.untrustClick()"
-                        ng-attr-title="{{ct.modalData.button.untrust.title}}"
-                        ng-disabled="ct.modalData.button.untrust.disabled">
-                        Untrust
-                    </button>
-                    <button type="button" ng-class="ct.modalData.button.distrust.cssClass" ng-click="ct.distrustClick()"
-                        ng-attr-title="{{ct.modalData.button.distrust.title}}"
-                        ng-disabled="ct.modalData.button.distrust.disabled">
-                        Distrust
-                    </button>
+                </div>
+                <!-- Three columns of text below the carousel -->
+                <div class="row">
+                    <div class="col-lg-4">
+                        <h5>Reputation</h5>
+                        <div ng-class="pv.status.iconClass"></div>
+                        <!-- <div class="fas fa-ban rounded-circle trustIcon distrust"></div>
+                        <div class="fas fa-exclamation-circle trustIcon neutral"></div>
+                        <div class="fas fa-question-circle trustIcon none"></div> -->
+                        <div class="dtpModelText">
+                            <div ng-show="pv.status.show">Status: <span ng-class="pv.status.cssClass"
+                                    ng-bind="pv.status.text"></span></div>
+                            <div ng-show="pv.score.show">
+                                <div ng-show="pv.score.show && pv.profile.binaryTrustResult.trust > 0">
+                                    Possitive claims: <span class="trusted"
+                                        ng-bind="pv.profile.binaryTrustResult.trust"></span></div>
+                                <div
+                                    ng-show="pv.score.show && pv.profile.binaryTrustResult.distrust > 0">
+                                    Negative claims: <span class="distrusted"
+                                        ng-bind="pv.profile.binaryTrustResult.distrust"></span></div>
+                            </div>
+                        </div>
+                    </div><!-- /.col-lg-4 -->
+                </div><!-- /.row -->
+                <div class="row">
+                    <div class="col-lg-4">
+                        <button type="button" ng-class="pv.button.trust.cssClass" ng-click="ct.trustClick(pv)"
+                            ng-attr-title="{{pv.button.trust.title}}"
+                            ng-disabled="pv.button.trust.disabled">
+                            Trust
+                        </button>
+                        <button type="button" ng-class="pv.button.untrust.cssClass" ng-click="ct.untrustClick(pv)"
+                            ng-attr-title="{{pv.button.untrust.title}}"
+                            ng-disabled="pv.button.untrust.disabled">
+                            Untrust
+                        </button>
+                        <button type="button" ng-class="pv.button.distrust.cssClass" ng-click="ct.distrustClick(pv)"
+                            ng-attr-title="{{pv.button.distrust.title}}"
+                            ng-disabled="pv.button.distrust.disabled">
+                            Distrust
+                        </button>
+                    </div>
                 </div>
             </div>
         </div><!-- /.container -->

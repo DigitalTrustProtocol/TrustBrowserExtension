@@ -6,13 +6,15 @@ import Crypto = require('../Crypto');
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models';
 import IProfile from "../IProfile";
 import IGraphData from './IGraphData';
+import { MessageHandler } from '../Shared/MessageHandler';
 import Profile = require("../Profile");
+import ProfileModal = require("../Model/ProfileModal");
 
 class UrlApp {
 
     public config: IConfig = null;
-    public defaultProfile : IProfile = new Profile({}); // Make sure that we do not have an empty object
-    public sessionProfiles: Array<IProfile> = new Array<IProfile>();
+    public defaultProfile : ProfileModal = null;
+    public sessionProfiles: Array<ProfileModal> = [];
 
     constructor(config:IConfig) {
         this.config = config;
@@ -36,42 +38,43 @@ class UrlApp {
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'visible') {
                 this.updateIcon(this.defaultProfile.trustResult);
-            } else {
-//                this.updateIcon("dtp");
             }
         });
 
         browser.runtime.onMessage.addListener(async (request, sender) => {
             if(request.handler === "profileHandler") {
                 if(request.action === "getProfiles") {
+                    return this.sessionProfiles; 
+                }
+            }
 
-                    return {
-                        profiles: this.sessionProfiles,
-                        queryResult: this.sessionProfiles[0].queryResult
-                    }; 
+            if(request.handler === "profileHandler") {
+                if(request.action === "updateProfiles") {
+                    this.sessionProfiles = request.data; 
+                    return true;
                 }
             }
         });
 
     }
 
-    public async requestProfileHandler(params: any, sender: Runtime.MessageSender) : Promise<IProfile> {
-        return this.defaultProfile;
-    }
+    // public async requestProfileHandler(params: any, sender: Runtime.MessageSender) : Promise<IProfile> {
+    //     return this.defaultProfile;
+    // }
 
 
 
     buildProfiles() : void {
         let url = this.getSanitizedUrl();
 
-        this.defaultProfile = new Profile(<IProfile>{
+        let defaultProfile = new Profile(<IProfile>{
             userId: Crypto.toDTPAddress(Crypto.Hash160(url)),
             screen_name: window.location.hostname,
             alias: url,
             scope: "url"
         });
-        this.sessionProfiles.push(this.defaultProfile);
-        this.config.profileRepository.setProfile(this.defaultProfile);
+        this.sessionProfiles.push(new ProfileModal(defaultProfile));
+        this.config.profileRepository.setProfile(defaultProfile);
 
         let hostname = window.location.hostname;
         if(hostname != url) {
@@ -81,7 +84,7 @@ class UrlApp {
                 alias: hostname,
                 scope: "url"
             });
-            this.sessionProfiles.push(hostnameProfile);
+            this.sessionProfiles.push(new ProfileModal(hostnameProfile));
             this.config.profileRepository.setProfile(hostnameProfile);
         }
 
@@ -109,9 +112,9 @@ class UrlApp {
                 profiles[profile.userId] = profile;
         });
 
-        $.each(profiles, (name, value) => {
-            this.sessionProfiles.push(value);
-            this.config.profileRepository.setProfile(value);
+        $.each(profiles, (name, profile) => {
+            this.sessionProfiles.push(new ProfileModal(profile));
+            this.config.profileRepository.setProfile(profile);
         })
     }
 
@@ -130,11 +133,16 @@ class UrlApp {
     queryProfiles() : JQueryPromise<void> {
         DTP.trace("Query profiles");
         let scope = "url";
-        return this.config.dtpService.Query(this.sessionProfiles, scope).then((response, queryResult) => {
+        let profiles = this.sessionProfiles.map(p=>p.profile);
+        return this.config.dtpService.Query(profiles, scope).then((response, queryResult) => {
             // Process the result
             DTP.trace("Query result: "+JSON.stringify(queryResult, null, 2));
             
-            this.config.trustStrategy.UpdateProfiles(queryResult, this.sessionProfiles);
+            let trustResults = this.config.trustStrategy.createTrustResults(queryResult) || {};
+            this.sessionProfiles.forEach((pv) => {
+                pv.queryResult = queryResult;
+                pv.trustResult = trustResults[pv.profile.userId] || new BinaryTrustResult();
+            })
             this.updateIcon(this.sessionProfiles[0].trustResult);
         });
     }

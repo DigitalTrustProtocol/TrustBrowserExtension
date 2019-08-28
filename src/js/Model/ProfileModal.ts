@@ -1,5 +1,7 @@
 import IProfile from "../IProfile";
 import Identicon = require('identicon.js');
+import { DtpGraphCoreModelQueryContext } from "../../lib/typescript-jquery-client/model/models";
+import BinaryTrustResult = require("./BinaryTrustResult");
 
 class TrustGraphScoreModel {
     public show: boolean = false;
@@ -25,11 +27,15 @@ class ProfileModal
     public subjectProfile: IProfile;
     public currentUser: IProfile;
     
+    public queryResult: DtpGraphCoreModelQueryContext;
+    public trustResult?: BinaryTrustResult;
+
     public spinner: string;
     public processing: boolean = false;
     public score: TrustGraphScoreModel = new TrustGraphScoreModel();
     public isCurrentUser: boolean = false;
     public status: TrustGraphStatusModel = new TrustGraphStatusModel();
+    public visible: boolean = false;
 
     public button = {
         show: false,
@@ -40,29 +46,31 @@ class ProfileModal
     /**
      *
      */
-    constructor(selectedProfile: IProfile, subjectProfile: IProfile, currentUser: IProfile) {
+    constructor(selectedProfile: IProfile, trustResult?: BinaryTrustResult, queryResult?: DtpGraphCoreModelQueryContext) {
         this.profile = selectedProfile;
-        this.subjectProfile = subjectProfile;
-        this.currentUser = currentUser;
+        this.subjectProfile = this.profile;
+        this.currentUser = null;
         this.spinner = chrome.extension.getURL("../img/Spinner24px.gif");
-        this.setup();
+        this.queryResult = queryResult;
+        this.trustResult = trustResult;
+        //this.setup();
     }    
 
-    public setup() : void {
+    public setup() : ProfileModal {
         this.EnsureAvatarImage();
         
         if(this.profile.userId == this.subjectProfile.userId) {
             this.setupSubjectProfile();
-            return;
+            return this;
         }
 
         if(this.profile.userId == this.currentUser.userId) {
             this.setupCurrentUser();
-            return;
+            return this;
         }
 
         this.isSomeoneElse();
-
+        return this;
     }
 
     public EnsureAvatarImage() : void {
@@ -96,12 +104,12 @@ class ProfileModal
 
     private setupStatus() : void {
         let trustGiven = false;
-        if(this.profile.trustResult) {
+        if(this.trustResult) {
 
-            let postText = this.profile.trustResult.direct ? " directly" : "";
+            let postText = this.trustResult.direct ? " directly" : "";
 
-            trustGiven = this.profile.trustResult.trust > 0 || this.profile.trustResult.distrust > 0;
-            this.score.result = this.profile.trustResult.trust - this.profile.trustResult.distrust;
+            trustGiven = this.trustResult.trust > 0 || this.trustResult.distrust > 0;
+            this.score.result = this.trustResult.trust - this.trustResult.distrust;
             if(this.score.result < 0)
                 this.status = { cssClass: "distrusted", text: "Distrusted" + postText, show: true, iconClass:"fas fa-stop-circle trustIcon distrust"};
 
@@ -119,20 +127,25 @@ class ProfileModal
     }
     
     private setupScore() : void {
-        this.score.show = (this.profile.trustResult && this.profile.trustResult.direct) ? false : true;
+        this.score.show = (this.trustResult && this.trustResult.direct) ? false : true;
         //    this.score.show = true; // Only show score if not trust directly.
     }
 
     private setupButtons() : void {
         this.button.show = true;
-        if(this.profile.trustResult && this.profile.trustResult.direct) 
+        if(this.trustResult && this.trustResult.direct) 
             this.directButtons();
         else
             this.undirectButtons();
     }
 
     private directButtons(): void {
-        let claimValue = this.profile.trustResult.directValue;
+        let claimValue = this.trustResult.directValue;
+        this.button.trust.disabled = false;
+        this.button.distrust.disabled = false;
+        this.button.untrust.disabled = false;
+
+
         if(claimValue == "true" || claimValue == "1") {
             this.button.trust.title = `${this.profile.alias} is trusted`;
             this.button.trust.disabled = true;

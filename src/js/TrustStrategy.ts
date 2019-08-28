@@ -132,6 +132,13 @@ class TrustStrategy implements ITrustStrategy {
     }
 
 
+    public createTrustResults(queryContext : QueryContext) : Object {
+        if(queryContext && queryContext.results && queryContext.results.claims) {
+            return this.ProcessClaims(queryContext.results.claims);
+        }
+        return {};
+    }
+
     // public ProcessResult2(queryContext : QueryContext, controllers: Array<ProfileController>) : void {
     //     if(!queryContext || !queryContext.results || !queryContext.results.claims)
     //         return;
