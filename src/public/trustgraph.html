@@ -83,8 +83,8 @@
                     <span class="float-left dtpModelText">
                         <div ng-show="tc.modalData.status.show">Status: <span ng-class="tc.modalData.status.cssClass" ng-bind="tc.modalData.status.text"></span></div>
                         <div ng-show="tc.modalData.score.show">
-                            <div ng-show="tc.modalData.score.show && tc.modalData.profile.binaryTrustResult.trust > 0">Possitive claims: <span class="trusted" ng-bind="tc.modalData.profile.binaryTrustResult.trust"></span></div>
-                            <div ng-show="tc.modalData.score.show && tc.modalData.profile.binaryTrustResult.distrust > 0" >Negative claims: <span class="distrusted" ng-bind="tc.modalData.profile.binaryTrustResult.distrust"></span></div>
+                            <div ng-show="tc.modalData.score.show && tc.modalData.trustResult.trust > 0">Possitive claims: <span class="trusted" ng-bind="tc.modalData.trustResult.trust"></span></div>
+                            <div ng-show="tc.modalData.score.show && tc.modalData.trustResult.distrust > 0" >Negative claims: <span class="distrusted" ng-bind="tc.modalData.trustResult.distrust"></span></div>
                         </div>
                     </span>
                 </div>

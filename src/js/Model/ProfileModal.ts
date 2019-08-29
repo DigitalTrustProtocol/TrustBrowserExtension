@@ -61,13 +61,15 @@ class ProfileModal
 
         this.EnsureAvatarImage();
         
-        if(this.profile.userId == this.subjectProfile.userId) {
-            this.setupSubjectProfile();
+        // if(this.profile.userId == this.subjectProfile.userId) {
+        // }
+
+        if(this.currentUser && this.profile.userId == this.currentUser.userId) {
+            this.setupCurrentUser();
             return this;
         }
-
-        if(this.profile.userId == this.currentUser.userId) {
-            this.setupCurrentUser();
+        else {
+            this.setupSubjectProfile();
             return this;
         }
 
