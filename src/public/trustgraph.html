@@ -73,7 +73,7 @@
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{ tc.modalData.profile.alias }}</br><small>{{ tc.modalData.profile.userId }}</small></h5>
+                    <h5 class="modal-title"><small>{{ tc.modalData.profile.userId }}</br>{{ tc.modalData.profile.alias }}</small></h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -89,7 +89,6 @@
                     </span>
                 </div>
                 <div class="modal-footer" data-ng-show="tc.modalData.button.show" >
-                    <img src="{{tc.modalData.spinner}}" ng-show="tc.modalData.processing">
                     <button type="button" ng-class="tc.modalData.button.trust.cssClass" ng-click="tc.trustClick()" ng-attr-title="{{tc.modalData.button.trust.title}}" ng-disabled="tc.modalData.button.trust.disabled">
                         Trust
                     </button>

@@ -13,8 +13,9 @@ import ProfileModal = require("../Model/ProfileModal");
 class UrlApp {
 
     public config: IConfig = null;
-    public defaultProfile : ProfileModal = null;
     public sessionProfiles: Array<ProfileModal> = [];
+    public selectedProfileView: ProfileModal;
+
 
     constructor(config:IConfig) {
         this.config = config;
@@ -37,31 +38,37 @@ class UrlApp {
 
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === 'visible') {
-                this.updateIcon(this.defaultProfile.trustResult);
+                this.updateIcon(this.selectedProfileView.trustResult);
             }
         });
 
         browser.runtime.onMessage.addListener(async (request, sender) => {
             if(request.handler === "profileHandler") {
                 if(request.action === "getProfiles") {
-                    return this.sessionProfiles; 
+
+                    return {
+                        selectedUserId : this.selectedProfileView.profile.userId,
+                        profileViews: this.sessionProfiles
+                    };
                 }
             }
 
             if(request.handler === "profileHandler") {
-                if(request.action === "updateProfiles") {
-                    this.sessionProfiles = request.data; 
+                if(request.params.action === "updateProfile") {
+
+                    let pv = this.sessionProfiles.filter(p => p.profile.userId === request.params.data.profile.userId).pop();
+                    if(!pv) 
+                        this.sessionProfiles.push(pv = new ProfileModal());
+                    
+                    pv.setup(request.params.data);
+                    this.selectedProfileView = pv;
+                    
                     return true;
                 }
             }
         });
 
     }
-
-    // public async requestProfileHandler(params: any, sender: Runtime.MessageSender) : Promise<IProfile> {
-    //     return this.defaultProfile;
-    // }
-
 
 
     buildProfiles() : void {
@@ -89,6 +96,8 @@ class UrlApp {
         }
 
         this.buildHtmlEntities();
+
+        this.selectedProfileView = this.sessionProfiles[0];
     }
 
 

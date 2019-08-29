@@ -10,6 +10,7 @@ import ProfileController = require('../ProfileController');
 import Profile = require('../Profile');
 import TrustStrategy = require('../TrustStrategy');
 import IGraphData from './IGraphData';
+import ProfileModal = require('../Model/ProfileModal');
 
 
 class TrustGraphDataAdapter {
@@ -34,33 +35,33 @@ class TrustGraphDataAdapter {
         this.graph.nodes.clear();
         this.graph.edges.clear();
 
-        let subjectProfile = this.profileIndex[this.source.subjectProfileId] as IProfile;
+        let subjectProfileView = this.profileIndex[this.source.subjectProfileId] as ProfileModal;
 
         //let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
-        this.loadNodes(subjectProfile);
+        this.loadNodes(subjectProfileView);
     }
 
-    private loadNodes(profile: IProfile) : void {
-        if(this.graph.nodes.get(profile.userId))
+    private loadNodes(pv: ProfileModal) : void {
+        if(this.graph.nodes.get(pv.profile.userId))
              return; // Do not re-process the node
 
-        this.addNode(profile);
+        this.addNode(pv.profile);
 
-        if(profile.userId == this.source.currentUserId)
+        if(pv.profile.userId == this.source.currentUserId)
              return; // Stop with oneself
 
-        if(!profile.trustResult)
+        if(!pv.trustResult)
             return;
              
         
-        for(let key in profile.trustResult.claims) {
-            let claim = profile.trustResult.claims[key];
+        for(let key in pv.trustResult.claims) {
+            let claim = pv.trustResult.claims[key];
 
-            let parentProfile = this.profileIndex[claim.issuer.id] as IProfile;
+            let parentView = this.profileIndex[claim.issuer.id] as ProfileModal;
 
-            this.addEdge(parentProfile, profile, claim.value);
+            this.addEdge(parentView.profile, pv.profile, claim.value);
 
-            this.loadNodes(parentProfile);
+            this.loadNodes(parentView);
         }
     }
 
@@ -75,8 +76,8 @@ class TrustGraphDataAdapter {
         
         to.trustResult.claims[claim.issuer.id] = claim;
 
-        this.updateNode(from); // Make sure that "from" profile node exist in graph
-        this.updateEdge(from, to, claim.value);
+        this.updateNode(from.profile); // Make sure that "from" profile node exist in graph
+        this.updateEdge(from.profile, to.profile, claim.value);
     }
 
    
@@ -103,10 +104,34 @@ class TrustGraphDataAdapter {
         let node = {
             id: profile.userId,
             image: profile.avatarImage,
-            label: '*'+profile.userId + (profile.alias) ? '*\n_'+profile.alias+'_' : '',
+            label: this.lineBreakText(profile.userId, 20) + ((profile.alias) ? '\n_'+ this.lineBreakText(profile.alias, 20)+'_' : ''),
         }
         return node;
     }
+
+
+    private lineBreakText(text : string, width: number) : string {
+        let r = [];
+        let count = 0;
+        let index = 0;
+        if(text.length <= width)
+            return text;
+        
+        while(index < text.length) {
+            if(count >= width) {
+                count = 0;
+                r.push('\n');
+                continue;
+            }
+
+            r.push(text[index]);
+            count++;
+            index++;
+        }
+
+        return r.join("");
+    }
+
 
     public addEdge(from: IProfile, to:IProfile, value: any) : void {
         this.graph.edges.add(this.createEdge(from, to, value));

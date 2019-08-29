@@ -88,31 +88,27 @@ class ExtensionpopupController {
                 this.initSubjectSelect();
 
                 chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-                    
-                    this.getProfiles(tabs[0].id).then((data: Array<ProfileModal>) => {
-
-                        if(!data || data.length == 0)
+                    this.contentTabId = tabs[0].id;
+                    this.getProfiles(this.contentTabId).then((data: any) => {
+                        if(!data || data.length == 0 || !data.profileViews)
                             return;
 
+                        data.profileViews.forEach(item=> this.sessionProfiles.push(new ProfileModal().setup(item)));
 
-                        //let trustResults = this.trustStrategy.createTrustResults(data[0].queryResult) || [];
-                        this.sessionProfiles = data;
-
-                        // data.profiles.forEach(p=> { 
-                        //     this.sessionProfiles.push(new ProfileModal(p, trustResults[p.userId] || new BinaryTrustResult(), data.queryResult).setup());
-                        // });
-                        let profileView = this.sessionProfiles[0];
+                        let profileView = this.sessionProfiles.filter(p=>p.profile.userId === data.selectedUserId).pop();
                         
                         // Set select2 default value
                         var newOption = new Option(profileView.profile.alias, profileView.profile.userId, true, true);
                         $('.userSelectContainer').append(newOption).trigger('change.select2');
 
                         this.selectProfile(profileView);
+                        
                     })
                 });
-  
             });
         });
+
+
     }
 
     initSubjectSelect() : void {
@@ -176,15 +172,15 @@ class ExtensionpopupController {
                 this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
                 this.updateIcon(profileView.trustResult);
                 this.$scope.$apply();
+                this.updateContentTabProfile(profileView);
             })
         } else {
             this.updateIcon(profileView.trustResult);
             this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
+            this.updateContentTabProfile(profileView);
             this.$scope.$apply();
         }
     }
-
-
 
     selectProfileID(id: string) : void {
         let f =  this.sessionProfiles.filter(x => x.profile.userId === id);
@@ -211,18 +207,6 @@ class ExtensionpopupController {
     }
 
 
-    getProfiles(tabId: any) : Promise<Array<ProfileModal>> {
-        let command = {
-            handler: "profileHandler",
-            action: "getProfiles"
-        }
-
-        const promise = browser.tabs.sendMessage(tabId, command);
-        promise.catch(this.noop);
-        return promise;
-    }
-
-
     saveClick() : boolean {
         let profileChanged = this.settings.address != this.tempSettings.address;
         this.settingsClient.buildKey(this.tempSettings);
@@ -232,13 +216,12 @@ class ExtensionpopupController {
         if (this.settings.rememberme)
             this.settingsClient.saveSettings(this.settings);
         
-        if(profileChanged)
-            this.selectProfileID(this.settings.address);
-
         
-
-        //this.profileRepository.setProfile()
-
+        let profile = new Profile();
+        profile.userId = this.settings.address;
+        profile.alias = this.settings.alias;
+        profile.aliasProof = this.settings.aliasProof;
+        this.profileRepository.setProfile(profile);
         return false;
     }
 
@@ -278,16 +261,18 @@ class ExtensionpopupController {
         return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
             console.log("Posting package is a "+trustResult.status);
            
-            let q = <QueryContext>{
+            profileView.queryResult = <QueryContext>{
                 issuerCount: 1,
                 subjectCount: 1,
                 results: trustPackage,
                 errors: []
             } 
-            let results = this.trustStrategy.createTrustResults(q);
+
+            let results = this.trustStrategy.createTrustResults(profileView.queryResult);
             profileView.trustResult = results[profileView.profile.userId];
             profileView.setup();
             this.updateIcon(profileView.trustResult);
+            this.updateContentTabProfile(profileView);
             this.$scope.$apply();
         }).fail((trustResult) => { 
         });
@@ -325,8 +310,36 @@ class ExtensionpopupController {
     }
 
     updateContentHandler(params, sender) : void {
-        this.selectProfile(params.profile);
+        let pv = this.sessionProfiles.filter((p) =>  p.profile.userId == params.profileView.profile.userId).pop();
+        if(pv) {
+            pv.setup(params.profileView);
+            this.selectProfile(pv);
+        }
     }
+
+    updateContentTabProfile(profileView: ProfileModal, callback?: (err: any, value: any) => void) : Promise<any>
+    {
+        let message = { 
+                action: "updateProfile",
+                data: profileView
+        };
+        return this.messageHandler.sendTab(this.contentTabId, "profileHandler", message, result => {
+            if(callback)
+                callback(null, result);
+        });     
+    }
+
+    getProfiles(tabId: any) : Promise<Array<ProfileModal>> {
+        let command = {
+            handler: "profileHandler",
+            action: "getProfiles"
+        }
+
+        const promise = browser.tabs.sendMessage(tabId, command);
+        promise.catch(this.noop);
+        return promise;
+    }
+
 
     openGraphClick(eventObject: JQueryEventObject, pv: ProfileModal) : boolean {
         this.trustGraphPopupClient.openPopup({profileId: pv.profile.userId});
@@ -339,17 +352,17 @@ class ExtensionpopupController {
 
 const app = angular.module("myApp", []);
 app.controller('ExtensionpopupController', ["$scope", ExtensionpopupController]) // bootstrap angular app here 
-app.controller('TabController', ['$scope', function($scope) {
-    $scope.tab = 1;
+// app.controller('TabController', ['$scope', function($scope) {
+//     $scope.tab = 1;
 
-    $scope.setTab = function(newTab){
-      $scope.tab = newTab;
-    };
+//     $scope.setTab = function(newTab){
+//       $scope.tab = newTab;
+//     };
 
-    $scope.isSet = function(tabNum){
-      return $scope.tab === tabNum;
-    };
-}]);
+//     $scope.isSet = function(tabNum){
+//       return $scope.tab === tabNum;
+//     };
+// }]);
 app.config( [
     '$compileProvider',
     function( $compileProvider )

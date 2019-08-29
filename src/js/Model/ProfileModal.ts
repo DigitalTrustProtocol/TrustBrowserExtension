@@ -2,6 +2,8 @@ import IProfile from "../IProfile";
 import Identicon = require('identicon.js');
 import { DtpGraphCoreModelQueryContext } from "../../lib/typescript-jquery-client/model/models";
 import BinaryTrustResult = require("./BinaryTrustResult");
+import * as $ from 'jquery';
+
 
 class TrustGraphScoreModel {
     public show: boolean = false;
@@ -46,17 +48,17 @@ class ProfileModal
     /**
      *
      */
-    constructor(selectedProfile: IProfile, trustResult?: BinaryTrustResult, queryResult?: DtpGraphCoreModelQueryContext) {
+    constructor(selectedProfile?: IProfile, trustResult?: BinaryTrustResult, queryResult?: DtpGraphCoreModelQueryContext) {
         this.profile = selectedProfile;
-        this.subjectProfile = this.profile;
-        this.currentUser = null;
         this.spinner = chrome.extension.getURL("../img/Spinner24px.gif");
         this.queryResult = queryResult;
         this.trustResult = trustResult;
-        //this.setup();
     }    
 
-    public setup() : ProfileModal {
+    public setup(profileView? : ProfileModal) : ProfileModal {
+        if(profileView)
+            $.extend(this, profileView);
+
         this.EnsureAvatarImage();
         
         if(this.profile.userId == this.subjectProfile.userId) {

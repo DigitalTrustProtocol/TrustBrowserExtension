@@ -124,24 +124,26 @@ class TrustGraphController {
         this.trustResults = this.trustStrategy.ProcessClaims(source.queryResult.results.claims);
 
         this.profileIndex = {};
-        this.currentUser = await this.profileRepository.getProfile(source.currentUserId); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
-        if(!this.currentUser) {
-            this.currentUser = new Profile({userId: source.currentUserId, alias: "(You)" });
-        }
-        this.profileIndex[source.currentUserId] = this.currentUser;
-
         this.selectedProfile = source.profiles.filter(p=>p.userId == source.subjectProfileId).pop();
-        this.profileIndex[source.subjectProfileId] = this.selectedProfile;
+        let subjectView = this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile);
 
+        let currentUserProfile = await this.profileRepository.getProfile(source.currentUserId); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
+        if(!currentUserProfile) {
+            currentUserProfile = new Profile({userId: source.currentUserId, alias: "(You)" });
+        }
+        let cu = this.profileIndex[source.currentUserId] = new ProfileModal(currentUserProfile);
+        cu.currentUser = currentUserProfile;
+        cu.subjectProfile = subjectView.profile;
 
         for(let key in this.trustResults) {
             let profile = source.profiles.filter(p=>p.userId === key).pop();
             if(!profile) {
                 profile = await this.profileRepository.getProfile(key);
-                this.profileIndex[key] = profile;
             }
 
-            profile.trustResult = this.trustResults[key];
+            let pv = this.profileIndex[key] = new ProfileModal(profile);
+            pv.trustResult = this.trustResults[key];
+            pv.subjectProfile = subjectView.profile;
         }
     }
 
@@ -172,7 +174,9 @@ class TrustGraphController {
                 shadow: true,
                 font: {
                     color: '#000000',
-                    multi: 'md'
+                    multi: 'md',
+                    face:'arial',
+                    size:9
                 }
             },
             edges: {
@@ -187,18 +191,11 @@ class TrustGraphController {
 
     showModal(profileId: any) : void {
 
-        let profile = this.profileIndex[profileId];
-        if(!profile.trustResult) {
-            profile.trustResult = this.trustResults[profileId] || new BinaryTrustResult();
-            // let arr = {};
-            // for(let key in profile.trustResult.claims) {
-            //     let claim = profile.trustResult.claims[key] as Claim;
-            //     arr[claim.issuer.id] = claim;
-            // }
-            // profile.trustResult.claims = arr;
-        }
+        let pv = this.profileIndex[profileId];
+        if(!pv.trustResult) 
+            pv.trustResult = this.trustResults[profileId] || new BinaryTrustResult();
 
-        this.modalData = new ProfileModal(profile, profile["trustResult"], profile["queryResult"]);
+        this.modalData = pv.setup();
     
         this.$scope.$apply();
         // Show dtpbar
@@ -217,26 +214,26 @@ class TrustGraphController {
 
 
     trustClick() {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, "true", 0, this.modalData.profile.alias + " trusted");
+        this.buildAndSubmitBinaryTrust(this.modalData, "true", 0, this.modalData.profile.alias + " trusted");
         return false;
     };
 
     distrustClick () {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, "false", 0, this.modalData.profile.alias + " distrusted");
+        this.buildAndSubmitBinaryTrust(this.modalData, "false", 0, this.modalData.profile.alias + " distrusted");
         return false;
     }
 
     untrustClick() {
-        this.buildAndSubmitBinaryTrust(this.modalData.profile, null, 1, this.modalData.profile.alias + " untrusted");
+        this.buildAndSubmitBinaryTrust(this.modalData, null, 1, this.modalData.profile.alias + " untrusted");
 
         return false;
     }
 
-    buildAndSubmitBinaryTrust (profile: IProfile, value: string, expire: number, message: string): JQueryPromise<any> {
+    buildAndSubmitBinaryTrust (profileView: ProfileModal, value: string, expire: number, message: string): JQueryPromise<any> {
         //this.modalData.disableButtons();
         this.modalData.processing = true;
-        profile.scope = this.source.scope;
-        var trustPackage = this.subjectService.BuildBinaryClaim(profile, value, undefined, this.source.scope, expire);
+        profileView.profile.scope = this.source.scope;
+        var trustPackage = this.subjectService.BuildBinaryClaim(profileView.profile, value, undefined, this.source.scope, expire);
         this.packageBuilder.SignPackage(trustPackage);
         return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
             console.log("Posting package is a "+trustResult.status);
@@ -244,12 +241,19 @@ class TrustGraphController {
             $["notify"](message, 'success');
 
             this.updateNetwork(trustPackage);
-            profile.queryResult.results = trustPackage;
-            profile.trustResult = new BinaryTrustResult();
-            profile.trustResult.claims.push(trustPackage.claims[0]);
-            profile.trustResult.processClaim(profile.trustResult.claims[0], this.source.currentUserId);
 
-            this.trustGraphPopupClient.updateContent(profile);
+            profileView.queryResult = <QueryContext>{
+                issuerCount: 1,
+                subjectCount: 1,
+                results: trustPackage,
+                errors: []
+            } 
+
+            let results = this.trustStrategy.createTrustResults(profileView.queryResult);
+            profileView.trustResult = results[profileView.profile.userId];
+            profileView.setup();
+
+            this.trustGraphPopupClient.updateContent(profileView);
            
             this.hideModal(); 
         }).fail((trustResult) => { 

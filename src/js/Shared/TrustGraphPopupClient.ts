@@ -3,6 +3,7 @@ import { TrustGraphPopupServer } from "../background/TrustGraphPopupServer";
 import { browser, Runtime } from "webextension-polyfill-ts";
 import IProfile from "../IProfile";
 import IGraphData from "../content/IGraphData";
+import ProfileModal = require("../Model/ProfileModal");
 
 export class TrustGraphPopupClient {
     private messageHandler: MessageHandler;
@@ -65,11 +66,11 @@ export class TrustGraphPopupClient {
 
     
 
-    public updateContent(profile: IProfile, callback?: (err: any, value: any) => void) : Promise<any>
+    public updateContent(profileView: ProfileModal, callback?: (err: any, value: any) => void) : Promise<any>
     {
         let message = { 
                 action: "updateContent",
-                profile
+                profileView
         };
         return this.messageHandler.send(TrustGraphPopupServer.handlerName, message, result => {
             if(callback)
