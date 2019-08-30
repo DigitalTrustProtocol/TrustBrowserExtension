@@ -1,3 +1,6 @@
+import 'bootstrap';
+import 'select2';
+
 import * as angular from 'angular';
 import '../common.js';
 import PackageBuilder = require('../PackageBuilder');
@@ -10,7 +13,6 @@ import ProfileRepository = require('../ProfileRepository');
 import BinaryTrustResult = require('../Model/BinaryTrustResult');
 import vis2 = require('vis');
 import Profile = require('../Profile');
-import Identicon = require('identicon.js');
 import { Buffer } from 'buffer';
 import ISiteInformation from '../Model/SiteInformation.interface';
 import SiteManager = require('../SiteManager');
@@ -21,17 +23,18 @@ import Settings = require('../Shared/Settings');
 import * as $ from 'jquery';
 import ProfileModal = require('../Model/ProfileModal');
 import { browser, Windows, Runtime, Tabs } from "webextension-polyfill-ts";
-import 'select2';
 import { StorageClient } from "../Shared/StorageClient";
 import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
 import IGraphData from './IGraphData';
 import IOpenDialogResult from '../Model/OpenDialogResult.interface';
 import { TrustGraphPopupServer } from '../background/TrustGraphPopupServer';
 import DTPIdentity = require('../Model/DTPIdentity');
-import 'bootstrap';
 import { QueryContext } from '../../lib/dtpapi/model/models.js';
 import IProfileView from './IProfileView';
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models.js';
+import AjaxErrorParser = require('../Shared/AjaxErrorParser');
+import Identicon = require('../Shared/Identicon');
+
 
 
 class ExtensionpopupController {
@@ -51,6 +54,8 @@ class ExtensionpopupController {
     storageClient: StorageClient;
     trustStrategy: TrustStrategy;
     trustGraphPopupClient: TrustGraphPopupClient;
+    showError: boolean;
+    errorMessage: string;
 
 
 
@@ -103,8 +108,15 @@ class ExtensionpopupController {
 
                         this.selectProfile(profileView);
                         
+
                     })
                 });
+
+                let key = this.settings.password + this.settings.seed;
+
+                if(!key || key == "" || key.length == 0) {
+                    $('#userModal').modal('show');
+                }
             });
         });
 
@@ -207,8 +219,16 @@ class ExtensionpopupController {
     }
 
 
-    saveClick() : boolean {
+    saveClick(formId: string) : boolean {
+        if(!this.validateForm(formId, true))
+            return;
+
         let profileChanged = this.settings.address != this.tempSettings.address;
+        if(!this.tempSettings.password) this.tempSettings.password = "";
+        if(!this.tempSettings.seed) this.tempSettings.seed = "";
+        if(!this.tempSettings.alias) this.tempSettings.alias = "";
+        if(!this.tempSettings.aliasProof) this.tempSettings.aliasProof = "";
+
         this.settingsClient.buildKey(this.tempSettings);
 
         this.settings = $.extend(this.settings, this.tempSettings);
@@ -225,10 +245,33 @@ class ExtensionpopupController {
         return false;
     }
 
-    cancelClick() : boolean {
+    cancelClick(formId: string) : boolean {
         this.tempSettings = $.extend(this.tempSettings, this.settings);
+        this.validateForm(formId, false);
         return false;
     }
+
+
+    validateForm(id: string, active: boolean) : boolean {
+        if(!id) return true;
+        
+        var form = $(id);
+        if(!active) {
+            form.removeClass('was-validated');
+            return true;  
+        }
+
+        if ((<any>form[0]).checkValidity() === false) {
+            event.preventDefault()
+            event.stopPropagation()
+            form.addClass('was-validated');
+            return false;
+          }
+          
+          form.removeClass('was-validated');
+          return true;
+    }
+
 
     trustClick(profileView: ProfileModal): boolean {
         this.buildAndSubmitBinaryTrust(profileView, "true", 0, profileView.profile.alias + " trusted");
@@ -249,7 +292,15 @@ class ExtensionpopupController {
         let scope = "url";
         return this.dtpService.Query(profiles, scope).then((response, queryResult) => {
             return { queryResult: queryResult, trustResults : this.trustStrategy.createTrustResults(queryResult)};
+        }).fail((xhr, exception) => {
+            this.showFatalError(AjaxErrorParser.formatErrorMessage(xhr, exception));
         });
+    }
+
+    showFatalError(message : string ): void {
+        this.showError = true;
+        this.errorMessage = message;
+        this.$scope.$apply();
     }
 
 
@@ -274,7 +325,8 @@ class ExtensionpopupController {
             this.updateIcon(profileView.trustResult);
             this.updateContentTabProfile(profileView);
             this.$scope.$apply();
-        }).fail((trustResult) => { 
+        }).fail((xhr, exception) => { 
+            // Show error
         });
     }
 
@@ -283,13 +335,11 @@ class ExtensionpopupController {
         if (state === 'identicon') {
             this.settingsClient.buildKey(this.tempSettings);
 
-            var identicon = new Identicon(this.tempSettings.address, { margin: 0.1, size: 64, format: 'svg' }).toString();
-            if (identicon.length > 0) {
-                this.tempSettings.identicon = "data:image/svg+xml;base64," + identicon.toString();
-                this.showIcon = true;
-            }
+              this.tempSettings.identicon = Identicon.createIcon(this.tempSettings.address);
+              this.showIcon = true
         }
     }
+
 
 
 
@@ -350,7 +400,12 @@ class ExtensionpopupController {
 }
 
 
-const app = angular.module("myApp", []);
+const app = angular.module("myApp", [])
+    .filter('to_html', ['$sce', function($sce){
+    return function(text) {
+        return $sce.trustAsHtml(text);
+    };
+}]);
 app.controller('ExtensionpopupController', ["$scope", ExtensionpopupController]) // bootstrap angular app here 
 // app.controller('TabController', ['$scope', function($scope) {
 //     $scope.tab = 1;

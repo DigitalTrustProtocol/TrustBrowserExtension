@@ -55,6 +55,14 @@
             /*background-color: red;*/
         }
 
+        .trusted {
+            color: green;
+        }
+
+        .distrusted {
+            color: red;
+        }
+
         .neutral {
             color: darkorange;
         }
@@ -79,10 +87,30 @@
             padding-top: 5px;
         }
 
-        dtp-avatarImg {
+        
+        .reputationLink:link {
+            color: black;
+            }
+
+        /* visited link */
+        .reputationLink:visited {
+        color: black;
+        }
+
+        /* mouse over link */
+        .reputationLink:hover {
+        color: black;
+        }
+
+        /* selected link */
+        .reputationLink:active {
+        color: black;
+        }
+
+        /* .dtp-avatarImg {
             width: 10pt;
             height: 10pt;
-        }
+        } */
     </style>
 
 </head>
@@ -127,12 +155,12 @@
         <!-- Wrap the rest of the page in another container to center all the content. -->
 
         <div class="container">
-            <div ng-repeat="(key, pv) in ct.sessionProfiles" ng-show="pv.visible">
+            <div ng-repeat="(key, pv) in ct.sessionProfiles" ng-show="pv.visible && !ct.showError">
                 <div class="row">
                     <div class="col-lg-4 subjectBlock">
                         <div class="breakContent" style="font-weight: bold">{{ pv.profile.alias }}</div>
 
-                        <div><img ng-src="{{ pv.profile.avatarImage }}" class="rounded-circle dtp-avatarImg"
+                        <div><img ng-src="{{ pv.profile.avatarImage }}" class="dtp-avatarImg"
                                 ng-click="ct.openGraphClick($event, pv)">
                             <span>{{ pv.profile.userId }}</span></div>
                     </div>
@@ -140,22 +168,18 @@
                 <!-- Three columns of text below the carousel -->
                 <div class="row">
                     <div class="col-lg-4">
-                        <h5>Reputation</h5>
-                        <div ng-class="pv.status.iconClass"></div>
-                        <!-- <div class="fas fa-ban rounded-circle trustIcon distrust"></div>
-                        <div class="fas fa-exclamation-circle trustIcon neutral"></div>
-                        <div class="fas fa-question-circle trustIcon none"></div> -->
+                        <h5><a href="#" ng-click="ct.openGraphClick($event, pv)" class="reputationLink" >Reputation</a></h5>
+                        <div ng-class="pv.status.iconClass" ng-click="ct.openGraphClick($event, pv)"></div>
                         <div class="dtpModelText">
                             <div ng-show="pv.status.show">Status: <span ng-class="pv.status.cssClass"
                                     ng-bind="pv.status.text"></span></div>
                             <div ng-show="pv.score.show">
-                                <div ng-show="pv.score.show && pv.profile.binaryTrustResult.trust > 0">
+                                <div ng-show="pv.score.show && pv.trustResult.trust > 0">
                                     Possitive claims: <span class="trusted"
-                                        ng-bind="pv.profile.binaryTrustResult.trust"></span></div>
-                                <div
-                                    ng-show="pv.score.show && pv.profile.binaryTrustResult.distrust > 0">
+                                        ng-bind="pv.trustResult.trust"></span></div>
+                                <div ng-show="pv.score.show && pv.trustResult.distrust > 0">
                                     Negative claims: <span class="distrusted"
-                                        ng-bind="pv.profile.binaryTrustResult.distrust"></span></div>
+                                        ng-bind="pv.trustResult.distrust"></span></div>
                             </div>
                         </div>
                     </div><!-- /.col-lg-4 -->
@@ -163,21 +187,26 @@
                 <div class="row">
                     <div class="col-lg-4">
                         <button type="button" ng-class="pv.button.trust.cssClass" ng-click="ct.trustClick(pv)"
-                            ng-attr-title="{{pv.button.trust.title}}"
-                            ng-disabled="pv.button.trust.disabled">
+                            ng-attr-title="{{pv.button.trust.title}}" ng-disabled="pv.button.trust.disabled">
                             Trust
                         </button>
                         <button type="button" ng-class="pv.button.untrust.cssClass" ng-click="ct.untrustClick(pv)"
-                            ng-attr-title="{{pv.button.untrust.title}}"
-                            ng-disabled="pv.button.untrust.disabled">
+                            ng-attr-title="{{pv.button.untrust.title}}" ng-disabled="pv.button.untrust.disabled">
                             Untrust
                         </button>
                         <button type="button" ng-class="pv.button.distrust.cssClass" ng-click="ct.distrustClick(pv)"
-                            ng-attr-title="{{pv.button.distrust.title}}"
-                            ng-disabled="pv.button.distrust.disabled">
+                            ng-attr-title="{{pv.button.distrust.title}}" ng-disabled="pv.button.distrust.disabled">
                             Distrust
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <div class="card" style="width: 18rem;" ng-show="ct.showError">
+                <span class="card-img-top far fa-sad-tear" style="font-size: 20pt"></span>
+                <div class="card-body">
+                    <h5 class="card-title">Error</h5>
+                    <p class="card-text">{{ct.errorMessage}}</p>
                 </div>
             </div>
         </div><!-- /.container -->
@@ -190,12 +219,12 @@
                 <div class="modal-header">
                     <h5 class="modal-title" id="userModalLabel">User settings</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"
-                        ng-click="ct.cancelClick()">
+                        ng-click="ct.cancelClick('#userForm')">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <form class="container" novalidate="" action="/echo" method="POST" id="userForm">
                         <p>The user ID is generated and stored on the client only. No signup is needed.<br>
                             <small style="display: none">NB! The password is not encrypted on the client and may be very
                                 insecure. The password and seed will never be submittet to the server.</small>
@@ -203,27 +232,28 @@
                         <label for="inputAlias">User alias, used for easier identification</label>
                         <div class="input-group mb-3 input-group-sm">
                             <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <span class="input-group-text"><i class="fas fa-user" title="Alias"></i></span>
                             </div>
                             <input id="inputAlias" type="text" class="form-control" name="inputAlias"
-                                placeholder="Alias / Name / Nickname (Optional)" required autofocus
+                                placeholder="Alias / Name / Nickname (Optional)" autofocus
                                 ng-model="ct.tempSettings.alias" ng-trim="true">
                         </div>
                         <div class="input-group mb-3 input-group-sm">
                             <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <span class="input-group-text"><i class="fas fa-lock" title="Password"></i></span>
                             </div>
                             <input id="inputPassword" type="password" class="form-control" name="inputPassword"
-                                placeholder="Password" required autofocus ng-model="ct.tempSettings.password"
+                                placeholder="Password (Required)" required ng-model="ct.tempSettings.password"
                                 ng-trim="false" ng-change="ct.modelChange('identicon')">
+                            <div class="invalid-feedback">Password required!</div>
                         </div>
                         <label for="inputSeed">Additional seed - Fill in for better security.</label>
                         <div class="input-group mb-3 input-group-sm">
                             <div class="input-group-prepend">
-                                <span class="input-group-text">Optional</span>
+                                <span class="input-group-text"><i class="fas fa-seedling" title="Seed"></i></span>
                             </div>
                             <input type="text" id="inputSeed" class="form-control" ng-model="ct.tempSettings.seed"
-                                ng-trim="false" placeholder="E-mail / Phone / Pin or any text"
+                                ng-trim="false" placeholder="E-mail / Phone / Pin or any text (Optional)"
                                 ng-change="ct.modelChange('identicon')">
                         </div>
                         <div class="input-group">
@@ -236,6 +266,8 @@
                             </div>
                         </div>
                         <div class="input-group">
+                            <!-- <div class="rounded-circle" ng-bind-html="ct.tempSettings.identicon | to_html"></div> -->
+                            <!-- <canvas id="userIcon" width="32" height="32"></canvas>  -->
                             <img id="identicon" style="float: left; padding: 5px;"
                                 ng-src="{{ ct.tempSettings.identicon }}" ng-show="ct.showIcon">
                             <div style="float: left; padding: 5px;">
@@ -247,8 +279,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal"
-                        ng-click="ct.cancelClick()">Cancel</button>
-                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()"
+                        ng-click="ct.cancelClick('#userForm')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" ng-click="ct.saveClick('#userForm')"
                         data-dismiss="modal">Save</button>
                 </div>
             </div>
@@ -295,7 +327,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">About DTP <small>Ver 0.3.20190824 - Alpha</small></h5>
+                    <h5 class="modal-title" id="userModalLabel">About DTP <small>Ver 0.3.20190830 - Alpha</small></h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>

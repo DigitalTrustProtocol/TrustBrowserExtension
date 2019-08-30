@@ -24,7 +24,7 @@ class SettingsClient {
         return this.messageHandler.send(SettingsServer.handlerName, param, result => {
             let data = (typeof result === "string") ? JSON.parse(result) as ISettings : result as ISettings;
             let settings: ISettings = (data) ? data : this.settings;
-
+            
             Object.defineProperty(settings, 'keyPair', { enumerable: false, writable: true, value: null }); // No serialize to json!
             this.buildKey(settings);
             if(callback)
@@ -50,7 +50,9 @@ class SettingsClient {
     }
 
     public buildKey(settings: ISettings) : any {
-        let keystring = (settings.password) ? settings.password : '' + (settings.seed) ? settings.seed : '';
+        let keystring = (settings.password) ? settings.password : '';
+        keystring += (settings.seed) ? settings.seed : '';
+
         let hash = Crypto.Hash256(keystring);
                 
         settings.keyPair = bitcoin.ECPair.fromPrivateKey(hash);
@@ -63,6 +65,8 @@ class SettingsClient {
         }
         return settings.keyPair;
     }
+
+    
 }
 
 export = SettingsClient

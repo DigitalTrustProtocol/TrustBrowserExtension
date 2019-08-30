@@ -17,7 +17,7 @@ function updateIcon(val: number) : void {
     let icon = "";
 
     if(val == 0)
-        icon = "neutral";
+        icon = "";
 
     if (val > 0)
         icon = "trust";

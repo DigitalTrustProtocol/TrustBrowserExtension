@@ -10,7 +10,6 @@ import ProfileRepository = require('../ProfileRepository');
 import BinaryTrustResult = require('../Model/BinaryTrustResult');
 import vis2 = require('vis');
 import Profile = require('../Profile');
-import Identicon = require('identicon.js');
 import { Buffer } from 'buffer';
 import ISiteInformation from '../Model/SiteInformation.interface';
 import SiteManager = require('../SiteManager');
@@ -165,7 +164,7 @@ class TrustGraphController {
             },
             nodes: {
                 shape: 'circularImage',
-                borderWidth: 4,
+                borderWidth: 3,
                 size: 20,
                 color: {
                     border: '#222222',

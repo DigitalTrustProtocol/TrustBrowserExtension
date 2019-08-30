@@ -2,7 +2,7 @@ import '../common.js';
 import ProfileController = require("../ProfileController");
 import Profile = require("../Profile");
 import IProfile from "../IProfile";
-import Identicon = require('identicon.js');
+import Identicon = require('../Shared/Identicon');
 import Crypto = require("../Crypto");
 import BinaryTrustResult = require('../Model/BinaryTrustResult');
 import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
@@ -259,8 +259,8 @@ class MastodonProfileView implements IProfileView {
         if (!controller.profile.identiconData16) {
             //let hash = Crypto.Hash160(profile.userId).toBase64();
             let hash = Crypto.toDTPAddress(Crypto.Hash160(controller.profile.userId));
-            let icon = new Identicon(hash, { margin: 0.1, size: 16, format: 'svg' }); // Need min 15 chars
-            controller.profile.identiconData16 = icon.toString();
+            let icon = Identicon.createIcon(hash); // Need min 15 chars
+            controller.profile.identiconData16 = icon;
             //profile.time = Date.now();
             //profile.controller.save();
         }

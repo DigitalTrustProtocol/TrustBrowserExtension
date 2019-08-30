@@ -3,7 +3,7 @@ import ITrustStrategy from "../Interfaces/ITrustStrategy";
 import { QueryContext, Claim } from '../../lib/dtpapi/model/models';
 import IProfile from '../IProfile';
 import Crypto = require('../Crypto');
-import Identicon = require('identicon.js');
+import Identicon = require('../Shared/Identicon');
 import ProfileRepository = require('../ProfileRepository');
 import BinaryTrustResult = require('../Model/BinaryTrustResult');
 import ProfileController = require('../ProfileController');
@@ -97,8 +97,8 @@ class TrustGraphDataAdapter {
 
         if(!profile.avatarImage) {
             //let hash = Crypto.toDTPAddress(Crypto.Hash160(userId));
-            let icon = new Identicon(profile.userId, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
-            profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
+            profile.avatarImage = Identicon.createIcon(profile.userId, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
+            //profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
         }
 
         let node = {

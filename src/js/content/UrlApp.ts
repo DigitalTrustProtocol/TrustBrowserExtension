@@ -9,6 +9,7 @@ import IGraphData from './IGraphData';
 import { MessageHandler } from '../Shared/MessageHandler';
 import Profile = require("../Profile");
 import ProfileModal = require("../Model/ProfileModal");
+import AjaxErrorParser = require("../Shared/AjaxErrorParser");
 
 class UrlApp {
 
@@ -129,8 +130,6 @@ class UrlApp {
 
     updateIcon(result: BinaryTrustResult) : void {
         let state = (result) ? result.state : undefined;
-        if(result.state == 0 && result.trust == 0)
-            state = undefined; // No trust given
 
         chrome.runtime.sendMessage({
             handler: 'extensionHandler',
@@ -153,7 +152,9 @@ class UrlApp {
                 pv.trustResult = trustResults[pv.profile.userId] || new BinaryTrustResult();
             })
             this.updateIcon(this.sessionProfiles[0].trustResult);
-        });
+        }).fail((xhr, errorMessage) => {
+            console.log(AjaxErrorParser.formatErrorMessage(xhr, errorMessage));
+        })
     }
 
 

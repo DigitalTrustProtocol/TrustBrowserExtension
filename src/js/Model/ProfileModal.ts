@@ -1,5 +1,5 @@
 import IProfile from "../IProfile";
-import Identicon = require('identicon.js');
+import Identicon = require('../Shared/Identicon');
 import { DtpGraphCoreModelQueryContext } from "../../lib/typescript-jquery-client/model/models";
 import BinaryTrustResult = require("./BinaryTrustResult");
 import * as $ from 'jquery';
@@ -79,8 +79,8 @@ class ProfileModal
 
     public EnsureAvatarImage() : void {
         if(!this.profile.avatarImage) {
-            let icon = new Identicon(this.profile.userId, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
-            this.profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
+            let icon = Identicon.createIcon(this.profile.userId); // Need min 15 chars
+            this.profile.avatarImage =icon; // 'data:image/svg+xml;base64,'+ icon.toString();
         }
     }
 
@@ -110,7 +110,7 @@ class ProfileModal
         let trustGiven = false;
         if(this.trustResult) {
 
-            let postText = this.trustResult.direct ? " directly" : "";
+            let postText = this.trustResult.direct ? " directly" : " by the network";
 
             trustGiven = this.trustResult.trust > 0 || this.trustResult.distrust > 0;
             this.score.result = this.trustResult.trust - this.trustResult.distrust;
