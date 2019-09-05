@@ -39,6 +39,13 @@ class ProfileModal
     public status: TrustGraphStatusModel = new TrustGraphStatusModel();
     public visible: boolean = false;
 
+    public inputForm: string = "thing";
+    public trustButtonContainerVisible: boolean = false;
+    public ratingStarsContainerVisible : boolean = false;
+    public keywordContainerVisible: boolean = false;
+    public keywordSelect: any;
+    public keywordNotes: string;
+
     public button = {
         show: false,
         trust: new TrustGraphButtonModel(),
@@ -59,11 +66,11 @@ class ProfileModal
         if(profileView)
             $.extend(this, profileView);
 
+        this.inputForm = (this.profile.userId.indexOf("1") == 0) ? "identity" : "thing";
+        this.setInputForm();
+
         this.EnsureAvatarImage();
         
-        // if(this.profile.userId == this.subjectProfile.userId) {
-        // }
-
         if(this.currentUser && this.profile.userId == this.currentUser.userId) {
             this.setupCurrentUser();
             return this;
@@ -81,6 +88,13 @@ class ProfileModal
         if(!this.profile.avatarImage) {
             let icon = Identicon.createIcon(this.profile.userId); // Need min 15 chars
             this.profile.avatarImage =icon; // 'data:image/svg+xml;base64,'+ icon.toString();
+        }
+    }
+
+    public setInputForm(): void {
+        switch(this.inputForm) {
+            case "identity" : this.trustButtonContainerVisible = true; break;
+            case "thing" : this.ratingStarsContainerVisible = true; break;
         }
     }
 

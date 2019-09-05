@@ -87,24 +87,24 @@
             padding-top: 5px;
         }
 
-        
+
         .reputationLink:link {
             color: black;
-            }
+        }
 
         /* visited link */
         .reputationLink:visited {
-        color: black;
+            color: black;
         }
 
         /* mouse over link */
         .reputationLink:hover {
-        color: black;
+            color: black;
         }
 
         /* selected link */
         .reputationLink:active {
-        color: black;
+            color: black;
         }
 
         /* .dtp-avatarImg {
@@ -146,13 +146,12 @@
 
         <div class="subjectBlock">
             <div style="padding-top: 5px;padding-bottom: 5px;">
-                <select class="userSelectContainer js-states form-control" name="state" style="width: 100%;">
+                <select class="userSelectContainer js-states form-control" name="state" style="width: 100%;"></select>
+
             </div>
         </div>
 
-        <!-- Marketing messaging and featurettes
-      ================================================== -->
-        <!-- Wrap the rest of the page in another container to center all the content. -->
+        <!-- Container ================================================== -->
 
         <div class="container">
             <div ng-repeat="(key, pv) in ct.sessionProfiles" ng-show="pv.visible && !ct.showError">
@@ -165,53 +164,86 @@
                             <span>{{ pv.profile.userId }}</span></div>
                     </div>
                 </div>
-                <!-- Three columns of text below the carousel -->
                 <div class="row">
                     <div class="col-lg-4">
-                        <h5><a href="#" ng-click="ct.openGraphClick($event, pv)" class="reputationLink" >Reputation</a></h5>
-                        <div ng-class="pv.status.iconClass" ng-click="ct.openGraphClick($event, pv)"></div>
-                        <div class="dtpModelText">
-                            <div ng-show="pv.status.show">Status: <span ng-class="pv.status.cssClass"
-                                    ng-bind="pv.status.text"></span></div>
-                            <div ng-show="pv.score.show">
-                                <div ng-show="pv.score.show && pv.trustResult.trust > 0">
-                                    Possitive claims: <span class="trusted"
-                                        ng-bind="pv.trustResult.trust"></span></div>
-                                <div ng-show="pv.score.show && pv.trustResult.distrust > 0">
-                                    Negative claims: <span class="distrusted"
-                                        ng-bind="pv.trustResult.distrust"></span></div>
+                        <div id="trustButtonContainer" ng-show="pv.trustButtonContainerVisible">
+                            <h5><a href="#" ng-click="ct.openGraphClick($event, pv)" class="reputationLink">Reputation</a></h5>
+                            <div ng-class="pv.status.iconClass" ng-click="ct.openGraphClick($event, pv)"></div>
+                            <div class="dtpModelText">
+                                <div ng-show="pv.status.show">Status: <span ng-class="pv.status.cssClass"
+                                        ng-bind="pv.status.text"></span></div>
+                                <div ng-show="pv.score.show">
+                                    <div ng-show="pv.score.show && pv.trustResult.trust > 0">
+                                        Possitive claims: <span class="trusted" ng-bind="pv.trustResult.trust"></span>
+                                    </div>
+                                    <div ng-show="pv.score.show && pv.trustResult.distrust > 0">
+                                        Negative claims: <span class="distrusted"
+                                            ng-bind="pv.trustResult.distrust"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" ng-class="pv.button.trust.cssClass" ng-click="ct.trustClick(pv)"
+                                    ng-attr-title="{{pv.button.trust.title}}" ng-disabled="pv.button.trust.disabled">
+                                    Trust
+                                </button>
+                                <button type="button" ng-class="pv.button.untrust.cssClass"
+                                    ng-click="ct.untrustClick(pv)" ng-attr-title="{{pv.button.untrust.title}}"
+                                    ng-disabled="pv.button.untrust.disabled">
+                                    Untrust
+                                </button>
+                                <button type="button" ng-class="pv.button.distrust.cssClass"
+                                    ng-click="ct.distrustClick(pv)" ng-attr-title="{{pv.button.distrust.title}}"
+                                    ng-disabled="pv.button.distrust.disabled">
+                                    Distrust
+                                </button>
                             </div>
                         </div>
-                    </div><!-- /.col-lg-4 -->
-                </div><!-- /.row -->
-                <div class="row">
-                    <div class="col-lg-4">
-                        <button type="button" ng-class="pv.button.trust.cssClass" ng-click="ct.trustClick(pv)"
-                            ng-attr-title="{{pv.button.trust.title}}" ng-disabled="pv.button.trust.disabled">
-                            Trust
-                        </button>
-                        <button type="button" ng-class="pv.button.untrust.cssClass" ng-click="ct.untrustClick(pv)"
-                            ng-attr-title="{{pv.button.untrust.title}}" ng-disabled="pv.button.untrust.disabled">
-                            Untrust
-                        </button>
-                        <button type="button" ng-class="pv.button.distrust.cssClass" ng-click="ct.distrustClick(pv)"
-                            ng-attr-title="{{pv.button.distrust.title}}" ng-disabled="pv.button.distrust.disabled">
-                            Distrust
-                        </button>
+                        <div id="ratingStarsContainer" ng-show="pv.ratingStarsContainerVisible">
+                            <h5><a href="#" ng-click="ct.openGraphClick($event, pv)" class="reputationLink">Rating</a></h5>
+                            <star-rating-comp id="'my-id'" rating="'3.5'" num-of-stars="5" star-type="'icon'"
+                                size="'medium'" show-hover-stars="true" show-half-stars="'true'" speed="'noticeable'"
+                                label-position="'right'" label-text="" on-click="ct.onRatingChange($event, pv)">
+                            </star-rating-comp><span>3.5</span>
+                        </div>
+                        <div id="keywordContainer" ng-show="pv.keywordContainerVisible">
+                                <div class="col text-center">
+                                    <p>Select key words</p>
+                                    <select class="keywordSelectContainer form-control" name="state2" style="width: 100%;"
+                                        ng-init="pv.keywordSelect = this"></select>
+                                    <p></p>
+                                    <button class="btn btn-danger btn-sm float-left" ng-click="ct.keywordCancel($event, pv)">
+                                        <i class="fas fa-backward"></i> Back
+                                    </button>
+        
+                                    <button class="btn btn-secondary btn-sm " data-toggle="modal"
+                                        data-target="#keywordNotesModal">
+                                        <i class="fas fa-comment"></i> Add Note
+                                    </button>
+        
+                                    <button class="btn btn-primary btn-sm float-right" ng-click="ct.keywordSubmit($event, pv)">
+                                        <i class="fas fa-check-circle"></i> Submit
+                                    </button>
+        
+                                </div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div><!-- /.Iterator -->
 
-            <div class="card" style="width: 18rem;" ng-show="ct.showError">
-                <span class="card-img-top far fa-sad-tear" style="font-size: 20pt"></span>
-                <div class="card-body">
-                    <h5 class="card-title">Error</h5>
-                    <p class="card-text">{{ct.errorMessage}}</p>
-                </div>
+        <!-- Error card ======== -->
+        <div class="card" style="width: 18rem;" ng-show="ct.showError">
+            <span class="card-img-top far fa-sad-tear" style="font-size: 20pt"></span>
+            <div class="card-body">
+                <h5 class="card-title">Error</h5>
+                <p class="card-text">{{ct.errorMessage}}</p>
             </div>
+        </div>
         </div><!-- /.container -->
     </main>
 
+    <!-- User Modal =============================================================================== -->
     <div class="modal fade" id="userModal" tabindex="-1" role="dialog" aria-labelledby="userModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -287,6 +319,7 @@
         </div>
     </div>
 
+    <!-- Server Modal =============================================================================== -->
     <div class="modal fade" id="serverModal" tabindex="-1" role="dialog" aria-labelledby="serverModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -322,6 +355,79 @@
         </div>
     </div>
 
+    <!-- Snippet Modal =============================================================================== -->
+    <div class="modal fade" id="snippetsModal" tabindex="-1" role="dialog" aria-labelledby="snippetsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">Snippets</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h6>User proof</h6>
+                    <div>Insert user proof html into a page. This will enable trusting the user directly.</div>
+                    <button class="btn btn-primary" type="button" data-toggle="collapse"
+                        data-target="#userProofContainer" aria-expanded="false" aria-controls="userProofContainer">
+                        User proof
+                    </button>
+                    </p>
+                    <div class="collapse" id="userProofContainer">
+                        <div class="card card-body">
+                            <pre><code id="userProofCode">&lt;div itemscope itemtype=&quot;http://digitaltrustprotocol.org/entity&quot;&gt; 
+&lt;div itemprop=&quot;alias&quot;&gt;<span ng-bind="ct.tempSettings.alias"></span>&lt;/div&gt;
+&lt;div itemprop=&quot;entityId&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
+&lt;span itemprop=&quot;aliasProof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+                            <button class="btn btn-secondary btn-sm" ng-click="ct.copyToClipboard('userProofCode')">
+                                <i class="fas fa-clipboard"></i> Copy to clipboard
+                            </button>
+                        </div>
+                    </div>
+                    <h6>Content proof</h6>
+                    <div>Insert content proof html into a page. This will enable trusting the content directly.</div>
+                    <button class="btn btn-primary" type="button" data-toggle="collapse"
+                        data-target="#contentProofContainer" aria-expanded="false"
+                        aria-controls="contentProofContainer">
+                        Content proof
+                    </button>
+                    </p>
+                    <div class="collapse" id="contentProofContainer">
+                        <form class="container" novalidate="" action="/echo" method="POST" id="contentProofForm">
+                            <label for="inputContentProof">Content</label>
+                            <div class="input-group mb-3 input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fab fa-html5" title="Html"></i></span>
+                                </div>
+                                <textarea class="form-control" id="inputContentProof" rows="3"
+                                    placeholder="Content text or html" ng-model="ct.contentProof"
+                                    ng-trim="false"></textarea>
+                            </div>
+                        </form>
+                        <div class="card card-body">
+                            <pre><code id="contentProofCode">&lt;div itemscope itemtype=&quot;http://digitaltrustprotocol.org/entity&quot;&gt; 
+&lt;div itemprop=&quot;entityId&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
+&lt;div itemprop=&quot;alias&quot;&gt;<span ng-bind="ct.tempSettings.alias"></span>&lt;/div&gt;
+&lt;span itemprop=&quot;aliasProof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+                            <button class="btn btn-secondary btn-sm" ng-click="ct.copyToClipboard('contentProofCode')">
+                                <i class="fas fa-clipboard"></i> Copy to clipboard
+                            </button>
+
+                        </div>
+                    </div>
+
+                </div><!-- /Modal body end -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal =============================================================================== -->
     <div class="modal fade" id="aboutModal" tabindex="-1" role="dialog" aria-labelledby="aboutModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
@@ -365,32 +471,40 @@
         </div>
     </div>
 
-    <div class="modal fade" id="snippetsModal" tabindex="-1" role="dialog" aria-labelledby="snippetsModalLabel"
+    <!-- Notes Modal =============================================================================== -->
+    <div class="modal fade" id="keywordNotesModal" tabindex="-1" role="dialog" aria-labelledby="keywordNotesModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">Snippets</h5>
+                    <h5 class="modal-title" id="userModalLabel">Notes</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-
-                    <h6>User proof</h6>
-                    <pre><code>&lt;div itemscope itemtype=&quot;http://digitaltrustprotocol.org/entity&quot;&gt; 
-    &lt;div itemprop=&quot;alias&quot;&gt;<span ng-bind="ct.tempSettings.alias"></span>&lt;/div&gt;
-    &lt;div itemprop=&quot;entityId&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
-    &lt;span itemprop=&quot;aliasProof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
-&lt;/div&gt;</code></pre>
+                    <h6>Notes about subject</h6>
+                    <div>Comments about the subject.</div>
+                    <form class="container" novalidate="" action="/echo" method="POST" id="keywordNoteForm">
+                        <label for="keywordNotesArea">Notes</label>
+                        <div class="input-group mb-3 input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-comment"></i></span>
+                            </div>
+                            <textarea class="form-control" id="keywordNotesArea" rows="3"
+                                placeholder="Notes about the subject" ng-model="ct.notes" ng-trim="true"></textarea>
+                        </div>
+                    </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        ng-click="ct.cancelClick()">Cancel</button>
+                    <button type="button" class="btn btn-primary" ng-click="ct.saveClick()"
+                        data-dismiss="modal">Save</button>
                 </div>
-            </div>
+            </div><!-- /Modal body end -->
         </div>
     </div>
-
 </body>
 
 </html>

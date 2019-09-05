@@ -1,8 +1,12 @@
 import 'bootstrap';
 import 'select2';
 
+import * as $ from 'jquery';
 import * as angular from 'angular';
 import '../common.js';
+import 'notifyjs-browser';
+import 'angular1-star-rating';
+
 import PackageBuilder = require('../PackageBuilder');
 import DTPService = require('../DTPService');
 import TrustStrategy = require('../TrustStrategy');
@@ -20,7 +24,6 @@ import ISettings from '../Interfaces/Settings.interface';
 import SettingsClient = require('../Shared/SettingsClient');
 import { MessageHandler } from '../Shared/MessageHandler';
 import Settings = require('../Shared/Settings');
-import * as $ from 'jquery';
 import ProfileModal = require('../Model/ProfileModal');
 import { browser, Windows, Runtime, Tabs } from "webextension-polyfill-ts";
 import { StorageClient } from "../Shared/StorageClient";
@@ -34,7 +37,7 @@ import IProfileView from './IProfileView';
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models.js';
 import AjaxErrorParser = require('../Shared/AjaxErrorParser');
 import Identicon = require('../Shared/Identicon');
-
+import copy = require('copy-to-clipboard');
 
 
 class ExtensionpopupController {
@@ -166,6 +169,62 @@ class ExtensionpopupController {
 
         $('.userSelectContainer').on('select2:select', e => this.selectProfileID(e.params.data.id));
     }
+
+    initKeywordSelect(keywordSelect: any) : void {
+        let self = this;
+        var data = [
+            {
+                id: 0,
+                text: 'Good'
+            },
+            {
+                id: 1,
+                text: 'Bad'
+            },
+            {
+                id: 2,
+                text: 'Fake news'
+            },
+            {
+                id: 3,
+                text: 'Valid content'
+            },
+            {
+                id: 4,
+                text: 'Faktually wrong'
+            }
+        ];
+
+        let ctrl =$('.keywordSelectContainer');
+        //let ctrl = $(keywordSelect);
+        ctrl.select2({
+            data: data,
+            multiple: true,
+            placeholder: 'Keywords',
+            minimumInputLength: 0
+            
+            // templateResult: this.formatSubjectSelect,
+            // templateSelection: this.formatSubjectSelection
+        });
+
+        // ctrl.on('select2:open', function (e) {
+        //     e.stopPropagation();
+        //     //e.preventDefault());
+        //   });
+
+        // $('.keywordSelectContainer').select2({
+        //     data: data,
+        //     placeholder: 'Keywords'
+        // });
+        // ,
+        //     tags: true,
+        //     tokenSeparators: [','], 
+        //     placeholder: "Add your tags here",
+        //     /* the next 2 lines make sure the user can click away after typing and not lose the new tag */
+        //     selectOnClose: true, 
+        //     closeOnSelect: false
+    }
+
 
     formatSubjectSelect(item) {
         return item.alias || item.text;
@@ -340,6 +399,16 @@ class ExtensionpopupController {
         }
     }
 
+    copyToClipboard(controlId: string) : void {
+
+        let ctrl = document.getElementById(controlId);
+        copy(ctrl.innerHTML);
+        $["notify"]("Copied to clipboard", {
+            autoHideDelay: 1000,
+            className: 'info'
+        });
+    }
+
 
 
 
@@ -397,27 +466,53 @@ class ExtensionpopupController {
         eventObject.stopPropagation();
         return false;
     }
+    
+    addKeyword(eventObject: JQueryEventObject, pv: ProfileModal) : void {
+        pv.ratingStarsContainerVisible = false;
+        pv.trustButtonContainerVisible = false;
+        pv.keywordContainerVisible = true;
+        this.initKeywordSelect(pv.keywordSelect);
+    }
+
+
+    onRatingChange($event: JQueryEventObject, pv: ProfileModal) : void {
+        //parent.rating = $event.rating;
+        this.addKeyword($event, pv);
+    }
+
+    keywordSubmit($event: JQueryEventObject, pv: ProfileModal) : void {
+        // Submit values !!
+        // Update profile view
+        this.setInputForm(pv);
+    }
+
+    keywordCancel($event: JQueryEventObject, pv: ProfileModal) : void {
+        // Reset values first
+        // Update profile view
+        this.setInputForm(pv);
+    }
+
+    setInputForm(pv : ProfileModal) : void {
+        pv.keywordContainerVisible = false; // Default hide the keyword container
+        pv.ratingStarsContainerVisible = false;
+        pv.trustButtonContainerVisible = false;
+        switch(pv.inputForm) {
+            case "identity" : pv.trustButtonContainerVisible = true;
+            case "thing" : pv.ratingStarsContainerVisible = true;
+        }
+
+    }
+
 }
 
 
-const app = angular.module("myApp", [])
+const app = angular.module("myApp", ['star-rating'])
     .filter('to_html', ['$sce', function($sce){
     return function(text) {
         return $sce.trustAsHtml(text);
     };
 }]);
-app.controller('ExtensionpopupController', ["$scope", ExtensionpopupController]) // bootstrap angular app here 
-// app.controller('TabController', ['$scope', function($scope) {
-//     $scope.tab = 1;
-
-//     $scope.setTab = function(newTab){
-//       $scope.tab = newTab;
-//     };
-
-//     $scope.isSet = function(tabNum){
-//       return $scope.tab === tabNum;
-//     };
-// }]);
+app.controller('ExtensionpopupController', ["$scope", ExtensionpopupController]);
 app.config( [
     '$compileProvider',
     function( $compileProvider )
