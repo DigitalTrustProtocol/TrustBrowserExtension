@@ -59,15 +59,11 @@ class ExtensionpopupController {
     trustGraphPopupClient: TrustGraphPopupClient;
     showError: boolean;
     errorMessage: string;
-
-
-
     sessionProfiles: Array<ProfileModal> = [];
+    tempProfileView: ProfileModal;
 
-    private noop = (reason) => { alert(reason); };
 
     constructor(private $scope: ng.IScope) {
-        //this.onStorageChanged();
     }
 
     init() {
@@ -170,7 +166,7 @@ class ExtensionpopupController {
         $('.userSelectContainer').on('select2:select', e => this.selectProfileID(e.params.data.id));
     }
 
-    initKeywordSelect(keywordSelect: any) : void {
+    initKeywordSelect(pv : ProfileModal) : void {
         let self = this;
         var data = [
             {
@@ -195,7 +191,7 @@ class ExtensionpopupController {
             }
         ];
 
-        let ctrl =$('.keywordSelectContainer');
+        let ctrl =$('#keywordSelect'+pv.profile.userId);
         //let ctrl = $(keywordSelect);
         ctrl.select2({
             data: data,
@@ -206,6 +202,7 @@ class ExtensionpopupController {
             // templateResult: this.formatSubjectSelect,
             // templateSelection: this.formatSubjectSelection
         });
+        ctrl.select2().val(pv.keywordValues)
 
         // ctrl.on('select2:open', function (e) {
         //     e.stopPropagation();
@@ -455,7 +452,7 @@ class ExtensionpopupController {
         }
 
         const promise = browser.tabs.sendMessage(tabId, command);
-        promise.catch(this.noop);
+        promise.catch(this.showFatalError);
         return promise;
     }
 
@@ -471,22 +468,27 @@ class ExtensionpopupController {
         pv.ratingStarsContainerVisible = false;
         pv.trustButtonContainerVisible = false;
         pv.keywordContainerVisible = true;
-        this.initKeywordSelect(pv.keywordSelect);
+        this.initKeywordSelect(pv);
     }
 
 
     onRatingChange($event: JQueryEventObject, pv: ProfileModal) : void {
-        //parent.rating = $event.rating;
+        this.tempProfileView = $.extend({}, pv);
+        pv.ratingValue = (<any>$event).rating;
         this.addKeyword($event, pv);
     }
 
     keywordSubmit($event: JQueryEventObject, pv: ProfileModal) : void {
+        pv.keywordValues = $("#keywordSelect"+pv.profile.userId).select2('data');
+        //pv.keywordValues = 
         // Submit values !!
         // Update profile view
         this.setInputForm(pv);
     }
 
     keywordCancel($event: JQueryEventObject, pv: ProfileModal) : void {
+        $.extend(pv, this.tempProfileView);
+        
         // Reset values first
         // Update profile view
         this.setInputForm(pv);

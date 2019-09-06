@@ -201,7 +201,7 @@
                         </div>
                         <div id="ratingStarsContainer" ng-show="pv.ratingStarsContainerVisible">
                             <h5><a href="#" ng-click="ct.openGraphClick($event, pv)" class="reputationLink">Rating</a></h5>
-                            <star-rating-comp id="'my-id'" rating="'3.5'" num-of-stars="5" star-type="'icon'"
+                            <star-rating-comp id="'ratingCtrl'+pv.profile.userId" rating="pv.ratingValue+''" num-of-stars="5" star-type="'icon'"
                                 size="'medium'" show-hover-stars="true" show-half-stars="'true'" speed="'noticeable'"
                                 label-position="'right'" label-text="" on-click="ct.onRatingChange($event, pv)">
                             </star-rating-comp><span>3.5</span>
@@ -209,8 +209,7 @@
                         <div id="keywordContainer" ng-show="pv.keywordContainerVisible">
                                 <div class="col text-center">
                                     <p>Select key words</p>
-                                    <select class="keywordSelectContainer form-control" name="state2" style="width: 100%;"
-                                        ng-init="pv.keywordSelect = this"></select>
+                                    <select class="keywordSelectContainer form-control" id="{{'keywordSelect'+pv.profile.userId}}" style="width: 100%;"></select>
                                     <p></p>
                                     <button class="btn btn-danger btn-sm float-left" ng-click="ct.keywordCancel($event, pv)">
                                         <i class="fas fa-backward"></i> Back

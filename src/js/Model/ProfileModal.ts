@@ -31,6 +31,7 @@ class ProfileModal
     
     public queryResult: DtpGraphCoreModelQueryContext;
     public trustResult?: BinaryTrustResult;
+    public ratingResult: any;
 
     public spinner: string;
     public processing: boolean = false;
@@ -43,8 +44,10 @@ class ProfileModal
     public trustButtonContainerVisible: boolean = false;
     public ratingStarsContainerVisible : boolean = false;
     public keywordContainerVisible: boolean = false;
-    public keywordSelect: any;
+    public keywordValues: any;
     public keywordNotes: string;
+    
+    public ratingValue: number;
 
     public button = {
         show: false,
@@ -60,6 +63,9 @@ class ProfileModal
         this.spinner = chrome.extension.getURL("../img/Spinner24px.gif");
         this.queryResult = queryResult;
         this.trustResult = trustResult;
+        this.ratingValue = 0;
+
+        Object.defineProperty(this, 'keywordSelect', { enumerable: false, writable: true, value: null }); // No serialize to json!
     }    
 
     public setup(profileView? : ProfileModal) : ProfileModal {
