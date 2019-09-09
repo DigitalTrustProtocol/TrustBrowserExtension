@@ -1,11 +1,14 @@
-import 'bootstrap';
-import 'select2';
-
 import * as $ from 'jquery';
 import * as angular from 'angular';
+import 'select2';
+
+import * as tabs from 'ui-bootstrap4/src/tabs';
+import 'bootstrap'
+
 import '../common.js';
 import 'notifyjs-browser';
 import 'angular1-star-rating';
+//import 'ui.bootstrap';
 
 import PackageBuilder = require('../PackageBuilder');
 import DTPService = require('../DTPService');
@@ -62,8 +65,21 @@ class ExtensionpopupController {
     sessionProfiles: Array<ProfileModal> = [];
     tempProfileView: ProfileModal;
 
-
-    constructor(private $scope: ng.IScope) {
+    constructor(private $scope: ng.IScope, private $window: ng.IWindowService) {
+        (<any>$scope).tabs = [
+            { title:'History', content:'History content' },
+            { title:'Lastest', content:'Lastest content', disabled: true }
+          ];
+        
+        (<any>$scope).alertMe = function() {
+            setTimeout(function() {
+                $window.alert('You\'ve selected the alert tab!');
+            });
+        };
+        
+        (<any>$scope).model = {
+            name: 'Tabs'
+        };
     }
 
     init() {
@@ -353,9 +369,13 @@ class ExtensionpopupController {
         });
     }
 
-    showFatalError(message : string ): void {
+    showFatalError(msg : any ): void {
         this.showError = true;
-        this.errorMessage = message;
+        if(typeof msg === "string")
+            this.errorMessage = msg;
+        else
+            this.errorMessage = msg.message;
+
         this.$scope.$apply();
     }
 
@@ -450,9 +470,8 @@ class ExtensionpopupController {
             handler: "profileHandler",
             action: "getProfiles"
         }
-
         const promise = browser.tabs.sendMessage(tabId, command);
-        promise.catch(this.showFatalError);
+        promise.catch((msg) => this.showFatalError(msg));
         return promise;
     }
 
@@ -508,13 +527,30 @@ class ExtensionpopupController {
 }
 
 
-const app = angular.module("myApp", ['star-rating'])
-    .filter('to_html', ['$sce', function($sce){
-    return function(text) {
-        return $sce.trustAsHtml(text);
-    };
-}]);
-app.controller('ExtensionpopupController', ["$scope", ExtensionpopupController]);
+const app = angular.module("myApp", ['star-rating', tabs]);
+//     .filter('to_html', ['$sce', function($sce){
+//     return function(text) {
+//         return $sce.trustAsHtml(text);
+//     };
+0// }]);
+app.controller('ExtensionpopupController', ["$scope", "$window", ExtensionpopupController]);
+// app.controller('PopupTabs', function ($scope, $window) {
+//     $scope.tabs = [
+//       { title:'History', content:'History content' },
+//       { title:'Lastest', content:'Lastest content', disabled: true }
+//     ];
+  
+//     $scope.alertMe = function() {
+//       setTimeout(function() {
+//         $window.alert('You\'ve selected the alert tab!');
+//       });
+//     };
+  
+//     $scope.model = {
+//       name: 'Tabs'
+//     };
+//   });
+
 app.config( [
     '$compileProvider',
     function( $compileProvider )
