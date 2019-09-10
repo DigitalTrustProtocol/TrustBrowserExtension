@@ -3,12 +3,15 @@ import * as angular from 'angular';
 import 'select2';
 
 import * as tabs from 'ui-bootstrap4/src/tabs';
+import * as tooltip from 'ui-bootstrap4/src/tooltip';
 import 'bootstrap'
+// import 'bootstrap/js/dist/button'
+// import 'bootstrap/js/dist/modal'
+
 
 import '../common.js';
 import 'notifyjs-browser';
 import 'angular1-star-rating';
-//import 'ui.bootstrap';
 
 import PackageBuilder = require('../PackageBuilder');
 import DTPService = require('../DTPService');
@@ -25,7 +28,7 @@ import ISiteInformation from '../Model/SiteInformation.interface';
 import SiteManager = require('../SiteManager');
 import ISettings from '../Interfaces/Settings.interface';
 import SettingsClient = require('../Shared/SettingsClient');
-import { MessageHandler } from '../Shared/MessageHandler';
+import { MessageHandler, Callback } from '../Shared/MessageHandler';
 import Settings = require('../Shared/Settings');
 import ProfileModal = require('../Model/ProfileModal');
 import { browser, Windows, Runtime, Tabs } from "webextension-polyfill-ts";
@@ -253,14 +256,14 @@ class ExtensionpopupController {
                 profileView.trustResult = trustResults[profileView.profile.userId] || new BinaryTrustResult();
                 profileView.queryResult = queryResult;
                 profileView.setup();
-                this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
+                //this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
                 this.updateIcon(profileView.trustResult);
                 this.$scope.$apply();
                 this.updateContentTabProfile(profileView);
             })
         } else {
             this.updateIcon(profileView.trustResult);
-            this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
+            //this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
             this.updateContentTabProfile(profileView);
             this.$scope.$apply();
         }
@@ -345,17 +348,23 @@ class ExtensionpopupController {
     }
 
 
-    trustClick(profileView: ProfileModal): boolean {
-        this.buildAndSubmitBinaryTrust(profileView, "true", 0, profileView.profile.alias + " trusted");
+    trustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
+        this.showKeywordForm(null, profileView, () => {
+            this.buildAndSubmitBinaryTrust(profileView, "true", 0, profileView.profile.alias + " trusted");
+        });
+
         return false;
     };
 
-    distrustClick(profileView: ProfileModal): boolean {
-        this.buildAndSubmitBinaryTrust(profileView, "false", 0, profileView.profile.alias + " distrusted");
+    distrustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
+        this.showKeywordForm(null, profileView, () => {
+            this.buildAndSubmitBinaryTrust(profileView, "false", 0, profileView.profile.alias + " distrusted");
+        });
+
         return false;
     }
 
-    untrustClick(profileView: ProfileModal): boolean {
+    untrustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
         this.buildAndSubmitBinaryTrust(profileView, null, 1, profileView.profile.alias + " untrusted");
         return false;
     }
@@ -483,10 +492,11 @@ class ExtensionpopupController {
         return false;
     }
     
-    addKeyword(eventObject: JQueryEventObject, pv: ProfileModal) : void {
+    showKeywordForm(eventObject: JQueryEventObject, pv: ProfileModal, callback?: any) : void {
         pv.ratingStarsContainerVisible = false;
         pv.trustButtonContainerVisible = false;
         pv.keywordContainerVisible = true;
+        pv.keywordSubmitCallback = callback;
         this.initKeywordSelect(pv);
     }
 
@@ -494,14 +504,18 @@ class ExtensionpopupController {
     onRatingChange($event: JQueryEventObject, pv: ProfileModal) : void {
         this.tempProfileView = $.extend({}, pv);
         pv.ratingValue = (<any>$event).rating;
-        this.addKeyword($event, pv);
+        this.showKeywordForm($event, pv, () => {
+            // Call back to submit trust
+        });
     }
 
     keywordSubmit($event: JQueryEventObject, pv: ProfileModal) : void {
         pv.keywordValues = $("#keywordSelect"+pv.profile.userId).select2('data');
-        //pv.keywordValues = 
-        // Submit values !!
-        // Update profile view
+
+        if(pv.keywordSubmitCallback) {
+            pv.keywordSubmitCallback();
+        }
+
         this.setInputForm(pv);
     }
 
@@ -518,38 +532,23 @@ class ExtensionpopupController {
         pv.ratingStarsContainerVisible = false;
         pv.trustButtonContainerVisible = false;
         switch(pv.inputForm) {
-            case "identity" : pv.trustButtonContainerVisible = true;
-            case "thing" : pv.ratingStarsContainerVisible = true;
+            case "identity" : pv.trustButtonContainerVisible = true; break;
+            case "thing" : pv.ratingStarsContainerVisible = true; break;
         }
-
     }
 
 }
 
 
-const app = angular.module("myApp", ['star-rating', tabs]);
+const app = angular.module("myApp", ['star-rating', tabs, tooltip]);
 //     .filter('to_html', ['$sce', function($sce){
 //     return function(text) {
 //         return $sce.trustAsHtml(text);
 //     };
-0// }]);
+// }]);
+
 app.controller('ExtensionpopupController', ["$scope", "$window", ExtensionpopupController]);
-// app.controller('PopupTabs', function ($scope, $window) {
-//     $scope.tabs = [
-//       { title:'History', content:'History content' },
-//       { title:'Lastest', content:'Lastest content', disabled: true }
-//     ];
-  
-//     $scope.alertMe = function() {
-//       setTimeout(function() {
-//         $window.alert('You\'ve selected the alert tab!');
-//       });
-//     };
-  
-//     $scope.model = {
-//       name: 'Tabs'
-//     };
-//   });
+
 
 app.config( [
     '$compileProvider',

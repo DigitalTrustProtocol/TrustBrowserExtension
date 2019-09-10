@@ -38,7 +38,7 @@ class ProfileModal
     public score: TrustGraphScoreModel = new TrustGraphScoreModel();
     public isCurrentUser: boolean = false;
     public status: TrustGraphStatusModel = new TrustGraphStatusModel();
-    public visible: boolean = false;
+    public visible: boolean = true;
 
     public inputForm: string = "thing";
     public trustButtonContainerVisible: boolean = false;
@@ -48,6 +48,7 @@ class ProfileModal
     public keywordNotes: string;
     
     public ratingValue: number;
+    public keywordSubmitCallback: any;
 
     public button = {
         show: false,
@@ -66,6 +67,7 @@ class ProfileModal
         this.ratingValue = 0;
 
         Object.defineProperty(this, 'keywordSelect', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'keywordSubmitCallback', { enumerable: false, writable: true, value: null }); // No serialize to json!
     }    
 
     public setup(profileView? : ProfileModal) : ProfileModal {
