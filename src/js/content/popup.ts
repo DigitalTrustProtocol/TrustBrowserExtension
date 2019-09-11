@@ -41,12 +41,15 @@ import DTPIdentity = require('../Model/DTPIdentity');
 import { QueryContext } from '../../lib/dtpapi/model/models.js';
 import IProfileView from './IProfileView';
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models.js';
+import { KeywordsProvider } from '../Shared/Keywords';
 import AjaxErrorParser = require('../Shared/AjaxErrorParser');
 import Identicon = require('../Shared/Identicon');
 import copy = require('copy-to-clipboard');
 
 
 class ExtensionpopupController {
+
+    public static SCOPE: string = "url";
 
     messageHandler: MessageHandler;
     settingsClient: SettingsClient;
@@ -66,6 +69,7 @@ class ExtensionpopupController {
     showError: boolean;
     errorMessage: string;
     sessionProfiles: Array<ProfileModal> = [];
+    profileList: Array<ProfileModal> = [];
     tempProfileView: ProfileModal;
 
     constructor(private $scope: ng.IScope, private $window: ng.IWindowService) {
@@ -116,15 +120,18 @@ class ExtensionpopupController {
                         if(!data || data.length == 0 || !data.profileViews)
                             return;
 
-                        data.profileViews.forEach(item=> this.sessionProfiles.push(new ProfileModal().setup(item)));
+                        data.profileViews.forEach(item=> this.sessionProfiles.push(new ProfileModal().setup(item))); // Recreate the ProfileView object!
 
-                        let profileView = this.sessionProfiles.filter(p=>p.profile.userId === data.selectedUserId).pop();
+                        this.profileList = this.sessionProfiles;
+
+                        //let profileView = this.sessionProfiles.filter(p=>p.profile.userId === data.selectedUserId).pop();
                         
                         // Set select2 default value
-                        var newOption = new Option(profileView.profile.alias, profileView.profile.userId, true, true);
-                        $('.userSelectContainer').append(newOption).trigger('change.select2');
+                        // var newOption = new Option(profileView.profile.alias, profileView.profile.userId, true, true);
+                        // $('.userSelectContainer').append(newOption).trigger('change.select2');
 
-                        this.selectProfile(profileView);
+                        //this.selectProfile(profileView);
+                        this.$scope.$apply();
                         
 
                     })
@@ -160,7 +167,8 @@ class ExtensionpopupController {
                 cache: true,
                 transport: function (params, success, failure) {
                     if(!params.data.term || params.data.term.length == 0) {
-                        let arr = $.map(self.sessionProfiles, (pv,i) => { return {id:pv.profile.userId, alias: pv.profile.alias || pv.profile.screen_name}; });
+                        //let arr = $.map(self.sessionProfiles, (pv,i) => { return {id:pv.profile.userId, alias: pv.profile.alias || pv.profile.screen_name}; });
+                        let arr = [{ text: "Page content", id:"-1"}];
 
                         var deferred = $.Deferred().resolve(arr);
                         deferred.then(success);
@@ -187,58 +195,17 @@ class ExtensionpopupController {
 
     initKeywordSelect(pv : ProfileModal) : void {
         let self = this;
-        var data = [
-            {
-                id: 0,
-                text: 'Good'
-            },
-            {
-                id: 1,
-                text: 'Bad'
-            },
-            {
-                id: 2,
-                text: 'Fake news'
-            },
-            {
-                id: 3,
-                text: 'Valid content'
-            },
-            {
-                id: 4,
-                text: 'Faktually wrong'
-            }
-        ];
+
 
         let ctrl =$('#keywordSelect'+pv.profile.userId);
-        //let ctrl = $(keywordSelect);
         ctrl.select2({
-            data: data,
-            multiple: true,
+            data: KeywordsProvider.getKeywords(),
             placeholder: 'Keywords',
-            minimumInputLength: 0
-            
-            // templateResult: this.formatSubjectSelect,
-            // templateSelection: this.formatSubjectSelection
+            multiple: true,
+            minimumInputLength: 0,
+            allowClear: true            
         });
         ctrl.select2().val(pv.keywordValues)
-
-        // ctrl.on('select2:open', function (e) {
-        //     e.stopPropagation();
-        //     //e.preventDefault());
-        //   });
-
-        // $('.keywordSelectContainer').select2({
-        //     data: data,
-        //     placeholder: 'Keywords'
-        // });
-        // ,
-        //     tags: true,
-        //     tokenSeparators: [','], 
-        //     placeholder: "Add your tags here",
-        //     /* the next 2 lines make sure the user can click away after typing and not lose the new tag */
-        //     selectOnClose: true, 
-        //     closeOnSelect: false
     }
 
 
@@ -251,26 +218,34 @@ class ExtensionpopupController {
     }
 
     selectProfile(profileView: ProfileModal) : void {
+        this.profileList = [profileView];
         if(!profileView.queryResult) {
             this.queryProfiles([profileView.profile]).then(({queryResult, trustResults}) => {
                 profileView.trustResult = trustResults[profileView.profile.userId] || new BinaryTrustResult();
                 profileView.queryResult = queryResult;
                 profileView.setup();
                 //this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
+                //this.profileList = this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
                 this.updateIcon(profileView.trustResult);
                 this.$scope.$apply();
                 this.updateContentTabProfile(profileView);
             })
         } else {
             this.updateIcon(profileView.trustResult);
-            //this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
+            //this.profileList = this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
             this.updateContentTabProfile(profileView);
             this.$scope.$apply();
         }
     }
 
     selectProfileID(id: string) : void {
-        let f =  this.sessionProfiles.filter(x => x.profile.userId === id);
+        if(id === "-1") {
+            this.profileList = this.sessionProfiles;
+            this.$scope.$apply();
+            return;
+        }
+
+        let f = this.sessionProfiles.filter(x => x.profile.userId === id);
         if(f.length > 0) {
             this.selectProfile(f[0]);
         }
@@ -278,7 +253,7 @@ class ExtensionpopupController {
             // Try getting the profile from storage
             this.profileRepository.ensureProfile(id, { userId: id, scope: "url"}).then(p => {
                 let pm = new ProfileModal(p, undefined, undefined);
-                this.sessionProfiles.push(pm);
+                //this.sessionProfiles.push(pm);
                 this.selectProfile(pm);
             });
     }
@@ -350,7 +325,7 @@ class ExtensionpopupController {
 
     trustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
         this.showKeywordForm(null, profileView, () => {
-            this.buildAndSubmitBinaryTrust(profileView, "true", 0, profileView.profile.alias + " trusted");
+            this.buildAndSubmitBinaryTrust(profileView, "true", 0);
         });
 
         return false;
@@ -358,14 +333,14 @@ class ExtensionpopupController {
 
     distrustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
         this.showKeywordForm(null, profileView, () => {
-            this.buildAndSubmitBinaryTrust(profileView, "false", 0, profileView.profile.alias + " distrusted");
+            this.buildAndSubmitBinaryTrust(profileView, "false", 0);
         });
 
         return false;
     }
 
     untrustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
-        this.buildAndSubmitBinaryTrust(profileView, null, 1, profileView.profile.alias + " untrusted");
+        this.buildAndSubmitBinaryTrust(profileView, null, 1);
         return false;
     }
     
@@ -389,13 +364,13 @@ class ExtensionpopupController {
     }
 
 
-    buildAndSubmitBinaryTrust (profileView: ProfileModal, value: string, expire: number, message: string): JQueryPromise<any> {
+    buildAndSubmitBinaryTrust (profileView: ProfileModal, value: string, expire: number): JQueryPromise<any> {
         //this.modalData.disableButtons();
         profileView.processing = true;
-        var trustPackage = this.subjectService.BuildBinaryClaim(profileView.profile, value, undefined, "url", expire);
+        var trustPackage = this.subjectService.BuildBinaryClaim(profileView.profile, value, undefined, ExtensionpopupController.SCOPE, expire);
         this.packageBuilder.SignPackage(trustPackage);
-        return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
-            console.log("Posting package is a "+trustResult.status);
+        return this.dtpService.PostPackage(trustPackage).done((response)=> {
+            console.log("Posting package is a "+response.status);
            
             profileView.queryResult = <QueryContext>{
                 issuerCount: 1,
@@ -411,7 +386,7 @@ class ExtensionpopupController {
             this.updateContentTabProfile(profileView);
             this.$scope.$apply();
         }).fail((xhr, exception) => { 
-            // Show error
+            this.showFatalError(exception);
         });
     }
 
@@ -506,6 +481,9 @@ class ExtensionpopupController {
         pv.ratingValue = (<any>$event).rating;
         this.showKeywordForm($event, pv, () => {
             // Call back to submit trust
+            this.submitRatingTrust(pv, 0).then(() => {
+                this.setInputForm(pv);
+            })
         });
     }
 
@@ -514,9 +492,9 @@ class ExtensionpopupController {
 
         if(pv.keywordSubmitCallback) {
             pv.keywordSubmitCallback();
+        } else {
+            this.setInputForm(pv);
         }
-
-        this.setInputForm(pv);
     }
 
     keywordCancel($event: JQueryEventObject, pv: ProfileModal) : void {
@@ -526,6 +504,33 @@ class ExtensionpopupController {
         // Update profile view
         this.setInputForm(pv);
     }
+
+    submitRatingTrust (profileView: ProfileModal, expire: number): JQueryPromise<any> {
+        //this.modalData.disableButtons();
+        profileView.processing = true;
+        var trustPackage = this.subjectService.BuildRatingClaim(profileView, ExtensionpopupController.SCOPE, expire);
+        this.packageBuilder.SignPackage(trustPackage);
+        return this.dtpService.PostPackage(trustPackage).done((response)=> {
+            console.log("Posting package is a "+response.status);
+           
+            profileView.queryResult = <QueryContext>{
+                issuerCount: 1,
+                subjectCount: 1,
+                results: trustPackage,
+                errors: []
+            } 
+
+            let results = this.trustStrategy.createTrustResults(profileView.queryResult);
+            profileView.trustResult = results[profileView.profile.userId];
+            profileView.setup();
+            //this.updateIcon(profileView.trustResult);
+            this.updateContentTabProfile(profileView);
+            this.$scope.$apply();
+        }).fail((xhr, exception) => { 
+            this.showFatalError(exception);
+        });
+    }
+
 
     setInputForm(pv : ProfileModal) : void {
         pv.keywordContainerVisible = false; // Default hide the keyword container

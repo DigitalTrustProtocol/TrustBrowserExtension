@@ -81,12 +81,12 @@
             padding-top: 10px;
         }
 
-        .subjectBlock {
+        /* .subjectBlock {
             background-color: #777;
             color: white;
             padding-bottom: 5px;
             padding-top: 5px;
-        }
+        } */
 
 
         form.tab-form-demo .tab-pane {
@@ -129,13 +129,24 @@
             <div>
                 <uib-tabset active="active">
                     <uib-tab index="0" heading="Page" >
-                        Elements found on page
+                        <div class="">
+                            <select class="userSelectContainer js-states form-control" name="state"
+                            style="width: 100%;"></select>
+                        </div>
+                        <div>
+                            <a href="#" uib-tooltip="List results from current page"
+                            tooltip-popup-delay="400" tooltip-animation="true"
+                            class="badge badge-light float-left" ><i class="fas fa-bars pr-1"></i>Page</a>
+                            <a href="#" uib-tooltip="Refresh search on trust "
+                            tooltip-popup-delay="400" tooltip-animation="true"
+                            class="badge badge-light float-right" ><i class="fas fa-sync pr-1"></i>Refresh</a>
+                        </div>
 
                         <!-- List ================================================== -->
                         <div class="table-responsive">
                             <table class="table table-striped table-sm">
                                 <tbody>
-                                    <tr ng-repeat="(key, pv) in ct.sessionProfiles" ng-show="!ct.showError">
+                                    <tr ng-repeat="(key, pv) in ct.profileList" ng-show="!ct.showError">
                                         <td>
                                             <img ng-src="{{ pv.profile.avatarImage }}" class="dtp-avatarImg"
                                                 ng-click="ct.openGraphClick($event, pv)">
@@ -234,21 +245,25 @@
 
                                             </div>
                                             <div id="keywordContainer" ng-show="pv.keywordContainerVisible"
-                                                class="col text-center">
-                                                <p>Select key words</p>
-                                                <select class="keywordSelectContainer form-control"
+                                                class="">
+                                                <div>Keywords and comment</div>
+                                                <select class="form-control"
                                                     id="{{'keywordSelect'+pv.profile.userId}}"
-                                                    style="width: 100%;"></select>
-                                                <p></p>
+                                                    style="width: 100%;" multiple="multiple" aria-placeholder="Keywords"></select>
+
+                                                <textarea class="form-control" id="keywordNotesArea" rows="3"
+                                                placeholder="Notes about the subject (Optional)" ng-model="pv.keywordNotes" ng-trim="true"></textarea>
+                
                                                 <button class="btn btn-danger btn-sm float-left"
                                                     ng-click="ct.keywordCancel($event, pv)">
                                                     <i class="fas fa-backward"></i> Back
                                                 </button>
 
-                                                <button class="btn btn-secondary btn-sm " data-toggle="modal"
-                                                    data-target="#keywordNotesModal">
+                                                <!-- <button class="btn btn-secondary btn-sm " data-toggle="modal"
+                                                    data-target="#keywordNotesModal"
+                                                    ng-click="$('#keywordNotesArea').text(pv.keywordNotes)">
                                                     <i class="fas fa-comment"></i> Add Note
-                                                </button>
+                                                </button> -->
 
                                                 <button class="btn btn-primary btn-sm float-right"
                                                     ng-click="ct.keywordSubmit($event, pv)">
@@ -261,123 +276,9 @@
                                 </tbody>
                             </table>
                         </div>
-
-                        <!-- <div ng-repeat="(key, pv) in ct.sessionProfiles" ng-show="pv.visible && !ct.showError">
-                                <div class="row">
-                                    <div class="col-lg-4 subjectBlock">
-                                        <div class="breakContent" style="font-weight: bold">{{ pv.profile.alias }}</div>
-
-                                        <div><img ng-src="{{ pv.profile.avatarImage }}" class="dtp-avatarImg"
-                                                ng-click="ct.openGraphClick($event, pv)">
-                                            <span>{{ pv.profile.userId }}</span></div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-lg-4">
-                                        <div id="trustButtonContainer" ng-show="pv.trustButtonContainerVisible">
-                                            <h5><a href="#" ng-click="ct.openGraphClick($event, pv)"
-                                                    class="reputationLink">Reputation</a></h5>
-                                            <div ng-class="pv.status.iconClass" ng-click="ct.openGraphClick($event, pv)">
-                                            </div>
-                                            <div class="dtpModelText">
-                                                <div ng-show="pv.status.show">Status: <span ng-class="pv.status.cssClass"
-                                                        ng-bind="pv.status.text"></span></div>
-                                                <div ng-show="pv.score.show">
-                                                    <div ng-show="pv.score.show && pv.trustResult.trust > 0">
-                                                        Possitive claims: <span class="trusted"
-                                                            ng-bind="pv.trustResult.trust"></span>
-                                                    </div>
-                                                    <div ng-show="pv.score.show && pv.trustResult.distrust > 0">
-                                                        Negative claims: <span class="distrusted"
-                                                            ng-bind="pv.trustResult.distrust"></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <button type="button" ng-class="pv.button.trust.cssClass"
-                                                    ng-click="ct.trustClick(pv)" ng-attr-title="{{pv.button.trust.title}}"
-                                                    ng-disabled="pv.button.trust.disabled">
-                                                    Trust
-                                                </button>
-                                                <button type="button" ng-class="pv.button.untrust.cssClass"
-                                                    ng-click="ct.untrustClick(pv)"
-                                                    ng-attr-title="{{pv.button.untrust.title}}"
-                                                    ng-disabled="pv.button.untrust.disabled">
-                                                    Untrust
-                                                </button>
-                                                <button type="button" ng-class="pv.button.distrust.cssClass"
-                                                    ng-click="ct.distrustClick(pv)"
-                                                    ng-attr-title="{{pv.button.distrust.title}}"
-                                                    ng-disabled="pv.button.distrust.disabled">
-                                                    Distrust
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div id="ratingStarsContainer" ng-show="pv.ratingStarsContainerVisible">
-                                            <h5><a href="#" ng-click="ct.openGraphClick($event, pv)"
-                                                    class="reputationLink">Rating</a>
-                                            </h5>
-                                            <star-rating-comp id="'ratingCtrl'+pv.profile.userId" rating="pv.ratingValue+''"
-                                                num-of-stars="5" star-type="'icon'" size="'medium'" show-hover-stars="true"
-                                                show-half-stars="'true'" speed="'noticeable'" label-position="'right'"
-                                                label-text="" on-click="ct.onRatingChange($event, pv)">
-                                            </star-rating-comp><span>3.5</span>
-                                        </div>
-                                        <div id="keywordContainer" ng-show="pv.keywordContainerVisible">
-                                            <div class="col text-center">
-                                                <p>Select key words</p>
-                                                <select class="keywordSelectContainer form-control"
-                                                    id="{{'keywordSelect'+pv.profile.userId}}"
-                                                    style="width: 100%;"></select>
-                                                <p></p>
-                                                <button class="btn btn-danger btn-sm float-left"
-                                                    ng-click="ct.keywordCancel($event, pv)">
-                                                    <i class="fas fa-backward"></i> Back
-                                                </button>
-
-                                                <button class="btn btn-secondary btn-sm " data-toggle="modal"
-                                                    data-target="#keywordNotesModal">
-                                                    <i class="fas fa-comment"></i> Add Note
-                                                </button>
-
-                                                <button class="btn btn-primary btn-sm float-right"
-                                                    ng-click="ct.keywordSubmit($event, pv)">
-                                                    <i class="fas fa-check-circle"></i> Submit
-                                                </button>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> -->
-
-
-
                     </uib-tab>
 
-                    <uib-tab index="1" heading="Search">
-                        <div
-                            class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                            <h3 class="h3">Search</h3>
-                            <div class="btn-toolbar mb-2 mb-md-0">
-                                <div class="btn-group mr-2">
-                                    <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        Search for a user id:
-                        <div class="subjectBlock">
-                            <!-- Subject Select -->
-                            <div style="padding-top: 5px;padding-bottom: 5px;">
-                                <select class="userSelectContainer js-states form-control" name="state"
-                                    style="width: 100%;"></select>
-                            </div>
-                        </div>
-                    </uib-tab>
-
-                    <uib-tab index="2" heading="History">
+                    <uib-tab index="1" heading="History">
                         <div
                             class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                             <h3 class="h3">History</h3>
@@ -391,22 +292,10 @@
 
                     </uib-tab>
 
-                    <uib-tab index="3" heading="Lastest">
+                    <uib-tab index="2" heading="Lastest">
                         Show the lastest trusts added to the server
 
                     </uib-tab>
-
-                    <!-- 
-                        <uib-tab index="$index + 1" ng-repeat="tab in tabs" heading="{{tab.title}}" disable="tab.disabled">
-                            {{tab.content}}
-                        </uib-tab> -->
-
-                    <!-- <uib-tab index="3" select="alertMe()">
-                            <uib-tab-heading>
-                                <i class="glyphicon glyphicon-bell"></i> Alert!
-                            </uib-tab-heading>
-                            I've got an HTML heading, and a select callback. Pretty cool!
-                        </uib-tab> -->
                 </uib-tabset>
             </div>
 
@@ -699,7 +588,10 @@
                 </div>
                 <div class="modal-body">
                     <h6>Comments from people</h6>
-                    lalalallala
+                    <div class="alert alert-danger">
+                        <strong>Danger!</strong> The comments are not from your trusted network. There is no filter against spammers and trolls.
+                    </div>
+                      lalalallala
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>

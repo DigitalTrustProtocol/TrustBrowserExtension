@@ -31,7 +31,6 @@ class ProfileModal
     
     public queryResult: DtpGraphCoreModelQueryContext;
     public trustResult?: BinaryTrustResult;
-    public ratingResult: any;
 
     public spinner: string;
     public processing: boolean = false;
@@ -49,6 +48,8 @@ class ProfileModal
     
     public ratingValue: number;
     public keywordSubmitCallback: any;
+
+    public metadata: string = "";
 
     public button = {
         show: false,

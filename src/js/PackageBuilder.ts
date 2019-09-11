@@ -9,7 +9,7 @@ class PackageBuilder {
    settings: any;
    static BINARY_TRUST_DTP1: string = "binarytrust";
    static CONFIRM_TRUST_DTP1: string = "confirm.trust.dtp1";
-   static RATING_TRUST_DTP1: string = "rating.trust.dtp1";
+   static RATING_TRUST_DTP1: string = "rating";
    static IDENTITY_DTP1: string = "entity";
    static IDENTITY_ENTITY_DTP1: string = "entity";
    static IDENTITY_THING_DTP1: string = "thing";
