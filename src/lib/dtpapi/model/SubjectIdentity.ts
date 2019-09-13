@@ -15,8 +15,8 @@ import * as models from './models';
 export interface SubjectIdentity {
     type?: string;
 
-    algorithm?: string;
-
+    source?: any;
+    
     id?: string;
 
     path?: string;

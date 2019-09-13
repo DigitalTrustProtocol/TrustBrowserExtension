@@ -1,13 +1,11 @@
 import  PackageBuilder = require('./PackageBuilder');
-import { ModelPackage,QueryContext, Claim } from '../lib/dtpapi/model/models';
+import { ModelPackage, Claim } from '../lib/dtpapi/model/models';
 import BinaryTrustResult = require('./Model/BinaryTrustResult');
 import ProfileRepository = require('./ProfileRepository');
-import Profile = require('./Profile');
 import IProfile from './IProfile';
-import DTPIdentity = require('./Model/DTPIdentity');
 import ITrustStrategy from './Interfaces/ITrustStrategy';
-import ProfileController = require('./ProfileController');
 import ISettings from './Interfaces/Settings.interface';
+import { DtpGraphCoreModelQueryContext } from '../lib/typescript-jquery-client/model/models';
 
 
 class TrustStrategy implements ITrustStrategy {
@@ -85,29 +83,29 @@ class TrustStrategy implements ITrustStrategy {
         return results;
     }
 
-    public ProcessResult(queryContext : QueryContext, controllers: ProfileController[]) : void {
-        if(!queryContext || !queryContext.results || !queryContext.results.claims)
-            return;
+    // public ProcessResult(queryContext : QueryContext, controllers: ProfileController[]) : void {
+    //     if(!queryContext || !queryContext.results || !queryContext.results.claims)
+    //         return;
 
-        let results = this.ProcessClaims(queryContext.results.claims);
+    //     let results = this.ProcessClaims(queryContext.results.claims);
 
-        // Update controllers
-        for(let controller of controllers) { 
+    //     // Update controllers
+    //     for(let controller of controllers) { 
 
-            let tempTrustResult = results[controller.profile.userId] as BinaryTrustResult;
+    //         let tempTrustResult = results[controller.profile.id] as BinaryTrustResult;
             
-            if(tempTrustResult) {
-                if(!tempTrustResult.isEqual(controller.trustResult)) 
-                    controller.trustResult = tempTrustResult;
-            } else
-                controller.trustResult = new BinaryTrustResult(); // Set default trustResult on controller that do not have a result.
+    //         if(tempTrustResult) {
+    //             if(!tempTrustResult.isEqual(controller.trustResult)) 
+    //                 controller.trustResult = tempTrustResult;
+    //         } else
+    //             controller.trustResult = new BinaryTrustResult(); // Set default trustResult on controller that do not have a result.
 
-            controller.trustResult.queryContext = queryContext;
-            this.calculateBinaryTrustResult(controller.trustResult);
-        }
-    }
+    //         controller.trustResult.queryContext = queryContext;
+    //         this.calculateBinaryTrustResult(controller.trustResult);
+    //     }
+    // }
 
-    public ProcessSingleResult(queryContext : QueryContext) : BinaryTrustResult {
+    public ProcessSingleResult(queryContext : DtpGraphCoreModelQueryContext) : BinaryTrustResult {
         if(!queryContext || !queryContext.results || !queryContext.results.claims)
             return null;
 
@@ -120,19 +118,19 @@ class TrustStrategy implements ITrustStrategy {
     }
 
 
-    public UpdateProfiles(queryContext : QueryContext, profiles: Array<IProfile>) : void {
-        if(queryContext && queryContext.results && queryContext.results.claims) {
-            let trustResults = this.ProcessClaims(queryContext.results.claims);
-            profiles.forEach(p => { 
-                    p.trustResult = trustResults[p.userId] || new BinaryTrustResult();
-                    p.queryResult = queryContext;
-                });
-        } else
-            profiles.forEach(p => p.trustResult = new BinaryTrustResult());
-    }
+    // public UpdateProfiles(queryContext : QueryContext, profiles: Array<IProfile>) : void {
+    //     if(queryContext && queryContext.results && queryContext.results.claims) {
+    //         let trustResults = this.ProcessClaims(queryContext.results.claims);
+    //         profiles.forEach(p => { 
+    //                 p.trustResult = trustResults[p.id] || new BinaryTrustResult();
+    //                 p.queryResult = queryContext;
+    //             });
+    //     } else
+    //         profiles.forEach(p => p.trustResult = new BinaryTrustResult());
+    // }
 
 
-    public createTrustResults(queryContext : QueryContext) : Object {
+    public createTrustResults(queryContext : any) : Object {
         if(queryContext && queryContext.results && queryContext.results.claims) {
             return this.ProcessClaims(queryContext.results.claims);
         }

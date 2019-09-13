@@ -75,12 +75,12 @@ class ProfileModal
         if(profileView)
             $.extend(this, profileView);
 
-        this.inputForm = (this.profile.userId.indexOf("1") == 0) ? "identity" : "thing";
+        this.inputForm = (this.profile.id.indexOf("1") == 0) ? "identity" : "thing";
         this.setInputForm();
 
         this.EnsureAvatarImage();
         
-        if(this.currentUser && this.profile.userId == this.currentUser.userId) {
+        if(this.currentUser && this.profile.id == this.currentUser.id) {
             this.setupCurrentUser();
             return this;
         }
@@ -94,9 +94,9 @@ class ProfileModal
     }
 
     public EnsureAvatarImage() : void {
-        if(!this.profile.avatarImage) {
-            let icon = Identicon.createIcon(this.profile.userId); // Need min 15 chars
-            this.profile.avatarImage =icon; // 'data:image/svg+xml;base64,'+ icon.toString();
+        if(!this.profile.icon) {
+            let icon = Identicon.createIcon(this.profile.id); // Need min 15 chars
+            this.profile.icon =icon; // 'data:image/svg+xml;base64,'+ icon.toString();
         }
     }
 
@@ -174,26 +174,26 @@ class ProfileModal
 
 
         if(claimValue == "true" || claimValue == "1") {
-            this.button.trust.title = `${this.profile.alias} is trusted`;
+            this.button.trust.title = `${this.profile.title} is trusted`;
             this.button.trust.disabled = true;
             this.button.trust.cssClass = "btn btn-success btn-sm active";
         }
         else {
-            this.button.trust.title = `Trust ${this.profile.alias}`;
+            this.button.trust.title = `Trust ${this.profile.title}`;
             this.button.trust.cssClass = "btn btn-outline-success btn-sm";
         }
         
         if(claimValue == "false" || claimValue == "0") {
-            this.button.distrust.title = `${this.profile.alias} is distrusted`;
+            this.button.distrust.title = `${this.profile.title} is distrusted`;
             this.button.distrust.disabled = true;
             this.button.distrust.cssClass = "btn btn-danger btn-sm active";
         } else {
-            this.button.distrust.title = `Distrust ${this.profile.alias}`;
+            this.button.distrust.title = `Distrust ${this.profile.title}`;
             this.button.distrust.cssClass = "btn btn-outline-danger btn-sm";
         }
 
         if(!claimValue || claimValue == "") {
-            this.button.untrust.title = `No trust given to ${this.profile.alias}`;
+            this.button.untrust.title = `No trust given to ${this.profile.title}`;
             this.button.untrust.disabled = true;
             this.button.untrust.cssClass = "btn btn-secondary btn-sm active";
         } else {
@@ -204,11 +204,11 @@ class ProfileModal
 
     private undirectButtons(): void {
         // Do nothing! Show everything!
-        this.button.trust.title = `Trust ${this.profile.alias}`;
+        this.button.trust.title = `Trust ${this.profile.title}`;
         this.button.trust.disabled = false;
         this.button.trust.cssClass = "btn btn-outline-success btn-sm";
 
-        this.button.distrust.title = `Distrust ${this.profile.alias}`;
+        this.button.distrust.title = `Distrust ${this.profile.title}`;
         this.button.distrust.disabled = false;
         this.button.distrust.cssClass = "btn btn-outline-danger btn-sm";
 

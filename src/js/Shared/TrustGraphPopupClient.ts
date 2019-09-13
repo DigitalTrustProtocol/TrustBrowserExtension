@@ -42,7 +42,7 @@ export class TrustGraphPopupClient {
     // }
 
 
-    
+   
     public showSubject(tabId: number, data: IGraphData, callback?: (err: any, value: any) => void): Promise<any> {
         let message = {
             action: "showSubject",

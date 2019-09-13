@@ -3,6 +3,7 @@ export default interface ISettings  {
     identicon?: string;
     password: string;
     alias: string;
+    aliasChanged: boolean;
     aliasProof: string;
     seed: string;
     rememberme: boolean;

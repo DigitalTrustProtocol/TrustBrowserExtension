@@ -9,7 +9,6 @@ import IProfile from '../IProfile';
 import ProfileRepository = require('../ProfileRepository');
 import BinaryTrustResult = require('../Model/BinaryTrustResult');
 import vis2 = require('vis');
-import Profile = require('../Profile');
 import { Buffer } from 'buffer';
 import ISiteInformation from '../Model/SiteInformation.interface';
 import SiteManager = require('../SiteManager');
@@ -64,26 +63,23 @@ class TrustGraphController {
         this.messageHandler = new MessageHandler();
         this.storageClient = new StorageClient(this.messageHandler);
         this.trustGraphPopupClient = new TrustGraphPopupClient(this.messageHandler);
-
    
-        SiteManager.GetUserContext().then((userContext) => {
-            this.settingsClient = new SettingsClient(this.messageHandler, userContext);
-            this.settingsClient.loadSettings((settings) => {
-                this.settings = settings;
-                this.profileRepository = new ProfileRepository(this.storageClient);
-                this.packageBuilder = new PackageBuilder(settings);
-                this.subjectService = new SubjectService(settings, this.packageBuilder);
-                this.dtpService = new DTPService(settings);
-                this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
+        this.settingsClient = new SettingsClient(this.messageHandler);
+        this.settingsClient.loadSettings((settings) => {
+            this.settings = settings;
+            this.profileRepository = new ProfileRepository(this.storageClient);
+            this.packageBuilder = new PackageBuilder(settings);
+            this.subjectService = new SubjectService(settings, this.packageBuilder);
+            this.dtpService = new DTPService(settings);
+            this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
 
-                this.trustGraphPopupClient.showSubjectHandler = (params: any, sender: Runtime.MessageSender) => { 
-                    this.loadOnData(params.data);
-                };
+            this.trustGraphPopupClient.showSubjectHandler = (params: any, sender: Runtime.MessageSender) => { 
+                this.loadOnData(params.data);
+            };
 
-                let url = new Url(location.href, true);
-                this.trustGraphPopupClient.requestSubject(url.query.profileId).then(data => {
-                    this.loadOnData(data);
-                });
+            let url = new Url(location.href, true);
+            this.trustGraphPopupClient.requestSubject(url.query.profileId).then(data => {
+                this.loadOnData(data);
             });
         });
     }
@@ -107,10 +103,11 @@ class TrustGraphController {
             let nw = new vis2.Network(container, this.dataAdapter.getGraph(), options);
 
             nw.on("select", (params) => {
-                if(params.nodes.length == 0)
-                    this.hideModal();
-                else 
-                    this.showModal(params.nodes[0]);
+                if(params.nodes.length > 0) {
+                    let profileId = params.nodes[0];
+                    let pv = this.profileIndex[profileId];
+                    this.trustGraphPopupClient.updateContent(pv);
+                }
             });
 
             return nw;
@@ -123,19 +120,17 @@ class TrustGraphController {
         this.trustResults = this.trustStrategy.ProcessClaims(source.queryResult.results.claims);
 
         this.profileIndex = {};
-        this.selectedProfile = source.profiles.filter(p=>p.userId == source.subjectProfileId).pop();
+        this.selectedProfile = source.profiles.filter(p=>p.id == source.subjectProfileId).pop();
         let subjectView = this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile);
 
-        let currentUserProfile = await this.profileRepository.getProfile(source.currentUserId); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
-        if(!currentUserProfile) {
-            currentUserProfile = new Profile({userId: source.currentUserId, alias: "(You)" });
-        }
+        let currentUserProfile = await this.profileRepository.getProfile(source.currentUserId,{id: source.currentUserId, title: "(You)" }); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
+
         let cu = this.profileIndex[source.currentUserId] = new ProfileModal(currentUserProfile);
         cu.currentUser = currentUserProfile;
         cu.subjectProfile = subjectView.profile;
 
         for(let key in this.trustResults) {
-            let profile = source.profiles.filter(p=>p.userId === key).pop();
+            let profile = source.profiles.filter(p=>p.id === key).pop();
             if(!profile) {
                 profile = await this.profileRepository.getProfile(key);
             }
@@ -188,97 +183,47 @@ class TrustGraphController {
         return options;
     }
 
-    showModal(profileId: any) : void {
+    // showModal(profileId: any) : void {
 
-        let pv = this.profileIndex[profileId];
-        if(!pv.trustResult) 
-            pv.trustResult = this.trustResults[profileId] || new BinaryTrustResult();
+    //     let pv = this.profileIndex[profileId];
+    //     if(!pv.trustResult) 
+    //         pv.trustResult = this.trustResults[profileId] || new BinaryTrustResult();
 
-        this.modalData = pv.setup();
+    //     this.modalData = pv.setup();
     
-        this.$scope.$apply();
-        // Show dtpbar
-        this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
-        //$("#networkModal").finish().show();
-        $('#networkModal').modal('show');
-    }
+    //     this.$scope.$apply();
+    //     // Show dtpbar
+    //     this.setToCenterOfParent( $('#networkModal'), document.body, false, false);
+    //     //$("#networkModal").finish().show();
+    //     $('#networkModal').modal('show');
+    // }
     
 
-    hideModal(): void {
-        if($('#networkModal').is(':visible'))
-            $("#networkModal").modal('hide');
-            //$("#networkModal").hide();
-    }
+    // hideModal(): void {
+    //     if($('#networkModal').is(':visible'))
+    //         $("#networkModal").modal('hide');
+    //         //$("#networkModal").hide();
+    // }
 
+    
+    // updateNetwork(trustPackage: ModelPackage) : void {
 
+    //     for(let key in trustPackage.claims) {
+    //         let claim = trustPackage.claims[key];
+    //         this.dataAdapter.updateWithClaim(claim);
+    //     }
+    // }
 
-    trustClick() {
-        this.buildAndSubmitBinaryTrust(this.modalData, "true", 0, this.modalData.profile.alias + " trusted");
-        return false;
-    };
-
-    distrustClick () {
-        this.buildAndSubmitBinaryTrust(this.modalData, "false", 0, this.modalData.profile.alias + " distrusted");
-        return false;
-    }
-
-    untrustClick() {
-        this.buildAndSubmitBinaryTrust(this.modalData, null, 1, this.modalData.profile.alias + " untrusted");
-
-        return false;
-    }
-
-    buildAndSubmitBinaryTrust (profileView: ProfileModal, value: string, expire: number, message: string): JQueryPromise<any> {
-        //this.modalData.disableButtons();
-        this.modalData.processing = true;
-        profileView.profile.scope = this.source.scope;
-        var trustPackage = this.subjectService.BuildBinaryClaim(profileView.profile, value, undefined, this.source.scope, expire);
-        this.packageBuilder.SignPackage(trustPackage);
-        return this.dtpService.PostPackage(trustPackage).done((trustResult)=> {
-            console.log("Posting package is a "+trustResult.status);
-           
-            $["notify"](message, 'success');
-
-            this.updateNetwork(trustPackage);
-
-            profileView.queryResult = <QueryContext>{
-                issuerCount: 1,
-                subjectCount: 1,
-                results: trustPackage,
-                errors: []
-            } 
-
-            let results = this.trustStrategy.createTrustResults(profileView.queryResult);
-            profileView.trustResult = results[profileView.profile.userId];
-            profileView.setup();
-
-            this.trustGraphPopupClient.updateContent(profileView);
-           
-            this.hideModal(); 
-        }).fail((trustResult) => { 
-            $["notify"]("Adding trust failed: " +trustResult.message,"fail");
-            this.hideModal(); 
-        });
-    }
-
-    updateNetwork(trustPackage: ModelPackage) : void {
-
-        for(let key in trustPackage.claims) {
-            let claim = trustPackage.claims[key];
-            this.dataAdapter.updateWithClaim(claim);
-        }
-    }
-
-    setToCenterOfParent(element, parent, ignoreWidth, ignoreHeight): void {
-        let parentWidth = $(parent).width();
-        let parentHeight = $(parent).height();  
-        let elementWidth = $(element).width();
-        let elementHeight = $(element).height();
-        if(!ignoreWidth)
-            $(element).css('left', parentWidth/2 - elementWidth/2);
-        if(!ignoreHeight)
-            $(element).css('top', parentHeight/2 - elementHeight/2);
-    }
+    // setToCenterOfParent(element, parent, ignoreWidth, ignoreHeight): void {
+    //     let parentWidth = $(parent).width();
+    //     let parentHeight = $(parent).height();  
+    //     let elementWidth = $(element).width();
+    //     let elementHeight = $(element).height();
+    //     if(!ignoreWidth)
+    //         $(element).css('left', parentWidth/2 - elementWidth/2);
+    //     if(!ignoreHeight)
+    //         $(element).css('top', parentHeight/2 - elementHeight/2);
+    // }
 }
 
 

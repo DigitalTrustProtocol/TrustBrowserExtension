@@ -9,11 +9,9 @@ import Settings = require("./Settings");
 class SettingsClient {
     private settings: ISettings;
     private messageHandler: MessageHandler;
-    private context: any;
     
-    constructor(messageHandler : MessageHandler, context: any) {
+    constructor(messageHandler : MessageHandler) {
         this.messageHandler = messageHandler;
-        this.context = context;
 
         this.settings = new Settings();
     }

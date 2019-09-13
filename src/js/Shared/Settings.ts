@@ -3,6 +3,7 @@ import ISettings from "../Interfaces/Settings.interface";
 class Settings implements ISettings {
     alias: string = "";
     aliasProof: string = "";
+    aliasChanged: boolean = false;
     password: string = "";
     seed: string = "";
     rememberme: boolean = true;

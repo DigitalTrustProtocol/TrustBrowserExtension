@@ -1,20 +1,6 @@
-import Decorators = require("../Decorators");
 import IProfile from "../IProfile";
 import { ProfileStateEnum } from "./ProfileStateEnum";
 import Crypto = require('../Crypto');
-
-
-// function typeCheck(typeName: string) {
-//     return function (target: any, propertyKey: string) {
-//         let descriptor = Object.getOwnPropertyDescriptor(target, propertyKey) || {};
-//         descriptor.set = function (value) {
-//             if (typeof value != typeName)
-//                 throw new Error(`${propertyKey} (${typeName}) cannot be set to object of type: ${typeof value}`);
-//             target["propertyKey"] = value;
-//         }
-//         Object.defineProperty(target, propertyKey, descriptor)
-//     }
-// }
 
 
 class DTPIdentity {
@@ -53,24 +39,24 @@ class DTPIdentity {
         return (url.indexOf(protocol) == 0) ? url: protocol+url; // userId is missing https://
     }
 
-    public static update(profile: IProfile, source: DTPIdentity) : boolean {
-        if(!profile.owner && !source) return;
-        if(!source) return;
-        if(!profile.owner) {
-            profile.owner = source;
-            profile.state = ProfileStateEnum.Changed;
-            return true;
-        }
+    // public static update(profile: IProfile, source: DTPIdentity) : boolean {
+    //     if(!profile.owner && !source) return;
+    //     if(!source) return;
+    //     if(!profile.owner) {
+    //         profile.owner = source;
+    //         profile.state = ProfileStateEnum.Changed;
+    //         return true;
+    //     }
 
-        DTPIdentity.updateProperty(profile.owner, "ID", source.ID);
-        DTPIdentity.updateProperty(profile.owner, "Proof", source.Proof);
-        DTPIdentity.updateProperty(profile.owner, "PlatformID", source.PlatformID);
+    //     DTPIdentity.updateProperty(profile.owner, "ID", source.ID);
+    //     DTPIdentity.updateProperty(profile.owner, "Proof", source.Proof);
+    //     DTPIdentity.updateProperty(profile.owner, "PlatformID", source.PlatformID);
 
-        if(profile.owner.state == ProfileStateEnum.Changed) 
-            profile.state = ProfileStateEnum.Changed;
+    //     if(profile.owner.state == ProfileStateEnum.Changed) 
+    //         profile.state = ProfileStateEnum.Changed;
 
-        return profile.state == ProfileStateEnum.Changed;
-    }
+    //     return profile.state == ProfileStateEnum.Changed;
+    // }
 
 
     public static updateProperty(owner: DTPIdentity, name: string, value: any, defaultValue?: any) : void {
@@ -135,6 +121,5 @@ class DTPIdentity {
 
 
 }
-//Decorators.typeCheck(DTPIdentity.prototype, "PlatformID", "string");
 
 export = DTPIdentity

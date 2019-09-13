@@ -1,4 +1,3 @@
-import DTPIdentity = require("./Model/DTPIdentity");
 import bitcoin = require('bitcoinjs-lib');
 import bitcoinMessage = require('bitcoinjs-message');
 import { Buffer } from 'buffer';
@@ -18,18 +17,7 @@ class Crypto {
             return false;
         }
     }
-
-    // static Verify(dtpIdentity: DTPIdentity, message: any): boolean
-    // {
-    //     try {
-    //         //let buf = new Buffer(dtpIdentity.Proof, "base64");
-    //         //return bitcoinMessage.verify(message, dtpIdentity.ID, buf);
-    //         return bitcoinMessage.verify(message, dtpIdentity.ID, dtpIdentity.Proof);
-    //     } catch {
-    //         return false;
-    //     }
-    // }
-    
+   
     static Hash160(data: any) : any {
         if(typeof data === 'string')
             data = new Buffer(data, 'UTF8');

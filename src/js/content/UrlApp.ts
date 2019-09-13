@@ -7,7 +7,6 @@ import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-clien
 import IProfile from "../IProfile";
 import IGraphData from './IGraphData';
 import { MessageHandler } from '../Shared/MessageHandler';
-import Profile = require("../Profile");
 import ProfileModal = require("../Model/ProfileModal");
 import AjaxErrorParser = require("../Shared/AjaxErrorParser");
 
@@ -48,7 +47,7 @@ class UrlApp {
                 if(request.action === "getProfiles") {
 
                     return {
-                        selectedUserId : this.selectedProfileView.profile.userId,
+                        selectedUserId : this.selectedProfileView.profile.id,
                         profileViews: this.sessionProfiles
                     };
                 }
@@ -57,7 +56,7 @@ class UrlApp {
             if(request.handler === "profileHandler") {
                 if(request.params.action === "updateProfile") {
 
-                    let pv = this.sessionProfiles.filter(p => p.profile.userId === request.params.data.profile.userId).pop();
+                    let pv = this.sessionProfiles.filter(p => p.profile.id === request.params.data.profile.userId).pop();
                     if(!pv) 
                         this.sessionProfiles.push(pv = new ProfileModal());
                     
@@ -75,26 +74,28 @@ class UrlApp {
     buildProfiles() : void {
         let url = this.getSanitizedUrl();
 
-        let defaultProfile = new Profile(<IProfile>{
-            userId: Crypto.toDTPAddress(Crypto.Hash160(url)),
-            screen_name: window.location.hostname,
-            alias: url,
-            scope: "url"
-        });
-        this.sessionProfiles.push(new ProfileModal(defaultProfile));
-        this.config.profileRepository.setProfile(defaultProfile);
+        let docTitle = window.document.title;
+        let hostname = window.location.origin;
 
-        let hostname = window.location.hostname;
         if(hostname != url) {
-            let hostnameProfile = new Profile(<IProfile>{
-                userId: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
-                screen_name: hostname,
-                alias: hostname,
-                scope: "url"
-            });
-            this.sessionProfiles.push(new ProfileModal(hostnameProfile));
-            this.config.profileRepository.setProfile(hostnameProfile);
+            let defaultProfile = <IProfile>{
+                id: Crypto.toDTPAddress(Crypto.Hash160(docTitle+url)),
+                title: docTitle,
+                data: url,
+                dataType: 'text'
+            };
+            this.sessionProfiles.push(new ProfileModal(defaultProfile));
+            this.config.profileRepository.setProfile(defaultProfile);
         }
+
+        let hostnameProfile = <IProfile>{
+            id: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
+            title: '',
+            data: hostname,
+            dataType: 'text'
+        };
+        this.sessionProfiles.push(new ProfileModal(hostnameProfile));
+        this.config.profileRepository.setProfile(hostnameProfile);
 
         this.buildHtmlEntities();
 
@@ -105,21 +106,20 @@ class UrlApp {
     buildHtmlEntities() : any {
         let profiles = {};
         $("[itemtype='http://digitaltrustprotocol.org/entity']").each((i, element) => {
-            let profile = new Profile();
-            profile.alias = $(element).find("[itemprop='alias']").text();
-            profile.userId = $(element).find("[itemprop='entityId']").text();
-            profile.aliasProof = $(element).find("[itemprop='aliasProof']").attr('itemvalue');
-            profile.avatarImage = $(element).find("[itemprop='avatarImage']").attr('itemvalue');
+            let profile = <IProfile>{};
+            profile.title = $(element).find("[itemprop='alias']").text();
+            profile.id = $(element).find("[itemprop='id']").text();
+            let proof = $(element).find("[itemprop='aliasProof']").attr('itemvalue');
 
-            if(profile.alias && profile.userId && profile.aliasProof) {
-                let valid = Crypto.Verify(profile.alias, profile.userId, profile.aliasProof);
+            if(profile.title && profile.id && proof) {
+                let valid = Crypto.Verify(profile.title, profile.id, proof);
                 if(!valid) {
-                    console.log(`Entity profile ${profile.alias} (${profile.userId}) do not have a valid signature ${profile.aliasProof}`);
+                    console.log(`Entity profile ${profile.title} (${profile.id}) do not have a valid signature ${proof}`);
                     return;
                 }
             }
-            if(profile.userId)
-                profiles[profile.userId] = profile;
+            if(profile.id)
+                profiles[profile.id] = profile;
         });
 
         $.each(profiles, (name, profile) => {
@@ -142,14 +142,14 @@ class UrlApp {
         DTP.trace("Query profiles");
         let scope = "url";
         let profiles = this.sessionProfiles.map(p=>p.profile);
-        return this.config.dtpService.Query(profiles, scope).then((response, queryResult) => {
+        return this.config.dtpService.Query(profiles, scope).then((queryResult) => {
             // Process the result
-            DTP.trace("Query result: "+JSON.stringify(queryResult, null, 2));
+            DTP.trace("Query result: "+JSON.stringify(queryResult.body, null, 2));
             
-            let trustResults = this.config.trustStrategy.createTrustResults(queryResult) || {};
+            let trustResults = this.config.trustStrategy.createTrustResults(queryResult.body) || {};
             this.sessionProfiles.forEach((pv) => {
-                pv.queryResult = queryResult;
-                pv.trustResult = trustResults[pv.profile.userId] || new BinaryTrustResult();
+                pv.queryResult = queryResult.body;
+                pv.trustResult = trustResults[pv.profile.id] || new BinaryTrustResult();
             })
             this.updateIcon(this.sessionProfiles[0].trustResult);
         }).fail((xhr, errorMessage) => {
@@ -159,7 +159,8 @@ class UrlApp {
 
 
     getSanitizedUrl() : string {
-        let url = window.location.href.substring(window.location.protocol.length+2);
+        //let url = window.location.href.substring(window.location.protocol.length+2);
+        let url = window.location.href;
         while(url.length > 0 && url[url.length-1] === '/') 
             url = url.slice(0, -1);
         return url;

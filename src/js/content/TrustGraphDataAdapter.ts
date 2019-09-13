@@ -6,8 +6,6 @@ import Crypto = require('../Crypto');
 import Identicon = require('../Shared/Identicon');
 import ProfileRepository = require('../ProfileRepository');
 import BinaryTrustResult = require('../Model/BinaryTrustResult');
-import ProfileController = require('../ProfileController');
-import Profile = require('../Profile');
 import TrustStrategy = require('../TrustStrategy');
 import IGraphData from './IGraphData';
 import ProfileModal = require('../Model/ProfileModal');
@@ -42,12 +40,12 @@ class TrustGraphDataAdapter {
     }
 
     private loadNodes(pv: ProfileModal) : void {
-        if(this.graph.nodes.get(pv.profile.userId))
+        if(this.graph.nodes.get(pv.profile.id))
              return; // Do not re-process the node
 
         this.addNode(pv.profile);
 
-        if(pv.profile.userId == this.source.currentUserId)
+        if(pv.profile.id == this.source.currentUserId)
              return; // Stop with oneself
 
         if(!pv.trustResult)
@@ -95,16 +93,16 @@ class TrustGraphDataAdapter {
         //let hasUserId = !(profile.userId == "?");
         //let hasAlias = (profile.alias) ? profile.userId : profile.owner.ID;
 
-        if(!profile.avatarImage) {
+        if(!profile.icon) {
             //let hash = Crypto.toDTPAddress(Crypto.Hash160(userId));
-            profile.avatarImage = Identicon.createIcon(profile.userId, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
+            profile.icon = Identicon.createIcon(profile.id, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
             //profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
         }
 
         let node = {
-            id: profile.userId,
-            image: profile.avatarImage,
-            label: this.lineBreakText(profile.userId, 20) + ((profile.alias) ? '\n_'+ this.lineBreakText(profile.alias, 20)+'_' : ''),
+            id: profile.id,
+            image: profile.icon,
+            label: this.lineBreakText(profile.id, 20) + ((profile.title) ? '\n_'+ this.lineBreakText(profile.title, 20)+'_' : ''),
         }
         return node;
     }
@@ -139,7 +137,7 @@ class TrustGraphDataAdapter {
 
     public removeEdge(from: IProfile, to:IProfile) : void {
         this.graph.edges.remove({ 
-            id: from.userId+to.userId
+            id: from.id+to.id
         });
     }
 
@@ -149,13 +147,11 @@ class TrustGraphDataAdapter {
 
     private createEdge(from: IProfile, to:IProfile, value: any) : any {
         let color = (value === "true" || value === "1") ? 'green' : (value == undefined || value == "") ? 'gray': 'red';
-        let fromId = (from.userId == "?") ? from.owner.ID : from.userId;
-        let toId = (to.userId == "?") ? to.owner.ID : to.userId;
 
         let node = { 
-            id: fromId+toId,
-            from: fromId, 
-            to: toId, 
+            id: from.id+to.id,
+            from: from.id, 
+            to: to.id, 
             color:{
                 color:color, 
                 highlight: color 

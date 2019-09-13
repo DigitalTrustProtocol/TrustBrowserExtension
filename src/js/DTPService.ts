@@ -28,7 +28,7 @@ class DTPService  {
     }
 
     BuildQuery (targets: Array<IProfile>, scope: string) : DtpGraphCoreModelQueryRequest {
-        let subjects = $.map(targets, p => p.userId);
+        let subjects = $.map(targets, p => p.id);
 
         if(subjects.length == 0)
             return null;

@@ -11,10 +11,10 @@ class PackageBuilder {
    static CONFIRM_TRUST_DTP1: string = "confirm.trust.dtp1";
    static RATING_TRUST_DTP1: string = "rating";
    static IDENTITY_DTP1: string = "entity";
-   static IDENTITY_ENTITY_DTP1: string = "entity";
-   static IDENTITY_THING_DTP1: string = "thing";
+   static IDENTITY: string = "entity";
+   static THING: string = "thing";
+   static ALIAS: string = "alias";
    static ID_IDENTITY_DTP1: string = "id.identity.dtp1";
-   static ALIAS_IDENTITY_DTP1: string = "alias.identity.dtp1";
    static IDENTITY_TYPE_NAME = "name";
    static IDENTITY_TYPE_DTPAddress = "address.dtp1";
    static IDENTITY_TYPE_NUMERIC = "numeric";
@@ -27,9 +27,9 @@ class PackageBuilder {
         this.settings = settings;
     }
 
-   CreatePackage(claim) : ModelPackage {
+   CreatePackage(claim?: any) : ModelPackage {
         let claimPackage : ModelPackage = {
-            claims: (claim) ? [claim] : [],
+            claims: (Array.isArray(claim)) ? claim : (claim) ? [claim] : [],
         }
         return claimPackage;
     }
@@ -42,27 +42,6 @@ class PackageBuilder {
         }
         return this;
     }
-
-    // CreateNameClaim (issuer, script, subject, value : string, scope, activate, expire, metadata?: string) : Claim
-    // {
-    //     return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_NAME, PackageBuilder.BINARY_TRUST_DTP1, scope, value, activate, expire, metadata);
-    // }
-
-
-    // CreateBinaryClaim (issuer, script, subject, value : string, scope, activate, expire, metadata?: string) : Claim
-    // {
-    //     return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.BINARY_TRUST_DTP1, scope, value, activate, expire, metadata);
-    // }
-
-    // CreateAliasIdentityClaim (issuer, script, subject, value : string, scope, activate, expire, metadata? : string) : Claim
-    // {
-    //     return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.ALIAS_IDENTITY_DTP1, scope, value, activate, expire, metadata);
-    // }
-
-    // CreateIDIdentityClaim (issuer, script, subject, value : string, scope, activate, expire, metadata? : string) : Claim
-    // {
-    //     return this.CreateClaim(issuer, script, subject, PackageBuilder.IDENTITY_TYPE_ID, PackageBuilder.ID_IDENTITY_DTP1, scope, value, activate, expire, metadata);
-    // }
 
     CreateClaim (issuer: any, issuerType, subject, subjectType, type, scope, value: string, activate, expire, metadata? : string) : Claim {
         if(typeof scope != 'string')

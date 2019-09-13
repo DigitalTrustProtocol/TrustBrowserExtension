@@ -20,29 +20,27 @@ $(document).ready( () =>{
     let storageClient = new StorageClient(messageHandler);
     let trustGraphPopupClient = new TrustGraphPopupClient(messageHandler);
 
-    SiteManager.GetUserContext().then((userContext) => {
-        
-        const settingsClient = new SettingsClient(messageHandler, userContext);
-        settingsClient.loadSettings( (settings: ISettings) => {
-            let profileRepository = new ProfileRepository(storageClient);
-            let packageBuilder = new PackageBuilder(settings);
+       
+    const settingsClient = new SettingsClient(messageHandler);
+    settingsClient.loadSettings( (settings: ISettings) => {
+        let profileRepository = new ProfileRepository(storageClient);
+        let packageBuilder = new PackageBuilder(settings);
 
-            let config = <IConfig>{
-                settings: settings,
-                profileRepository : profileRepository,
-                packageBuilder: packageBuilder,
-                subjectService: new SubjectService(settings, packageBuilder),
-                dtpService: new DTPService(settings),
-                trustStrategy: new TrustStrategy(settings, profileRepository),
-                trustGraphPopupClient: trustGraphPopupClient,
-                messageHandler: messageHandler
-            };
+        let config = <IConfig>{
+            settings: settings,
+            profileRepository : profileRepository,
+            packageBuilder: packageBuilder,
+            subjectService: new SubjectService(settings, packageBuilder),
+            dtpService: new DTPService(settings),
+            trustStrategy: new TrustStrategy(settings, profileRepository),
+            trustGraphPopupClient: trustGraphPopupClient,
+            messageHandler: messageHandler
+        };
 
-            let urlapp = new UrlApp(config);
-            urlapp.ready(document).then(() => {
-                
-            });
-
+        let urlapp = new UrlApp(config);
+        urlapp.ready(document).then(() => {
+            
         });
+
     });
 });

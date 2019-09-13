@@ -134,9 +134,6 @@
                             style="width: 100%;"></select>
                         </div>
                         <div>
-                            <a href="#" uib-tooltip="List results from current page"
-                            tooltip-popup-delay="400" tooltip-animation="true"
-                            class="badge badge-light float-left" ><i class="fas fa-bars pr-1"></i>Page</a>
                             <a href="#" uib-tooltip="Refresh search on trust "
                             tooltip-popup-delay="400" tooltip-animation="true"
                             class="badge badge-light float-right" ><i class="fas fa-sync pr-1"></i>Refresh</a>
@@ -148,13 +145,16 @@
                                 <tbody>
                                     <tr ng-repeat="(key, pv) in ct.profileList" ng-show="!ct.showError">
                                         <td>
-                                            <img ng-src="{{ pv.profile.avatarImage }}" class="dtp-avatarImg"
-                                                ng-click="ct.openGraphClick($event, pv)">
+                                            <img ng-src="{{ pv.profile.icon }}" ng-click="ct.openGraphClick($event, pv)">
                                         </td>
                                         <td>
-                                            <div class="breakContent" style="font-weight: bold"><i class="fas fa-link pr-1"></i>{{ pv.profile.alias }}
+                                            <div class="breakContent" style="font-weight: bold">
+                                                {{ pv.profile.title || pv.profile.data }}
                                             </div>
-                                            <div>{{ pv.profile.userId }}</div>
+                                            <div><small>
+                                                <i class="fas fa-id-badge pr-1"></i>{{ pv.profile.id }}
+                                            </small>
+                                            </div>
 
                                             <!-- Identity =====================================================  -->
                                             <div id="trustButtonContainer" ng-show="pv.trustButtonContainerVisible">
@@ -196,17 +196,6 @@
                                                         Distrust
                                                     </button>
                                                 </div>
-                                                <div class="clearfix">
-                                                    <div class="float-left pr-3">
-                                                        <a href="#" uib-tooltip="View comments on subject"
-                                                            tooltip-popup-delay="400" tooltip-animation="true"
-                                                            class="badge badge-light" data-toggle="modal" data-target="#commentsModal">Comments</a>
-                                                        <a href="#" ng-click="ct.openGraphClick($event, pv)"
-                                                            uib-tooltip="View the trust graph on subject"
-                                                            tooltip-popup-delay="400" tooltip-animation="true"
-                                                            class="badge badge-light">Graph</a>
-                                                    </div>
-                                                </div>                                                
                                             </div>
                                             <!-- Thing =====================================================  -->
                                             <div id="ratingStarsContainer" ng-show="pv.ratingStarsContainerVisible">
@@ -228,21 +217,24 @@
                                                     </small>    
                                                 </div>
         
-                                                <div class="clearfix">
-                                                    <div class="float-left pr-3">
-                                                        <a href="#" uib-tooltip="View comments on subject"
-                                                            tooltip-popup-delay="400" tooltip-animation="true"
-                                                            class="badge badge-light" data-toggle="modal" data-target="#commentsModal">Comments</a>
-                                                        <a href="#" ng-click="ct.openGraphClick($event, pv)"
-                                                            uib-tooltip="View the trust graph on subject"
-                                                            tooltip-popup-delay="400" tooltip-animation="true"
-                                                            class="badge badge-light">Graph</a>
-                                                        <a href="#" uib-tooltip="Undo your trust on subject"
-                                                            tooltip-popup-delay="400" tooltip-animation="true"
-                                                            class="badge badge-light">Untrust</a>
-                                                    </div>
-                                                </div>
 
+
+                                            </div>
+                                            <!-- Buttom buttons =========================================== -->
+                                            <div class="clearfix">
+                                                <div class="float-left pr-3">
+                                                    <a href="#" uib-tooltip="View comments on subject"
+                                                        tooltip-popup-delay="400" tooltip-animation="true"
+                                                        class="badge badge-light" ng-click="ct.selectedProfileView = pv" 
+                                                        data-toggle="modal" data-target="#profileDetailsModal">Details and Comments</a>
+                                                    <a href="#" ng-click="ct.openGraphClick($event, pv)"
+                                                        uib-tooltip="View the trust graph on subject"
+                                                        tooltip-popup-delay="400" tooltip-animation="true"
+                                                        class="badge badge-light">Graph</a>
+                                                    <a href="#" uib-tooltip="Undo your trust on subject"
+                                                        tooltip-popup-delay="400" tooltip-animation="true"
+                                                        class="badge badge-light">Untrust</a>
+                                                </div>
                                             </div>
                                             <div id="keywordContainer" ng-show="pv.keywordContainerVisible"
                                                 class="">
@@ -447,7 +439,7 @@
                         <div class="card card-body">
                             <pre><code id="userProofCode">&lt;div itemscope itemtype=&quot;http://digitaltrustprotocol.org/entity&quot;&gt; 
 &lt;div itemprop=&quot;alias&quot;&gt;<span ng-bind="ct.tempSettings.alias"></span>&lt;/div&gt;
-&lt;div itemprop=&quot;entityId&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
+&lt;div itemprop=&quot;id&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
 &lt;span itemprop=&quot;aliasProof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
 &lt;/div&gt;</code></pre>
                             <button class="btn btn-secondary btn-sm" ng-click="ct.copyToClipboard('userProofCode')">
@@ -576,22 +568,35 @@
     </div>
 
     <!-- Comments Modal =============================================================================== -->
-    <div class="modal fade" id="commentsModal" tabindex="-1" role="dialog" aria-labelledby="commentsModalLabel"
+    <div class="modal fade" id="profileDetailsModal" tabindex="-1" role="dialog" aria-labelledby="profileDetailsModalLabel"
         aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">Comments</h5>
+                    <h6 class="modal-title" id="userModalLabel">{{ ct.selectedProfileView.profile.title || ct.selectedProfileView.profile.data }}</h6>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
-                    <h6>Comments from people</h6>
-                    <div class="alert alert-danger">
-                        <strong>Danger!</strong> The comments are not from your trusted network. There is no filter against spammers and trolls.
-                    </div>
-                      lalalallala
+                <div class="modal-body float-left">
+                    <small>
+                        <div>
+                            <i class="fas fa-link pr-1"></i>{{ ct.selectedProfileView.profile.data }}
+                        </div>
+                        <div class="pt-1">
+                            <i class="fas fa-id-badge pr-1"></i>
+                            {{ ct.selectedProfileView.profile.id }}
+                        </div>
+                        <div class="pt-1">
+                            <ul>
+                                <li>Test1</li>
+                                <li>Test1</li>
+                                <li>Test1</li>
+                                <li>Test1</li>
+                                <li>Test1</li>
+                            </ul>
+                        </div>
+                    </small>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
