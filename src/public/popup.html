@@ -149,7 +149,7 @@
                                         </td>
                                         <td>
                                             <div class="breakContent" style="font-weight: bold">
-                                                {{ pv.profile.title || pv.profile.data }}
+                                                {{ pv.profile.title || ct.getStringFromBuffer(pv.profile.data) }}
                                             </div>
                                             <div><small>
                                                 <i class="fas fa-id-badge pr-1"></i>{{ pv.profile.id }}

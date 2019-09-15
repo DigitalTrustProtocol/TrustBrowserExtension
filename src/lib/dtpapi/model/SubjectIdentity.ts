@@ -11,11 +11,12 @@
  */
 
 import * as models from './models';
+import IProfile from '../../../js/IProfile';
 
 export interface SubjectIdentity {
     type?: string;
 
-    source?: any;
+    meta?: IProfile;
     
     id?: string;
 

@@ -11,6 +11,7 @@
  */
 
 import * as models from './models';
+import IProfile from '../../../js/IProfile';
 
 export interface IssuerIdentity {
     type?: string;
@@ -23,4 +24,5 @@ export interface IssuerIdentity {
 
     proof?: any;
 
+    meta?: IProfile;
 }

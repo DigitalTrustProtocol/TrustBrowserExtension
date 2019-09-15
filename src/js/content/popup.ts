@@ -497,7 +497,7 @@ class ExtensionpopupController {
 
 
         this.packageBuilder.SignPackage(trustPackage);
-        return this.dtpService.PostPackage(trustPackage).done((response)=> {
+        return this.dtpService.PostPackage(trustPackage).then((response)=> {
             console.log("Posting package is a "+response.status);
            
             profileView.queryResult = <QueryContext>{
@@ -513,7 +513,7 @@ class ExtensionpopupController {
             //this.updateIcon(profileView.trustResult);
             this.updateContentTabProfile(profileView);
             profileView.processing = false;
-            this.$scope.$apply();
+            return profileView;
         }).fail((xhr, exception) => { 
             this.showFatalError(exception);
         });
@@ -527,6 +527,13 @@ class ExtensionpopupController {
             case "identity" : pv.trustButtonContainerVisible = true; break;
             case "thing" : pv.ratingStarsContainerVisible = true; break;
         }
+    }
+
+    getStringFromBuffer(data: any) : string {
+        if(typeof data === 'string')
+            return Buffer.from(data, 'base64').toString("utf-8");
+
+        return typeof data;
     }
 
 }

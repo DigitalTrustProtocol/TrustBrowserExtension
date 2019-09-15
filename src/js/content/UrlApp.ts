@@ -9,6 +9,7 @@ import IGraphData from './IGraphData';
 import { MessageHandler } from '../Shared/MessageHandler';
 import ProfileModal = require("../Model/ProfileModal");
 import AjaxErrorParser = require("../Shared/AjaxErrorParser");
+import { Buffer } from 'buffer';
 
 class UrlApp {
 
@@ -81,8 +82,7 @@ class UrlApp {
             let defaultProfile = <IProfile>{
                 id: Crypto.toDTPAddress(Crypto.Hash160(docTitle+url)),
                 title: docTitle,
-                data: url,
-                dataType: 'text'
+                data:  Buffer.from(url, 'UTF8')
             };
             this.sessionProfiles.push(new ProfileModal(defaultProfile));
             this.config.profileRepository.setProfile(defaultProfile);
@@ -91,8 +91,7 @@ class UrlApp {
         let hostnameProfile = <IProfile>{
             id: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
             title: '',
-            data: hostname,
-            dataType: 'text'
+            data: Buffer.from(hostname, 'UTF8')
         };
         this.sessionProfiles.push(new ProfileModal(hostnameProfile));
         this.config.profileRepository.setProfile(hostnameProfile);

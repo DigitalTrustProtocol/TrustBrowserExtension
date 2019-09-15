@@ -6,6 +6,7 @@ import { ModelPackage } from '../lib/dtpapi/model/models';
 import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
 import ProfileModal = require('./Model/ProfileModal');
+import { Buffer } from 'buffer';
 
 class SubjectService  {
     settings: ISettings;
@@ -40,11 +41,10 @@ class SubjectService  {
                 expire,
                 profileView.metadata);
 
-            claim.subject.source = {
+            claim.subject.meta = <IProfile>{
                 data: profileView.profile.data,
-                dataType: profileView.profile.dataType
-            }
-
+                title: profileView.profile.title
+            };
         }
 
         return claim;
