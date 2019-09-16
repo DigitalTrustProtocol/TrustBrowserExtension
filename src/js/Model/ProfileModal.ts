@@ -32,7 +32,6 @@ class ProfileModal
     public queryResult: DtpGraphCoreModelQueryContext;
     public trustResult?: BinaryTrustResult;
 
-    public spinner: string;
     public processing: boolean = false;
     public score: TrustGraphScoreModel = new TrustGraphScoreModel();
     public isCurrentUser: boolean = false;
@@ -42,13 +41,12 @@ class ProfileModal
     public inputForm: string = "thing";
     public trustButtonContainerVisible: boolean = false;
     public ratingStarsContainerVisible : boolean = false;
-    public keywordContainerVisible: boolean = false;
-    public keywordValues: any;
-    public keywordNotes: string;
-    
-    public ratingValue: number;
-    public keywordSubmitCallback: any;
+    public commentContainerVisible: boolean = false;
+    public comment: string;
+    public commentSubmitCallback: any;
 
+    public ratingValue: number;
+    
     public metadata: string = "";
 
     public button = {
@@ -62,13 +60,11 @@ class ProfileModal
      */
     constructor(selectedProfile?: IProfile, trustResult?: BinaryTrustResult, queryResult?: DtpGraphCoreModelQueryContext) {
         this.profile = selectedProfile;
-        this.spinner = chrome.extension.getURL("../img/Spinner24px.gif");
         this.queryResult = queryResult;
         this.trustResult = trustResult;
         this.ratingValue = 0;
 
-        Object.defineProperty(this, 'keywordSelect', { enumerable: false, writable: true, value: null }); // No serialize to json!
-        Object.defineProperty(this, 'keywordSubmitCallback', { enumerable: false, writable: true, value: null }); // No serialize to json!
+        Object.defineProperty(this, 'commentSubmitCallback', { enumerable: false, writable: true, value: null }); // No serialize to json!
     }    
 
     public setup(profileView? : ProfileModal) : ProfileModal {
@@ -91,6 +87,12 @@ class ProfileModal
 
         this.isSomeoneElse();
         return this;
+    }
+
+    public resetValues() : void {
+        this.queryResult = null;
+        this.trustResult = null;
+        this.ratingValue = 0;
     }
 
     public EnsureAvatarImage() : void {

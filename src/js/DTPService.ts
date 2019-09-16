@@ -16,14 +16,12 @@ class DTPService  {
         this.packageApi = new PackageApi(settings.infoserver);
         this.queryApi = new QueryApi(settings.infoserver);
     } 
-//{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }
+    //{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext; }
     Query (targets: Array<IProfile>, scope: any) : JQueryPromise<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext;  }> {
         let query = this.BuildQuery(targets, scope);
         if(query == null) 
             return $.Deferred<{ response: JQueryXHR; body: DtpGraphCoreModelQueryContext;  }>().resolve(null, null).promise();
 
-        //this.queryApi.basePath = this.settings.infoserver;
-        //DTP['trace'](JSON.stringify(query, null, 2));
         return this.queryApi.resolvePost(query);
     }
 

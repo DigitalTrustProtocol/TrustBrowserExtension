@@ -74,6 +74,7 @@ class SubjectService  {
             return;
 
         trustPackage.claims.push(this.CreateAliasClaim(profileView, scope, expire));
+        this.settings.aliasChanged = false;
     }
 
     CreateAliasClaim (profileView: ProfileModal, scope: string, expire: number) : Claim {
@@ -84,10 +85,10 @@ class SubjectService  {
             this.settings.address,
             PackageBuilder.IDENTITY,
             this.settings.address,
-            PackageBuilder.IDENTITY,
+            PackageBuilder.THING,
             PackageBuilder.ALIAS,
             scope,
-            profile.title,
+            this.settings.alias,
             0,
             expire,
             "");

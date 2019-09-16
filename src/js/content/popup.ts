@@ -65,8 +65,8 @@ class ExtensionpopupController {
     trustGraphPopupClient: TrustGraphPopupClient;
     showError: boolean;
     errorMessage: string;
-    sessionProfiles: Array<ProfileModal> = [];
-    profileList: Array<ProfileModal> = [];
+    pageProfiles: Array<ProfileModal> = [];
+    profileListView: Array<ProfileModal> = [];
     tempProfileView: ProfileModal;
     settingsProfile : IProfile = null;
     selectedProfileView: ProfileModal = null;
@@ -100,24 +100,14 @@ class ExtensionpopupController {
 
             chrome.tabs.query({active: true, currentWindow: true}, tabs => {
                 this.contentTabId = tabs[0].id;
-                this.getProfiles(this.contentTabId).then((data: any) => {
-                    if(!data || data.length == 0 || !data.profileViews)
+                this.getPageProfiles(this.contentTabId).then((data: any) => {
+                    if(!data || data.length == 0 || !data.profiles)
                         return;
 
-                    data.profileViews.forEach(item=> this.sessionProfiles.push(new ProfileModal().setup(item))); // Recreate the ProfileView object!
+                    data.profiles.forEach(item=> this.pageProfiles.push(new ProfileModal(item))); // Recreate the ProfileView object!
+                    this.profileListView = this.pageProfiles;
 
-                    this.profileList = this.sessionProfiles;
-
-                    //let profileView = this.sessionProfiles.filter(p=>p.profile.userId === data.selectedUserId).pop();
-                    
-                    // Set select2 default value
-                    // var newOption = new Option(profileView.profile.alias, profileView.profile.userId, true, true);
-                    // $('.userSelectContainer').append(newOption).trigger('change.select2');
-
-                    //this.selectProfile(profileView);
-                    this.$scope.$apply();
-                    
-
+                    this.queryProfileListView();
                 })
             });
 
@@ -127,9 +117,9 @@ class ExtensionpopupController {
                 $('#userModal').modal('show');
             }
         });
-
-
     }
+
+
 
     initSubjectSelect() : void {
         let self = this;
@@ -175,22 +165,6 @@ class ExtensionpopupController {
         $('.userSelectContainer').on('select2:select', e => this.selectProfileID(e.params.data.id));
     }
 
-    initKeywordSelect(pv : ProfileModal) : void {
-        let self = this;
-
-
-        let ctrl =$('#keywordSelect'+pv.profile.id);
-        ctrl.select2({
-            data: KeywordsProvider.getKeywords(),
-            placeholder: 'Keywords',
-            multiple: true,
-            minimumInputLength: 0,
-            allowClear: true            
-        });
-        ctrl.select2().val(pv.keywordValues)
-    }
-
-
     formatSubjectSelect(item) {
         return item.alias || item.text;
     }
@@ -199,35 +173,21 @@ class ExtensionpopupController {
         return item.alias || item.text;
     }
 
-    selectProfile(profileView: ProfileModal) : void {
-        this.profileList = [profileView];
-        if(!profileView.queryResult) {
-            this.queryProfiles([profileView.profile]).then(({queryResult, trustResults}) => {
-                profileView.trustResult = trustResults[profileView.profile.id] || new BinaryTrustResult();
-                profileView.queryResult = queryResult;
-                profileView.setup();
-                //this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
-                //this.profileList = this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
-                this.updateIcon(profileView.trustResult);
-                this.$scope.$apply();
-                this.updateContentTabProfile(profileView);
-            })
-        } else {
-            this.updateIcon(profileView.trustResult);
-            //this.profileList = this.sessionProfiles.forEach((pm)=> pm.visible = (pm.profile.userId == profileView.profile.userId));
-            this.updateContentTabProfile(profileView);
-            this.$scope.$apply();
-        }
+    queryProfileListView(pv : Array<ProfileModal> = null) : void {
+        if(pv) 
+            this.profileListView = pv;
+        
+        this.queryProfiles(this.profileListView).then((success)=> { if(success) this.$scope.$apply() });
     }
 
     selectProfileID(id: string) : void {
         if(id === "-1") {
-            this.profileList = this.sessionProfiles;
+            this.profileListView = this.pageProfiles;
             this.$scope.$apply();
             return;
         }
 
-        let f = this.sessionProfiles.filter(x => x.profile.id === id);
+        let f = this.pageProfiles.filter(x => x.profile.id === id);
         if(f.length > 0) {
             this.selectProfile(f[0]);
         }
@@ -235,33 +195,27 @@ class ExtensionpopupController {
             // Try getting the profile from storage
             this.profileRepository.getProfile(id, { id: id }).then(p => {
                 let pm = new ProfileModal(p, undefined, undefined);
-                //this.sessionProfiles.push(pm);
                 this.selectProfile(pm);
             });
     }
 
-    updateIcon(result: BinaryTrustResult) : void {
-        let state = (result) ? result.state : undefined;
-
-        chrome.runtime.sendMessage({
-            handler: 'extensionHandler',
-            action: 'updateIcon',
-            value: state
-        });
+    selectProfile(profileView: ProfileModal) : void {
+        this.queryProfileListView([profileView]);
     }
-
 
     saveClick(formId: string) : boolean {
         if(!this.validateForm(formId, true))
-            return;
+            return false;
 
-        let profileChanged = this.settings.address != this.tempSettings.address;
+       
+        this.tempSettings.aliasChanged = this.settings.alias != this.tempSettings.alias;
+
         if(!this.tempSettings.password) this.tempSettings.password = "";
         if(!this.tempSettings.seed) this.tempSettings.seed = "";
         if(!this.tempSettings.alias) this.tempSettings.alias = "";
 
         this.settingsClient.buildKey(this.tempSettings);
-
+        let addressChanged = this.settings.address != this.tempSettings.address;
         this.settings = $.extend(this.settings, this.tempSettings);
 
         if (this.settings.rememberme)
@@ -271,7 +225,15 @@ class ExtensionpopupController {
         this.settingsProfile.title = this.settings.alias;
 
         this.profileRepository.setProfile(this.settingsProfile);
-        return false;
+
+        if(addressChanged) {
+            // Make sure to remove all trust data from profiles as it needs to reload
+            this.pageProfiles.forEach(item => item.resetValues());
+            this.profileListView.forEach(item => item.resetValues());
+            this.queryProfileListView(); // Reload the trust values
+        }
+
+        return true;
     }
 
     cancelClick(formId: string) : boolean {
@@ -303,16 +265,22 @@ class ExtensionpopupController {
 
 
     trustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
-        this.showKeywordForm(null, profileView, () => {
-            this.submitBinaryTrust(profileView, "true", 0);
+        this.showCommentForm(null, profileView, () => {
+            this.submitBinaryTrust(profileView, "true", 0).then(() => {
+                this.setInputForm(profileView);
+                this.$scope.$apply();
+            });
         });
 
         return false;
     };
 
     distrustClick($event: JQueryEventObject, profileView: ProfileModal): boolean {
-        this.showKeywordForm(null, profileView, () => {
-            this.submitBinaryTrust(profileView, "false", 0);
+        this.showCommentForm(null, profileView, () => {
+            this.submitBinaryTrust(profileView, "false", 0).then(() => {
+                this.setInputForm(profileView);
+                this.$scope.$apply();
+            });
         });
 
         return false;
@@ -323,10 +291,22 @@ class ExtensionpopupController {
         return false;
     }
     
-    queryProfiles(profiles: Array<IProfile>) : JQueryPromise<{queryResult: DtpGraphCoreModelQueryContext, trustResults: object}> {
+
+    queryProfiles(profileViews: Array<ProfileModal>) : Promise<boolean> {
         let scope = "url";
-        return this.dtpService.Query(profiles, scope).then(({response, body}) => {
-            return { queryResult: body, trustResults : this.trustStrategy.createTrustResults(body)};
+        let profiles = profileViews.filter(p=>!p.trustResult).map(p=>p.profile);
+
+        return this.dtpService.Query(profiles, scope).then((response,body:any) => {
+            if(body == null)
+                return false;
+
+            let trustResults = this.trustStrategy.createTrustResults(body) || {};
+            profileViews.forEach((pv) => {
+                 pv.queryResult = body;
+                 pv.trustResult = trustResults[pv.profile.id] || new BinaryTrustResult();
+                 pv.setup();
+            });
+            return true;
         }).fail((xhr, exception) => {
             this.showFatalError(AjaxErrorParser.formatErrorMessage(xhr, exception));
         });
@@ -369,14 +349,15 @@ class ExtensionpopupController {
 
 
     public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
-        let profile = this.sessionProfiles.filter(pv=>pv.profile.id === params.profileId).pop();
+        // Get the profile from the list of visible profiles
+        let profile = this.profileListView.filter(pv=>pv.profile.id === params.profileId).pop();
 
 
         let dialogData = {
             scope: "url",
             currentUserId: this.settings.address,
             subjectProfileId: params.profileId,
-            profiles: this.sessionProfiles.map(pv => pv.profile),
+            profiles: this.profileListView.map(pv => pv.profile),
             queryResult: profile.queryResult,
         } as IGraphData;
 
@@ -384,27 +365,12 @@ class ExtensionpopupController {
     }
 
     updateContentHandler(params, sender) : void {
-        // let pv = this.sessionProfiles.filter((p) =>  p.profile.userId == params.profileView.profile.userId).pop();
-        // if(pv) {
         let pv = new ProfileModal().setup(params.profileView);
-        //pv.setup(params.profileView);
         this.selectProfile(pv);
-        //}
     }
 
-    updateContentTabProfile(profileView: ProfileModal, callback?: (err: any, value: any) => void) : Promise<any>
-    {
-        let message = { 
-                action: "updateProfile",
-                data: profileView
-        };
-        return this.messageHandler.sendTab(this.contentTabId, "profileHandler", message, result => {
-            if(callback)
-                callback(null, result);
-        });     
-    }
-
-    getProfiles(tabId: any) : Promise<Array<ProfileModal>> {
+    
+    getPageProfiles(tabId: any) : Promise<Array<IProfile>> {
         let command = {
             handler: "profileHandler",
             action: "getProfiles"
@@ -422,19 +388,19 @@ class ExtensionpopupController {
         return false;
     }
     
-    showKeywordForm(eventObject: JQueryEventObject, pv: ProfileModal, callback?: any) : void {
+    showCommentForm(eventObject: JQueryEventObject, pv: ProfileModal, callback?: any) : void {
         pv.ratingStarsContainerVisible = false;
         pv.trustButtonContainerVisible = false;
-        pv.keywordContainerVisible = true;
-        pv.keywordSubmitCallback = callback;
-        this.initKeywordSelect(pv);
+        pv.commentContainerVisible = true;
+        pv.commentSubmitCallback = callback;
+        //this.initKeywordSelect(pv);
     }
 
 
     onRatingChange($event: JQueryEventObject, pv: ProfileModal) : void {
         this.tempProfileView = $.extend({}, pv);
         pv.ratingValue = (<any>$event).rating;
-        this.showKeywordForm($event, pv, () => {
+        this.showCommentForm($event, pv, () => {
             this.submitRatingTrust(pv, 0).then(() => {
                 this.setInputForm(pv);
                 this.$scope.$apply();
@@ -442,17 +408,16 @@ class ExtensionpopupController {
         });
     }
 
-    keywordSubmit($event: JQueryEventObject, pv: ProfileModal) : void {
-        pv.keywordValues = $("#keywordSelect"+pv.profile.id).select2('data');
+    commentSubmit($event: JQueryEventObject, pv: ProfileModal) : void {
 
-        if(pv.keywordSubmitCallback) {
-            pv.keywordSubmitCallback();
+        if(pv.commentSubmitCallback) {
+            pv.commentSubmitCallback();
         } else {
             this.setInputForm(pv);
         }
     }
 
-    keywordCancel($event: JQueryEventObject, pv: ProfileModal) : void {
+    commentCancel($event: JQueryEventObject, pv: ProfileModal) : void {
         $.extend(pv, this.tempProfileView);
         
         // Reset values first
@@ -461,14 +426,14 @@ class ExtensionpopupController {
     }
 
 
-    submitBinaryTrust (profileView: ProfileModal, value: string, expire: number): JQueryPromise<any> {
+    submitBinaryTrust (profileView: ProfileModal, value: string, expire: number): JQueryPromise<ProfileModal> {
         profileView.processing = true;
 
         let trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateBinaryClaim(profileView.profile, value, undefined, ExtensionpopupController.SCOPE, expire));
         this.subjectService.addAliasClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
 
         this.packageBuilder.SignPackage(trustPackage);
-        return this.dtpService.PostPackage(trustPackage).done((response)=> {
+        return this.dtpService.PostPackage(trustPackage).then((response)=> {
             console.log("Posting package is a "+response.status);
            
             profileView.queryResult = <QueryContext>{
@@ -481,16 +446,14 @@ class ExtensionpopupController {
             let results = this.trustStrategy.createTrustResults(profileView.queryResult);
             profileView.trustResult = results[profileView.profile.id];
             profileView.setup();
-            this.updateIcon(profileView.trustResult);
-            this.updateContentTabProfile(profileView);
             profileView.processing = false;
-            this.$scope.$apply();
+            return profileView;
         }).fail((xhr, exception) => { 
             this.showFatalError(exception);
         });
     }
 
-    submitRatingTrust (profileView: ProfileModal, expire: number): JQueryPromise<any> {
+    submitRatingTrust (profileView: ProfileModal, expire: number): JQueryPromise<ProfileModal> {
         profileView.processing = true;
         let trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateRatingClaim(profileView, ExtensionpopupController.SCOPE, expire));
         this.subjectService.addAliasClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
@@ -510,8 +473,6 @@ class ExtensionpopupController {
             let results = this.trustStrategy.createTrustResults(profileView.queryResult);
             profileView.trustResult = results[profileView.profile.id];
             profileView.setup();
-            //this.updateIcon(profileView.trustResult);
-            this.updateContentTabProfile(profileView);
             profileView.processing = false;
             return profileView;
         }).fail((xhr, exception) => { 
@@ -520,7 +481,7 @@ class ExtensionpopupController {
     }
 
     setInputForm(pv : ProfileModal) : void {
-        pv.keywordContainerVisible = false; // Default hide the keyword container
+        pv.commentContainerVisible = false; // Default hide the comment container
         pv.ratingStarsContainerVisible = false;
         pv.trustButtonContainerVisible = false;
         switch(pv.inputForm) {

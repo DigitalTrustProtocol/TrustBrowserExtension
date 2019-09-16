@@ -13,39 +13,39 @@ storageServer.ready().then(() => {
      settingsServer.init();
 });
 
-function updateIcon(val: number) : void {
-    let icon = "";
+// function updateIcon(val: number) : void {
+//     let icon = "";
 
-    if(val == 0)
-        icon = "";
+//     if(val == 0)
+//         icon = "";
 
-    if (val > 0)
-        icon = "trust";
+//     if (val > 0)
+//         icon = "trust";
     
-    if(val < 0) 
-        icon = "distrust";
+//     if(val < 0) 
+//         icon = "distrust";
 
-    chrome.browserAction.setIcon({
-        path : {
-          "16": `img/DTP${icon}16a.png`,
-          "24": `img/DTP${icon}24a.png`,
-          "32": `img/DTP${icon}32a.png`
-        }
-      });
-}
-
-
-chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
-    if(msg.handler ===  "extensionHandler")
-        if (msg.action === "updateIcon") {
-            updateIcon(msg.value);
-        }
-});
+//     chrome.browserAction.setIcon({
+//         path : {
+//           "16": `img/DTP${icon}16a.png`,
+//           "24": `img/DTP${icon}24a.png`,
+//           "32": `img/DTP${icon}32a.png`
+//         }
+//       });
+// }
 
 
-chrome.tabs.onActivated.addListener(function(activeInfo: chrome.tabs.TabActiveInfo) {
-    updateIcon(undefined);
-});
+// chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+//     if(msg.handler ===  "extensionHandler")
+//         if (msg.action === "updateIcon") {
+//             updateIcon(msg.value);
+//         }
+// });
+
+
+// chrome.tabs.onActivated.addListener(function(activeInfo: chrome.tabs.TabActiveInfo) {
+//     updateIcon(undefined);
+// });
 
 
 // https://stackoverflow.com/questions/10994324/chrome-extension-content-script-re-injection-after-upgrade-or-install/11598753#11598753
