@@ -43,7 +43,7 @@ class PackageBuilder {
         return this;
     }
 
-    CreateClaim (issuer: any, issuerType, subject, subjectType, type, scope, value: string, activate, expire, metadata? : string) : Claim {
+    CreateClaim (issuer: any, issuerType, subject, subjectType, type, scope, value: string, activate, expire, note? : string) : Claim {
         if(typeof scope != 'string')
             scope = JSON.stringify(scope);
 
@@ -66,7 +66,7 @@ class PackageBuilder {
             created: Math.round(Date.now()/1000.0),
             activate: (activate) ? activate: 0,
             expire: (expire) ? expire: 0,
-            metadata: metadata
+            note: note
         }
 
         if(subjectType) 
@@ -158,7 +158,7 @@ class PackageBuilder {
             addString(claim.value);
 
         addString(claim.scope);
-        addString(claim.metadata); // Metadata
+        addString(claim.note); 
         addInt32LE(claim.created);
         addInt32LE(claim.activate);
         addInt32LE(claim.expire);

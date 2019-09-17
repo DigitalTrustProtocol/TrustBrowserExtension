@@ -36,10 +36,10 @@ class SubjectService  {
                 PackageBuilder.THING,
                 PackageBuilder.RATING_TRUST_DTP1,
                 scope,
-                profileView.ratingValue.toString(), 
+                profileView.score.toString(), 
                 0,
                 expire,
-                profileView.metadata);
+                profileView.note);
 
             claim.subject.meta = <IProfile>{
                 data: profileView.profile.data,
@@ -51,7 +51,7 @@ class SubjectService  {
     }
 
 
-    CreateBinaryClaim (profile: IProfile, value: string, metadata: string, scope: string, expire: number) : ModelPackage {
+    CreateBinaryClaim (profile: IProfile, value: string, note: string, scope: string, expire: number) : ModelPackage {
         let claim: Claim = null;
         if(profile.id) {
             claim = this.packageBuilder.CreateClaim(
@@ -64,7 +64,7 @@ class SubjectService  {
             value, 
             0,
             expire,
-            metadata);
+            note);
         }
         return claim;
     }

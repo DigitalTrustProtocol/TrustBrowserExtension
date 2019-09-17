@@ -21,14 +21,14 @@ class TrustStrategy implements ITrustStrategy {
         this.profileRepository = profileRepository;
     }
 
-    public calculateBinaryTrustResult(trustResult: BinaryTrustResult) : void {
+    public calculateBinaryTrustResult(queryContext:DtpGraphCoreModelQueryContext, trustResult: BinaryTrustResult) : void {
         trustResult.direct = false;
         trustResult.trust = 0;
         trustResult.distrust = 0;
-        trustResult.state = 0;
+        trustResult.value = 0;
 
-        for(let key in trustResult.queryContext.results.claims) {
-            let claim = trustResult.queryContext.results.claims[key];
+        for(let key in queryContext.results.claims) {
+            let claim = queryContext.results.claims[key];
             if(claim.type != PackageBuilder.BINARY_TRUST_DTP1) 
                 continue; // Ignore all cliams that is not BINARY_TRUST_DTP1
 
@@ -77,8 +77,12 @@ class TrustStrategy implements ITrustStrategy {
                 trustResult = results[claim.subject.id] = new BinaryTrustResult();
             } 
             trustResult.claims.push(claim);
-            trustResult.processClaim(claim, this.settings.address);
         });
+
+        for(let key in results) {
+            let result = results[key];
+            result.processClaims(this.settings.address);
+        }
 
         return results;
     }
@@ -110,10 +114,7 @@ class TrustStrategy implements ITrustStrategy {
             return null;
 
         let result = new BinaryTrustResult();
-        result.queryContext = queryContext;
-
-
-        this.calculateBinaryTrustResult(result);
+        this.calculateBinaryTrustResult(queryContext, result);
         return result;
     }
 

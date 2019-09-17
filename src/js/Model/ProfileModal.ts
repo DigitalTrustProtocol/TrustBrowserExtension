@@ -5,11 +5,6 @@ import BinaryTrustResult = require("./BinaryTrustResult");
 import * as $ from 'jquery';
 
 
-class TrustGraphScoreModel {
-    public show: boolean = false;
-    public result: number = 0;
-}
-
 class TrustGraphStatusModel {
     public cssClass: string;
     public text: string;
@@ -33,7 +28,9 @@ class ProfileModal
     public trustResult?: BinaryTrustResult;
 
     public processing: boolean = false;
-    public score: TrustGraphScoreModel = new TrustGraphScoreModel();
+
+    public show_score: boolean = false;
+    public score: number = 0;
     public isCurrentUser: boolean = false;
     public status: TrustGraphStatusModel = new TrustGraphStatusModel();
     public visible: boolean = true;
@@ -42,12 +39,8 @@ class ProfileModal
     public trustButtonContainerVisible: boolean = false;
     public ratingStarsContainerVisible : boolean = false;
     public commentContainerVisible: boolean = false;
-    public comment: string;
     public commentSubmitCallback: any;
-
-    public ratingValue: number;
-    
-    public metadata: string = "";
+    public note: string = "";
 
     public button = {
         show: false,
@@ -62,7 +55,6 @@ class ProfileModal
         this.profile = selectedProfile;
         this.queryResult = queryResult;
         this.trustResult = trustResult;
-        this.ratingValue = 0;
 
         Object.defineProperty(this, 'commentSubmitCallback', { enumerable: false, writable: true, value: null }); // No serialize to json!
     }    
@@ -85,14 +77,15 @@ class ProfileModal
             return this;
         }
 
-        this.isSomeoneElse();
+        //this.isSomeoneElse();
         return this;
     }
 
     public resetValues() : void {
         this.queryResult = null;
         this.trustResult = null;
-        this.ratingValue = 0;
+        this.score = 0;
+        this.show_score = false;
     }
 
     public EnsureAvatarImage() : void {
@@ -133,34 +126,47 @@ class ProfileModal
 
     private setupStatus() : void {
         let trustGiven = false;
+        let postText = "";
+        if(this.trustResult) {
+            postText = this.trustResult.direct ? " directly" : " by the network";
+        }
+
+        if(this.trustResult.ratings > 0) {
+            this.score = this.trustResult.value;
+            this.status = { cssClass: "", text: "Rated" + postText, show: true, iconClass:""};
+            return;
+        }
+
         if(this.trustResult) {
 
             let postText = this.trustResult.direct ? " directly" : " by the network";
 
             trustGiven = this.trustResult.trust > 0 || this.trustResult.distrust > 0;
-            this.score.result = this.trustResult.trust - this.trustResult.distrust;
-            if(this.score.result < 0)
+            this.score = this.trustResult.trust - this.trustResult.distrust;
+            if(this.score < 0)
                 this.status = { cssClass: "distrusted", text: "Distrusted" + postText, show: true, iconClass:"fas fa-stop-circle trustIcon distrust"};
 
-            if(this.score.result > 0)
+            if(this.score > 0)
                 this.status = { cssClass: "trusted", text: "Trusted" + postText, show: true, iconClass:"fas fa-check-circle trustIcon trust"};
-
         }
 
-        if(this.score.result == 0 && trustGiven)
+        if(this.score == 0 && trustGiven)
             this.status = { cssClass: "", text: "Evenly trusted", show: true, iconClass:"fas fa-exclamation-circle trustIcon neutral"};
         else
-            if(this.score.result == 0 && !trustGiven)
+            if(this.score == 0 && !trustGiven)
             this.status = { cssClass: "", text: "Not trusted yet", show: true, iconClass:"fas fa-question-circle trustIcon none"};
 
     }
     
     private setupScore() : void {
-        this.score.show = (this.trustResult && this.trustResult.direct) ? false : true;
+        this.show_score = (this.trustResult && this.trustResult.direct) ? false : true;
         //    this.score.show = true; // Only show score if not trust directly.
     }
 
     private setupButtons() : void {
+        if(this.trustResult.ratings > 0)
+            return;
+
         this.button.show = true;
         if(this.trustResult && this.trustResult.direct) 
             this.directButtons();
@@ -169,13 +175,13 @@ class ProfileModal
     }
 
     private directButtons(): void {
-        let claimValue = this.trustResult.directValue;
+        let claimValue = this.trustResult.value;
         this.button.trust.disabled = false;
         this.button.distrust.disabled = false;
         this.button.untrust.disabled = false;
 
 
-        if(claimValue == "true" || claimValue == "1") {
+        if(claimValue > 0) {
             this.button.trust.title = `${this.profile.title} is trusted`;
             this.button.trust.disabled = true;
             this.button.trust.cssClass = "btn btn-success btn-sm active";
@@ -185,7 +191,7 @@ class ProfileModal
             this.button.trust.cssClass = "btn btn-outline-success btn-sm";
         }
         
-        if(claimValue == "false" || claimValue == "0") {
+        if(claimValue < 0) {
             this.button.distrust.title = `${this.profile.title} is distrusted`;
             this.button.distrust.disabled = true;
             this.button.distrust.cssClass = "btn btn-danger btn-sm active";
@@ -194,7 +200,7 @@ class ProfileModal
             this.button.distrust.cssClass = "btn btn-outline-danger btn-sm";
         }
 
-        if(!claimValue || claimValue == "") {
+        if(claimValue == 0) {
             this.button.untrust.title = `No trust given to ${this.profile.title}`;
             this.button.untrust.disabled = true;
             this.button.untrust.cssClass = "btn btn-secondary btn-sm active";

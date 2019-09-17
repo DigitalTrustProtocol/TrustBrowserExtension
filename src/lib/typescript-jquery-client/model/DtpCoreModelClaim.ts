@@ -31,7 +31,7 @@ export interface DtpCoreModelClaim {
 
     expire?: number;
 
-    metadata?: string;
+    note?: string;
 
     timestamps?: Array<models.DtpCoreModelTimestamp>;
 

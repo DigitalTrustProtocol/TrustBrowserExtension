@@ -3,6 +3,7 @@ import { PackageApi, QueryApi } from '../lib/typescript-jquery-client/api/api';
 import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
 import * as $ from 'jquery';
+import PackageBuilder = require('./PackageBuilder');
 
 
 class DTPService  {
@@ -43,13 +44,32 @@ class DTPService  {
     
             // Claim made about the subject. The format is specified by the version property in the header section.
             "types": [
-                "binarytrust"
+                PackageBuilder.BINARY_TRUST_DTP1,
+                PackageBuilder.RATING_TRUST_DTP1
               ],
             "level": 0, // Use default level search (0)
             //"flags": "LeafsOnly"
         };
 
         return obj;
+    }
+
+    async getIdentityMetadata(id: string) : Promise<any> {
+
+        let url = this.settings.infoserver+'/api/Identity/metadata/?id='+id;
+        
+        let result = null;
+        await $.ajax({
+            type: "GET",
+            url: url,
+            contentType: 'application/json; charset=utf-8',
+        }).then(function (msg, textStatus, jqXHR) {
+            result = msg;
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            // this.TrustServerErrorAlert(jqXHR, textStatus, errorThrown, this.settings.infoserver);
+            // deferred.fail(jqXHR);
+        });
+        return result;
     }
 
 

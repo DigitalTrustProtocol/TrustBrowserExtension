@@ -1,20 +1,18 @@
 import { QueryContext, Claim } from "../../lib/dtpapi/model/models";
 import IProfile from "../IProfile";
 import PackageBuilder = require("../PackageBuilder");
+import ProfileRepository = require("../ProfileRepository");
+
 
 class BinaryTrustResult {
     public direct : boolean = false;
     public directValue: any;
     public trust : number =  0;
     public distrust: number = 0;
-    public state: number = 0;
+    public ratings: number = 0;
+    public value: number = 0;
     public claims: Array<Claim> = [];
-    public time: number = 0;
-    public queryContext: QueryContext;
-    //public profiles: Array<IProfile> = []
-    public DTPid: string;
-
-
+    public profiles: Array<IProfile> = null;
 
     public Clean() {
         Object.defineProperty(this, 'claims', { enumerable: false, writable: true, value: null }); // No serialize to json!
@@ -24,35 +22,59 @@ class BinaryTrustResult {
         this.directValue = 0;
         this.trust = 0;
         this.distrust = 0;
-        this.state = 0;
+        this.value = 0;
         this.claims = [];
-        this.time = 0;
-        this.queryContext = null;
-        this.DTPid = "";
     }
 
     public calculateState() {
     }
 
-    public processClaim(claim: Claim, address: string) : void {
 
-        if(claim.type === PackageBuilder.BINARY_TRUST_DTP1) {
-            if(claim.value === "true" || claim.value === "1")
-                this.trust++;
-            
-            if(claim.value === "false" || claim.value === "0")
-                this.distrust++;
+    public processClaims(currentUserId: string) : void {
+        this.claims.forEach((claim) => {   
+            this.processClaim(claim, currentUserId);
+        });
 
-            // IssuerAddress is base64
-            if(claim.issuer.id == address)
-            {
-                this.direct = true;
-                this.directValue = claim.value;
-            }
-            this.state = this.trust - this.distrust;
+        if(this.ratings > 0) { // Recalculate the value based on number of ratings.
+            this.value = +((this.value / this.ratings).toFixed(1)); // 1 decimal and convert to number
         }
     }
 
+    public processClaim(claim: Claim, currentUserId: string) : void {
+
+        if(claim.type === PackageBuilder.BINARY_TRUST_DTP1) {
+            let val = (claim.value) ? claim.value.toLocaleLowerCase() : "";
+            if(val === "true" || val === "1")
+                this.trust++;
+            
+            if(val === "false" || val === "0")
+                this.distrust++;
+
+            this.value = this.trust - this.distrust;
+        }
+
+        if(claim.type === PackageBuilder.RATING_TRUST_DTP1) {
+            this.ratings++;
+            this.value += parseInt((claim.value) ? claim.value : "0");
+        }
+
+        if(claim.issuer.id == currentUserId)
+        {
+            this.direct = true;
+        }
+    }
+
+
+    public async loadProfiles(rep: ProfileRepository) : Promise<Array<IProfile>> {
+        if(this.profiles) 
+            return this.profiles;
+        
+        let ids = this.claims.map(p=>p.issuer.id);
+
+        this.profiles = await rep.getProfiles(ids);
+
+        return this.profiles;
+    } 
 
 
     public isEqual(source: BinaryTrustResult) : boolean {
@@ -65,8 +87,7 @@ class BinaryTrustResult {
         changed = this.directValue != source.directValue ? true : changed;
         changed = this.distrust != source.distrust ? true : changed;
         changed = this.trust != source.trust ? true : changed;
-        changed = this.state != source.state ? true : changed;
-        changed = this.DTPid != source.DTPid ? true : changed;
+        changed = this.value != source.value ? true : changed;
 
         return !changed;
     }

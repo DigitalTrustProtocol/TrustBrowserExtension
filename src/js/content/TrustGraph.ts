@@ -67,10 +67,10 @@ class TrustGraphController {
         this.settingsClient = new SettingsClient(this.messageHandler);
         this.settingsClient.loadSettings((settings) => {
             this.settings = settings;
-            this.profileRepository = new ProfileRepository(this.storageClient);
+            this.dtpService = new DTPService(settings);
+            this.profileRepository = new ProfileRepository(this.storageClient, this.dtpService);
             this.packageBuilder = new PackageBuilder(settings);
             this.subjectService = new SubjectService(settings, this.packageBuilder);
-            this.dtpService = new DTPService(settings);
             this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
 
             this.trustGraphPopupClient.showSubjectHandler = (params: any, sender: Runtime.MessageSender) => { 

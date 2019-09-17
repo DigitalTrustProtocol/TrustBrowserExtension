@@ -23,7 +23,8 @@ $(document).ready( () =>{
        
     const settingsClient = new SettingsClient(messageHandler);
     settingsClient.loadSettings( (settings: ISettings) => {
-        let profileRepository = new ProfileRepository(storageClient);
+        let dtpService = new DTPService(settings);
+        let profileRepository = new ProfileRepository(storageClient, dtpService);
         let packageBuilder = new PackageBuilder(settings);
 
         let config = <IConfig>{
@@ -31,7 +32,7 @@ $(document).ready( () =>{
             profileRepository : profileRepository,
             packageBuilder: packageBuilder,
             subjectService: new SubjectService(settings, packageBuilder),
-            dtpService: new DTPService(settings),
+            dtpService: dtpService,
             trustStrategy: new TrustStrategy(settings, profileRepository),
             trustGraphPopupClient: trustGraphPopupClient,
             messageHandler: messageHandler

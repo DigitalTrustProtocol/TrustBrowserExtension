@@ -33,7 +33,7 @@ export interface Claim {
 
     expire?: number;
 
-    metadata?: string;
+    note?: string;
 
     templateId?: number;
 

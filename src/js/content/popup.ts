@@ -67,7 +67,7 @@ class ExtensionpopupController {
     errorMessage: string;
     pageProfiles: Array<ProfileModal> = [];
     profileListView: Array<ProfileModal> = [];
-    tempProfileView: ProfileModal;
+    tempProfileView: object = {};
     settingsProfile : IProfile = null;
     selectedProfileView: ProfileModal = null;
 
@@ -77,7 +77,6 @@ class ExtensionpopupController {
     init() {
         this.messageHandler = new MessageHandler();
         this.storageClient = new StorageClient(this.messageHandler);
-        this.profileRepository = new ProfileRepository(this.storageClient);
 
         this.settingsClient = new SettingsClient(this.messageHandler);
         this.settingsClient.loadSettings().then((settings: ISettings) => {
@@ -86,9 +85,10 @@ class ExtensionpopupController {
 
             this.settingsProfile = <IProfile>{ id: this.settings.address, title: "You" };
 
+            this.dtpService = new DTPService(this.settings);
+            this.profileRepository = new ProfileRepository(this.storageClient, this.dtpService);
             this.packageBuilder = new PackageBuilder(this.settings);
             this.subjectService = new SubjectService(this.settings, this.packageBuilder);
-            this.dtpService = new DTPService(this.settings);
             this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
             this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true : false;
             this.trustGraphPopupClient = new TrustGraphPopupClient(this.messageHandler);
@@ -118,8 +118,6 @@ class ExtensionpopupController {
             }
         });
     }
-
-
 
     initSubjectSelect() : void {
         let self = this;
@@ -393,13 +391,13 @@ class ExtensionpopupController {
         pv.trustButtonContainerVisible = false;
         pv.commentContainerVisible = true;
         pv.commentSubmitCallback = callback;
-        //this.initKeywordSelect(pv);
     }
 
 
     onRatingChange($event: JQueryEventObject, pv: ProfileModal) : void {
-        this.tempProfileView = $.extend({}, pv);
-        pv.ratingValue = (<any>$event).rating;
+
+        this.tempProfileView[pv.profile.id] = $.extend({}, pv);
+        pv.score = +((<any>$event).rating); // Convert to number no matter what format
         this.showCommentForm($event, pv, () => {
             this.submitRatingTrust(pv, 0).then(() => {
                 this.setInputForm(pv);
@@ -407,6 +405,7 @@ class ExtensionpopupController {
             })
         });
     }
+
 
     commentSubmit($event: JQueryEventObject, pv: ProfileModal) : void {
 
@@ -418,13 +417,12 @@ class ExtensionpopupController {
     }
 
     commentCancel($event: JQueryEventObject, pv: ProfileModal) : void {
-        $.extend(pv, this.tempProfileView);
+        $.extend(pv, <ProfileModal>this.tempProfileView[pv.profile.id]);
         
         // Reset values first
         // Update profile view
         this.setInputForm(pv);
     }
-
 
     submitBinaryTrust (profileView: ProfileModal, value: string, expire: number): JQueryPromise<ProfileModal> {
         profileView.processing = true;

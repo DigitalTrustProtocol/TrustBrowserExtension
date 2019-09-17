@@ -4,4 +4,5 @@ export default interface IProfile {
     data?: any;
     title?: string;
     icon?: string;
+    href?: string;
 }

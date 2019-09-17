@@ -3,15 +3,36 @@ declare var DTP: any;
 import IProfile from './IProfile';
 import IStorage from './Interfaces/IStorage';
 import * as $ from 'jquery';
+import DTPService = require('./DTPService');
 class ProfileRepository {
     public profiles: Array<IProfile> = [];
     public index: Array<IProfile> = [];
     storage: IStorage;
+    dtpService: DTPService;
 
     public static scope : string = "DTP";
 
-    constructor(storage: IStorage) {
+    constructor(storage: IStorage, dtpService: DTPService) {
         this.storage = storage;
+        this.dtpService = dtpService;
+    }
+
+    async getProfiles(ids : Array<string>) : Promise<Array<IProfile>> {
+        if(!ids) 
+            return [];
+
+        let profiles = [];
+        for(let key in ids) {
+            let id = ids[key];
+
+            let p = await this.getProfile(id);
+            if(!p) 
+                p = <IProfile>await this.dtpService.getIdentityMetadata(id);
+
+            if(p)
+                profiles.push(p);
+        }
+        return profiles;
     }
 
     getCacheKey(id: string): string {
@@ -26,14 +47,20 @@ class ProfileRepository {
 
         this.storage.getItem(this.getCacheKey(id)).then(data => {
             if (!data) {
-                profile = defaultProfile;
-                this.setProfile(profile);
-            }
+                if(defaultProfile) {
+                    profile = defaultProfile;
+                    this.setProfile(profile);
+                    deferred.resolve(profile);
+                } else {
 
-            profile = (typeof data === "string") ? <IProfile>JSON.parse(data) : data as IProfile;
-            
-            this.profiles[id] = profile; // Save to quick cache
-            deferred.resolve(profile);
+                    deferred.resolve(null);
+                }
+            } else {
+                profile = (typeof data === "string") ? <IProfile>JSON.parse(data) : data as IProfile;
+                
+                this.profiles[id] = profile; // Save to quick cache
+                deferred.resolve(profile);
+            }
         });
 
         return deferred.promise();
