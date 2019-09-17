@@ -1,9 +1,9 @@
 import IProfile from "../IProfile";
 import { ProfileStateEnum } from "./ProfileStateEnum";
-import Crypto = require('../Crypto');
+import Crypto from "../Crypto";
 
 
-class DTPIdentity {
+export default class DTPIdentity {
     public ID: string;
     public Proof: string;
     public PlatformID: string;
@@ -121,5 +121,3 @@ class DTPIdentity {
 
 
 }
-
-export = DTPIdentity

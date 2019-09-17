@@ -1,18 +1,18 @@
-import SiteManager = require("../SiteManager");
-import PackageBuilder = require("../PackageBuilder");
-import SubjectService = require("../SubjectService");
-import ProfileRepository = require("../ProfileRepository");
+import PackageBuilder from "../PackageBuilder";
+import SubjectService from "../SubjectService";
+import ProfileRepository from "../ProfileRepository";
 import * as localforage from 'localforage';
 import { MessageHandler } from "../Shared/MessageHandler";
 import { StorageClient } from "../Shared/StorageClient";
 import { TrustGraphPopupClient } from "../Shared/TrustGraphPopupClient";
-import SettingsClient = require("../Shared/SettingsClient");
+import SettingsClient from "../Shared/SettingsClient";
 import ISettings from "../Interfaces/Settings.interface";
 import IConfig from "../Interfaces/IConfig";
-import DTPService = require("../DTPService");
-import * as $ from 'jquery';
-import TrustStrategy = require("../TrustStrategy");
-import UrlApp = require("./UrlApp");
+import DTPService from "../DTPService";
+import $ = require('jquery');
+import TrustStrategy from "../TrustStrategy";
+import UrlApp from "./UrlApp";
+
 
 $(document).ready( () =>{ 
     //Start application

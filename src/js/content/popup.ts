@@ -1,9 +1,9 @@
-import * as $ from 'jquery';
+import $ = require('jquery');
 import * as angular from 'angular';
 import 'select2';
 
-import * as tabs from 'ui-bootstrap4/src/tabs';
-import * as tooltip from 'ui-bootstrap4/src/tooltip';
+import tabs from 'ui-bootstrap4/src/tabs';
+import tooltip from 'ui-bootstrap4/src/tooltip';
 import 'bootstrap'
 import 'angular-inview'
 // import 'bootstrap/js/dist/button'
@@ -14,23 +14,22 @@ import '../common.js';
 import 'notifyjs-browser';
 import 'angular1-star-rating';
 
-import PackageBuilder = require('../PackageBuilder');
-import DTPService = require('../DTPService');
-import TrustStrategy = require('../TrustStrategy');
-import SubjectService = require('../SubjectService');
-import Crypto = require('../Crypto');
+import PackageBuilder from "../PackageBuilder";
+import DTPService from "../DTPService";
+import TrustStrategy from "../TrustStrategy";
+import SubjectService from "../SubjectService";
+import Crypto from "../Crypto";
 import IProfile from '../IProfile';
-import ProfileRepository = require('../ProfileRepository');
-import BinaryTrustResult = require('../Model/BinaryTrustResult');
-import vis2 = require('vis');
+import ProfileRepository from "../ProfileRepository";
+import BinaryTrustResult from "../Model/BinaryTrustResult";
+import * as vis2 from "vis";
 import { Buffer } from 'buffer';
 import ISiteInformation from '../Model/SiteInformation.interface';
-import SiteManager = require('../SiteManager');
 import ISettings from '../Interfaces/Settings.interface';
-import SettingsClient = require('../Shared/SettingsClient');
+import SettingsClient from "../Shared/SettingsClient";
 import { MessageHandler, Callback } from '../Shared/MessageHandler';
-import Settings = require('../Shared/Settings');
-import ProfileModal = require('../Model/ProfileModal');
+import Settings from "../Shared/Settings";
+import { ProfileModal } from "../Model/ProfileModal";
 import { browser, Windows, Runtime, Tabs } from "webextension-polyfill-ts";
 import { StorageClient } from "../Shared/StorageClient";
 import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
@@ -41,9 +40,9 @@ import { QueryContext, ModelPackage } from '../../lib/dtpapi/model/models.js';
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models.js';
 import { KeywordsProvider } from '../Shared/Keywords';
 import { Claim } from '../../lib/dtpapi/model/Claim';
-import AjaxErrorParser = require('../Shared/AjaxErrorParser');
-import Identicon = require('../Shared/Identicon');
-import copy = require('copy-to-clipboard');
+import AjaxErrorParser from "../Shared/AjaxErrorParser";
+import Identicon from "../Shared/Identicon";
+import copy from "copy-to-clipboard";
 
 
 class ExtensionpopupController {
@@ -512,7 +511,7 @@ class ExtensionpopupController {
 }
 
 
-const app = angular.module("myApp", ['angular-inview','star-rating', tabs, tooltip]);
+const app = angular.module("myApp", ['star-rating', tabs, tooltip]);
 //     .filter('to_html', ['$sce', function($sce){
 //     return function(text) {
 //         return $sce.trustAsHtml(text);
@@ -537,7 +536,4 @@ app.config( [
         $compileProvider.imgSrcSanitizationWhitelist(/^\s*(https?|local|data|chrome-extension):/);
     }
 ]);
-
-
-
 

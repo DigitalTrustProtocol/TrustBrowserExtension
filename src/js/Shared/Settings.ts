@@ -1,6 +1,6 @@
 import ISettings from "../Interfaces/Settings.interface";
 
-class Settings implements ISettings {
+export default class Settings implements ISettings {
     alias: string = "";
     aliasProof: string = "";
     aliasChanged: boolean = false;
@@ -36,5 +36,3 @@ class Settings implements ISettings {
         return target;
     }
 }
-
-export = Settings;

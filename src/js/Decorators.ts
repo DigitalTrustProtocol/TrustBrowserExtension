@@ -1,4 +1,4 @@
-class Decorators {
+export class Decorators {
     /**
      * @typeCheck decorator that sets a check on type in runtime.
      * @param typeName string.
@@ -45,5 +45,3 @@ class Decorators {
     }
 
 }
-
-export = Decorators

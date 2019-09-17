@@ -1,7 +1,7 @@
 import { browser } from "webextension-polyfill-ts";
 import * as $ from 'jquery';
 
-class SiteManager {
+export class SiteManager {
     static dtpUserContext: any;
 
     static GetUserContext(): JQueryPromise<any> {
@@ -40,5 +40,3 @@ class SiteManager {
         return deferred.promise();
     }
 }
-
-export = SiteManager

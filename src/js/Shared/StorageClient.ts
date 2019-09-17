@@ -25,7 +25,5 @@ export class StorageClient implements IStorage {
                 callback(null, result);
         });     
     }
-
-
 }
 

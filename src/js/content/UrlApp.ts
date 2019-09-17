@@ -1,17 +1,17 @@
 import { browser, Runtime, Bookmarks } from "webextension-polyfill-ts";
 import IConfig from "../Interfaces/IConfig";
-import BinaryTrustResult = require('../Model/BinaryTrustResult');
-import * as $ from 'jquery';
-import Crypto = require('../Crypto');
+import BinaryTrustResult from "../Model/BinaryTrustResult";
+import $ = require('jquery');
+import Crypto from "../Crypto";
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models';
 import IProfile from "../IProfile";
 import IGraphData from './IGraphData';
 import { MessageHandler } from '../Shared/MessageHandler';
-import ProfileModal = require("../Model/ProfileModal");
-import AjaxErrorParser = require("../Shared/AjaxErrorParser");
+import { ProfileModal } from "../Model/ProfileModal";
+import AjaxErrorParser from "../Shared/AjaxErrorParser";
 import { Buffer } from 'buffer';
 
-class UrlApp {
+export default class UrlApp {
 
     public config: IConfig = null;
     public profiles: Array<IProfile> = [];
@@ -183,5 +183,3 @@ class UrlApp {
         }).promise(null);
     }
 }
-
-export = UrlApp;

@@ -1,14 +1,15 @@
-import  PackageBuilder = require('./PackageBuilder');
-import { ModelPackage, Claim } from '../lib/dtpapi/model/models';
-import BinaryTrustResult = require('./Model/BinaryTrustResult');
-import ProfileRepository = require('./ProfileRepository');
+import PackageBuilder from "./PackageBuilder";
+import { Claim } from '../lib/dtpapi/model/models';
+import { ModelPackage } from '../lib/dtpapi/model/ModelPackage';
+import BinaryTrustResult from "./Model/BinaryTrustResult";
+import ProfileRepository from "./ProfileRepository";
 import IProfile from './IProfile';
 import ITrustStrategy from './Interfaces/ITrustStrategy';
 import ISettings from './Interfaces/Settings.interface';
 import { DtpGraphCoreModelQueryContext } from '../lib/typescript-jquery-client/model/models';
 
 
-class TrustStrategy implements ITrustStrategy {
+export default class TrustStrategy implements ITrustStrategy {
     settings: ISettings;
     subjects: any[];
     alias: any[];
@@ -213,4 +214,3 @@ class TrustStrategy implements ITrustStrategy {
     //     }
     // }
 }
-export = TrustStrategy

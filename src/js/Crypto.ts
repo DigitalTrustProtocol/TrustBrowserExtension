@@ -1,9 +1,9 @@
-import bitcoin = require('bitcoinjs-lib');
-import bitcoinMessage = require('bitcoinjs-message');
+import * as bitcoin from "bitcoinjs-lib";
+import * as bitcoinMessage from "bitcoinjs-message";
 import { Buffer } from 'buffer';
 
 
-class Crypto {
+export default class Crypto {
     static Sign(keyPair: any, message: any) : any
     {
         return bitcoinMessage.sign(message, keyPair.privateKey, keyPair.compressed);
@@ -43,5 +43,3 @@ class Crypto {
     } 
     
 }
-
-export = Crypto

@@ -1,14 +1,13 @@
-import ISubject from './Interfaces/SubjectInterface';
-import PackageBuilder = require('./PackageBuilder');
+import PackageBuilder from "./PackageBuilder";
 import { Claim } from '../lib/dtpapi/model/Claim';
-import Crypto = require("./Crypto");
-import { ModelPackage } from '../lib/dtpapi/model/models';
+import Crypto from "./Crypto";
+import { ModelPackage } from '../lib/dtpapi/model/ModelPackage';
 import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
-import ProfileModal = require('./Model/ProfileModal');
+import { ProfileModal } from "./Model/ProfileModal";
 import { Buffer } from 'buffer';
 
-class SubjectService  {
+export default class SubjectService  {
     settings: ISettings;
     packageBuilder: PackageBuilder;
 
@@ -109,6 +108,3 @@ class SubjectService  {
 
 
 }
-
-export = SubjectService
-

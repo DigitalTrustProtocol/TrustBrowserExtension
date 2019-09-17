@@ -3,7 +3,7 @@ import { TrustGraphPopupServer } from "../background/TrustGraphPopupServer";
 import { browser } from "webextension-polyfill-ts";
 import { PopupHandler } from "../background/PopupHandler";
 
-export class PopupClient {
+export default class PopupClient {
     public handlerName: string;
     private messageHandler: MessageHandler;
     

@@ -5,36 +5,10 @@ DTP.trace = function (message) {
     console.log(message);
 };
 
-// function GetTargetAddress(target) {
-//     var address = (target.id) ? GetAddress(target.id, target.sig, target.content) :
-//                 GetIDFromContent(target.content);
-//     return address;
-// }
-
-// function GetIDFromContent(content) {
-//     return tce.bitcoin.crypto.hash160(new tce.buffer.Buffer(content, 'UTF8'));
-// }
-
-
-// tce.buffer.Buffer.prototype.toJSON = function() {
-//     return this.toString('base64');
-// }
-
-
-
-// tce.buffer.Buffer.prototype.base64ToBuffer = function () {
-//     return this;
-// }
 
 String.prototype.base64ToBuffer = function() {
     return new tce.buffer.Buffer(this.toString(), 'base64');
 }
-
-
-// tce.buffer.Buffer.prototype.toAddress = function (prefix) {
-//     prefix = prefix || 0;
-//     return tce.bitcoin.address.toBase58Check(this, prefix);
-// }
 
 
 String.prototype.toAddress = function() {
@@ -44,10 +18,6 @@ String.prototype.toAddress = function() {
 String.prototype.toDTPAddress = function() {
     return this.base64ToBuffer().toDTPAddress();
 }
-
-// tce.buffer.Buffer.prototype.toBase64 = function () {
-//     return this.toString('base64');
-// }
 
 String.prototype.toBase64 = function() {
     return this;

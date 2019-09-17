@@ -1,11 +1,11 @@
 import { QueryContext, Claim } from "../../lib/dtpapi/model/models";
 import IProfile from '../IProfile';
-import { IdentityPopupClient } from '../Shared/IdentityPopupClient';
-import PackageBuilder = require("../PackageBuilder");
-import ProfileRepository = require("../ProfileRepository");
+import IdentityPopupClient from '../Shared/IdentityPopupClient';
+import PackageBuilder from "../PackageBuilder";
+import ProfileRepository from "../ProfileRepository";
 
 
-class BinaryTrustResult {
+export default class BinaryTrustResult {
     public direct : boolean = false;
     public directValue: any;
     public trust : number =  0;
@@ -92,7 +92,4 @@ class BinaryTrustResult {
 
         return !changed;
     }
-
 }
-
-export = BinaryTrustResult

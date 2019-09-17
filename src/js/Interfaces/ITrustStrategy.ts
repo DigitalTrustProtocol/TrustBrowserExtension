@@ -1,4 +1,4 @@
-import BinaryTrustResult = require("../Model/BinaryTrustResult");
+import BinaryTrustResult from "../Model/BinaryTrustResult";
 import { QueryContext, Claim } from "../../lib/dtpapi/model/models";
 import IProfile from "../IProfile";
 

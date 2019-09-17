@@ -1,17 +1,17 @@
-import vis2 = require('vis');
+import * as vis2 from "vis";
 import ITrustStrategy from "../Interfaces/ITrustStrategy";
 import { QueryContext, Claim } from '../../lib/dtpapi/model/models';
 import IProfile from '../IProfile';
-import Crypto = require('../Crypto');
-import Identicon = require('../Shared/Identicon');
-import ProfileRepository = require('../ProfileRepository');
-import BinaryTrustResult = require('../Model/BinaryTrustResult');
-import TrustStrategy = require('../TrustStrategy');
+import Crypto from "../Crypto";
+import Identicon from "../Shared/Identicon";
+import ProfileRepository from "../ProfileRepository";
+import BinaryTrustResult from "../Model/BinaryTrustResult";
+import TrustStrategy from "../TrustStrategy";
 import IGraphData from './IGraphData';
-import ProfileModal = require('../Model/ProfileModal');
+import { ProfileModal } from "../Model/ProfileModal";
 
 
-class TrustGraphDataAdapter {
+export default class TrustGraphDataAdapter {
 
     public graph: any = {     
         nodes: new vis2.DataSet(),
@@ -162,5 +162,3 @@ class TrustGraphDataAdapter {
     
 
 }
-
-export = TrustGraphDataAdapter

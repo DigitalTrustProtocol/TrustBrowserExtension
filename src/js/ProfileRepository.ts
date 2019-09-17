@@ -3,8 +3,9 @@ declare var DTP: any;
 import IProfile from './IProfile';
 import IStorage from './Interfaces/IStorage';
 import * as $ from 'jquery';
-import DTPService = require('./DTPService');
-class ProfileRepository {
+import DTPService from "./DTPService";
+
+export default class ProfileRepository {
     public profiles: Array<IProfile> = [];
     public index: Array<IProfile> = [];
     storage: IStorage;
@@ -82,4 +83,3 @@ class ProfileRepository {
         return this.profiles;
     }
 }
-export = ProfileRepository

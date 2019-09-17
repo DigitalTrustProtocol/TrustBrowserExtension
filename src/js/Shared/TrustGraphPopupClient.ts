@@ -3,7 +3,7 @@ import { TrustGraphPopupServer } from "../background/TrustGraphPopupServer";
 import { browser, Runtime } from "webextension-polyfill-ts";
 import IProfile from "../IProfile";
 import IGraphData from "../content/IGraphData";
-import ProfileModal = require("../Model/ProfileModal");
+import { ProfileModal } from "../Model/ProfileModal";
 
 export class TrustGraphPopupClient {
     private messageHandler: MessageHandler;
@@ -111,8 +111,5 @@ export class TrustGraphPopupClient {
 
         return this.messageHandler.send(TrustGraphPopupServer.handlerName, opt);
     }
-
-
-
-    
+   
 }

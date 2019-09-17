@@ -1,4 +1,4 @@
-class AjaxErrorParser {
+export default class AjaxErrorParser {
     public static formatErrorMessage(jqXHR : JQueryXHR, exception: string) : string {
         if (jqXHR.status === 0) {
             return ('Not connected.\nPlease verify your network connection or the server may be down.');
@@ -17,4 +17,3 @@ class AjaxErrorParser {
         }
     }
 }
-export = AjaxErrorParser;

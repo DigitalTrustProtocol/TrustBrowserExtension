@@ -1,12 +1,12 @@
 import { MessageHandler } from "./MessageHandler";
-import bitcoin = require('bitcoinjs-lib');
-import Crypto = require("../Crypto");
+import * as bitcoin from "bitcoinjs-lib";
+import Crypto from "../Crypto";
 import { SettingsServer } from "../background/SettingsServer";
 import ISettings from "../Interfaces/Settings.interface";
-import Settings = require("./Settings");
+import Settings from "./Settings";
 
 
-class SettingsClient {
+export default class SettingsClient {
     private settings: ISettings;
     private messageHandler: MessageHandler;
     
@@ -62,9 +62,5 @@ class SettingsClient {
             settings.aliasProof = buf.toString('base64');
         }
         return settings.keyPair;
-    }
-
-    
+    }   
 }
-
-export = SettingsClient

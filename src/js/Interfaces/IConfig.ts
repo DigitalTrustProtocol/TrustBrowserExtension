@@ -1,12 +1,12 @@
 import { MessageHandler } from "../Shared/MessageHandler";
 import { TrustGraphPopupClient } from "../Shared/TrustGraphPopupClient";
 
-import DTPService = require("../DTPService");
-import TrustStrategy = require("../TrustStrategy");
-import PackageBuilder = require("../PackageBuilder");
-import SubjectService = require("../SubjectService");
+import DTPService from "../DTPService";
+import TrustStrategy from "../TrustStrategy";
+import PackageBuilder from "../PackageBuilder";
+import SubjectService from "../SubjectService";
 import ISettings from "./Settings.interface";
-import ProfileRepository = require("../ProfileRepository");
+import ProfileRepository from "../ProfileRepository";
 
 
 export default interface IConfig {

@@ -3,10 +3,10 @@ import { PackageApi, QueryApi } from '../lib/typescript-jquery-client/api/api';
 import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
 import * as $ from 'jquery';
-import PackageBuilder = require('./PackageBuilder');
+import PackageBuilder from "./PackageBuilder";
 
 
-class DTPService  {
+export default class DTPService  {
     settings: ISettings;
 
     packageApi : PackageApi;
@@ -196,4 +196,3 @@ class DTPService  {
     // }
 
 }
-export = DTPService;

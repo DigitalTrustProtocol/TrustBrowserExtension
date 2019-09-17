@@ -1,7 +1,7 @@
-import { PopupClient } from "./PopupClient";
+import PopupClient from "./PopupClient";
 import { MessageHandler } from "./MessageHandler";
 
-export class IdentityPopupClient {
+export default class IdentityPopupClient {
 
     private popupClient: PopupClient;
 

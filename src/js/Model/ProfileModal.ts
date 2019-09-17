@@ -1,24 +1,24 @@
 import IProfile from "../IProfile";
-import Identicon = require('../Shared/Identicon');
+import Identicon from "../Shared/Identicon";
 import { DtpGraphCoreModelQueryContext } from "../../lib/typescript-jquery-client/model/models";
-import BinaryTrustResult = require("./BinaryTrustResult");
+import BinaryTrustResult from "./BinaryTrustResult";
 import * as $ from 'jquery';
 
 
-class TrustGraphStatusModel {
+export class TrustGraphStatusModel {
     public cssClass: string;
     public text: string;
     public show: boolean;
     public iconClass: string;
 }
 
-class TrustGraphButtonModel {
+export class TrustGraphButtonModel {
     public disabled: boolean = false;
     public title: string;
     public cssClass: string;
 }
 
-class ProfileModal
+export class ProfileModal
 {
     public profile: IProfile;
     public subjectProfile: IProfile;
@@ -225,4 +225,3 @@ class ProfileModal
         this.button.untrust.cssClass = "btn btn-outline-secondary btn-sm";
     }
 }
-export = ProfileModal

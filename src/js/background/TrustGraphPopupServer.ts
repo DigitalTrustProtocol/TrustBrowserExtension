@@ -1,4 +1,4 @@
-import { browser, Windows, Runtime, Tabs } from "webextension-polyfill-ts";
+import { browser, Windows, Runtime } from "webextension-polyfill-ts";
 import { MessageHandler } from "../Shared/MessageHandler";
 import * as $ from 'jquery';
 import IOpenDialogResult from "../Model/OpenDialogResult.interface";
