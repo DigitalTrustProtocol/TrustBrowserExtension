@@ -1,5 +1,6 @@
 import { QueryContext, Claim } from "../../lib/dtpapi/model/models";
-import IProfile from "../IProfile";
+import IProfile from '../IProfile';
+import { IdentityPopupClient } from '../Shared/IdentityPopupClient';
 import PackageBuilder = require("../PackageBuilder");
 import ProfileRepository = require("../ProfileRepository");
 
@@ -65,17 +66,17 @@ class BinaryTrustResult {
     }
 
 
-    public async loadProfiles(rep: ProfileRepository) : Promise<Array<IProfile>> {
-        if(this.profiles) 
-            return this.profiles;
-        
-        let ids = this.claims.map(p=>p.issuer.id);
+    public async ensureProfileMeta(rep: ProfileRepository) : Promise<void> {
+        let ids = this.claims.filter(p=>!p.issuer.meta).map(p=>p.issuer.id);
+        if(ids.length == 0)
+            return;
 
-        this.profiles = await rep.getProfiles(ids);
+        let profiles = await rep.getProfiles(ids);
 
-        return this.profiles;
-    } 
-
+        let profileIndex = {};
+        profiles.forEach((profile: IProfile) => profileIndex[profile.id] = profile);
+        this.claims.forEach(claim => claim.issuer.meta = profileIndex[claim.issuer.id] );
+    }
 
     public isEqual(source: BinaryTrustResult) : boolean {
         if(!source)

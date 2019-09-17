@@ -518,7 +518,7 @@
 
     <!-- Comments Modal =============================================================================== -->
     <div class="modal fade" id="profileCommentsModal" tabindex="-1" role="dialog" aria-labelledby="profileCommentsModalLabel"
-        aria-hidden="true">
+        aria-hidden="true" >
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -540,7 +540,7 @@
                         <div class="table-responsive">
                             <table class="table table-striped table-sm">
                                 <tbody>
-                                    <tr ng-repeat="(key, claim) in ct.selectedProfileView.trustResult.profiles">
+                                    <tr ng-repeat="(key, claim) in ct.loadCommentsClaims()">
                                         <td>
                                             <p>Name of the issuer</p>
                                             <p>Issuer:<i class="fas fa-id-badge pr-1"></i> {{ claim.issuer.id }}</p>

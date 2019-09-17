@@ -5,6 +5,7 @@ import 'select2';
 import * as tabs from 'ui-bootstrap4/src/tabs';
 import * as tooltip from 'ui-bootstrap4/src/tooltip';
 import 'bootstrap'
+import 'angular-inview'
 // import 'bootstrap/js/dist/button'
 // import 'bootstrap/js/dist/modal'
 
@@ -39,6 +40,7 @@ import { TrustGraphPopupServer } from '../background/TrustGraphPopupServer';
 import { QueryContext, ModelPackage } from '../../lib/dtpapi/model/models.js';
 import { DtpGraphCoreModelQueryContext } from '../../lib/typescript-jquery-client/model/models.js';
 import { KeywordsProvider } from '../Shared/Keywords';
+import { Claim } from '../../lib/dtpapi/model/Claim';
 import AjaxErrorParser = require('../Shared/AjaxErrorParser');
 import Identicon = require('../Shared/Identicon');
 import copy = require('copy-to-clipboard');
@@ -171,12 +173,7 @@ class ExtensionpopupController {
         return item.alias || item.text;
     }
 
-    queryProfileListView(pv : Array<ProfileModal> = null) : void {
-        if(pv) 
-            this.profileListView = pv;
-        
-        this.queryProfiles(this.profileListView).then((success)=> { if(success) this.$scope.$apply() });
-    }
+
 
     selectProfileID(id: string) : void {
         if(id === "-1") {
@@ -198,7 +195,24 @@ class ExtensionpopupController {
     }
 
     selectProfile(profileView: ProfileModal) : void {
-        this.queryProfileListView([profileView]);
+        if(profileView) 
+            this.profileListView = [profileView];
+
+        this.queryProfileListView();
+    }
+
+    queryProfileListView() : void {
+        this.queryProfiles(this.profileListView).then((success)=> { if(success) this.$scope.$apply() });
+    }
+
+
+    async loadCommentsClaims(): Promise<Array<Claim>> {
+        if(!$('#profileCommentsModal').hasClass('show'))
+            return null;
+
+        await this.selectedProfileView.trustResult.ensureProfileMeta(this.profileRepository);
+        
+        return this.selectedProfileView.trustResult.claims;
     }
 
     saveClick(formId: string) : boolean {
@@ -498,12 +512,19 @@ class ExtensionpopupController {
 }
 
 
-const app = angular.module("myApp", ['star-rating', tabs, tooltip]);
+const app = angular.module("myApp", ['angular-inview','star-rating', tabs, tooltip]);
 //     .filter('to_html', ['$sce', function($sce){
 //     return function(text) {
 //         return $sce.trustAsHtml(text);
 //     };
 // }]);
+//app.run($q => { window.Promise = $q; });
+// app.run(["$q",
+//     function ($q: ng.IQService) {
+//         // Use Angular's Q object as Promise. This is needed to make async/await work properly with the UI.
+//         // See http://stackoverflow.com/a/41825004/536
+//         window["Promise"] = $q;
+//     }]);
 
 app.controller('ExtensionpopupController', ["$scope", "$window", ExtensionpopupController]);
 

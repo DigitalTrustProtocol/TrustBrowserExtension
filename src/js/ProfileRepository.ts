@@ -21,17 +21,15 @@ class ProfileRepository {
         if(!ids) 
             return [];
 
-        let profiles = [];
-        for(let key in ids) {
-            let id = ids[key];
+        // let profiles = [];
+        // for(let key in ids) {
+        //     let id = ids[key];
 
-            let p = await this.getProfile(id);
-            if(!p) 
-                p = <IProfile>await this.dtpService.getIdentityMetadata(id);
-
-            if(p)
-                profiles.push(p);
-        }
+        //     let p = await this.getProfile(id);
+        //     if(p)
+        //         profiles.push(p);
+        // }
+        let profiles = await Promise.all(ids.map(async id=>await this.getProfile(id)));
         return profiles;
     }
 
@@ -39,31 +37,25 @@ class ProfileRepository {
         return ProfileRepository.scope + id;
     }
 
-    getProfile(id: string, defaultProfile?: IProfile): JQueryPromise<IProfile> {
-        let deferred = $.Deferred<IProfile>();
+    async getProfile(id: string, defaultProfile?: IProfile): Promise<IProfile> {
         let profile: IProfile = this.profiles[id]; // Quick cache
         if (profile) 
-            return deferred.resolve(profile).promise();
+            return profile;
 
-        this.storage.getItem(this.getCacheKey(id)).then(data => {
-            if (!data) {
-                if(defaultProfile) {
+        let data = await this.storage.getItem(this.getCacheKey(id));
+        if (data) { // Data is null or undefined
+            profile = (typeof data === "string") ? <IProfile>JSON.parse(data) : data as IProfile;
+            this.profiles[id] = profile; // Save to quick cache
+        } else {
+            profile = <IProfile>await this.dtpService.getIdentityMetadata(id);
+            if(profile) 
+                this.setProfile(profile);
+            else 
+                if(defaultProfile)
                     profile = defaultProfile;
-                    this.setProfile(profile);
-                    deferred.resolve(profile);
-                } else {
+        }
 
-                    deferred.resolve(null);
-                }
-            } else {
-                profile = (typeof data === "string") ? <IProfile>JSON.parse(data) : data as IProfile;
-                
-                this.profiles[id] = profile; // Save to quick cache
-                deferred.resolve(profile);
-            }
-        });
-
-        return deferred.promise();
+        return profile;
     }
 
 

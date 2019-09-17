@@ -15,6 +15,7 @@
         "@types/select2": "^4.0.48",
         "@types/url-parse": "^1.4.3",
         "angular": "^1.7.4",
+        "angular-inview": "^3.1.0",
         "angular1-star-rating": "^1.2.11",
         "bitcoinjs-lib": "^4.0.3",
         "bitcoinjs-message": "^2.0.0",
