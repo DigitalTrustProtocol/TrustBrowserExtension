@@ -1,4 +1,4 @@
-import * as localforage from 'localforage';
+import localforage from 'localforage';
 import { MessageHandler, Callback } from '../Shared/MessageHandler';
 import { Runtime } from 'webextension-polyfill-ts';
 

@@ -65,7 +65,6 @@ export default class BinaryTrustResult {
         }
     }
 
-
     public async ensureProfileMeta(rep: ProfileRepository) : Promise<void> {
         let ids = this.claims.filter(p=>!p.issuer.meta).map(p=>p.issuer.id);
         if(ids.length == 0)

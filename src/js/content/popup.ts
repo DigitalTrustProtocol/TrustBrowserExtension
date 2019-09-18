@@ -67,15 +67,17 @@ class ExtensionpopupController {
     showError: boolean;
     errorMessage: string;
     pageProfiles: Array<ProfileModal> = [];
-    profileListView: Array<ProfileModal> = [];
+    pageProfilesView: Array<ProfileModal> = [];
     tempProfileView: object = {};
     settingsProfile : IProfile = null;
     selectedProfileView: ProfileModal = null;
+    commentClaims: Array<Claim> = [];
 
-    constructor(private $scope: ng.IScope, private $window: ng.IWindowService) {
+    constructor(private $scope: ng.IScope, private $window: ng.IWindowService, private $document: ng.IDocumentService) {
+        $document.ready(() => angular.bind(this, this.init)());
     }
 
-    init() {
+    init(jqueryAlias: any) : void {
         this.messageHandler = new MessageHandler();
         this.storageClient = new StorageClient(this.messageHandler);
 
@@ -99,24 +101,26 @@ class ExtensionpopupController {
 
             this.initSubjectSelect();
 
-            chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-                this.contentTabId = tabs[0].id;
-                this.getPageProfiles(this.contentTabId).then((data: any) => {
-                    if(!data || data.length == 0 || !data.profiles)
-                        return;
-
-                    data.profiles.forEach(item=> this.pageProfiles.push(new ProfileModal(item))); // Recreate the ProfileView object!
-                    this.profileListView = this.pageProfiles;
-
-                    this.queryProfileListView();
-                })
-            });
-
             let key = this.settings.password + this.settings.seed;
 
             if(!key || key == "" || key.length == 0) {
                 $('#userModal').modal('show');
+            } else {
+                this.loadProfilesFromContentPage();
             }
+        });
+    }
+
+    loadProfilesFromContentPage() : void {
+        chrome.tabs.query({active: true, currentWindow: true}, tabs => {
+            this.contentTabId = tabs[0].id;
+            this.getPageProfiles(this.contentTabId).then(async (data: any) => {
+                if(!data || data.length == 0 || !data.profiles)
+                    return;
+
+                data.profiles.forEach(item=> this.pageProfiles.push(new ProfileModal(item))); // Recreate the ProfileView object!
+                this.pageProfilesView = await this.queryProfiles(this.pageProfiles);
+            })
         });
     }
 
@@ -176,8 +180,7 @@ class ExtensionpopupController {
 
     selectProfileID(id: string) : void {
         if(id === "-1") {
-            this.profileListView = this.pageProfiles;
-            this.$scope.$apply();
+            this.pageProfilesView = this.pageProfiles;
             return;
         }
 
@@ -193,28 +196,14 @@ class ExtensionpopupController {
             });
     }
 
-    selectProfile(profileView: ProfileModal) : void {
-        if(profileView) 
-            this.profileListView = [profileView];
-
-        this.queryProfileListView();
-    }
-
-    queryProfileListView() : void {
-        this.queryProfiles(this.profileListView).then((success)=> { if(success) this.$scope.$apply() });
-    }
-
-
-    async loadCommentsClaims(): Promise<Array<Claim>> {
-        if(!$('#profileCommentsModal').hasClass('show'))
-            return null;
-
-        await this.selectedProfileView.trustResult.ensureProfileMeta(this.profileRepository);
+    async selectProfile(profileView: ProfileModal) : Promise<void> {
+        if(!profileView) 
+            return;
         
-        return this.selectedProfileView.trustResult.claims;
+        this.pageProfilesView = await this.queryProfiles([profileView]);
     }
 
-    saveClick(formId: string) : boolean {
+    async saveClick(formId: string) : Promise<boolean> {
         if(!this.validateForm(formId, true))
             return false;
 
@@ -237,12 +226,17 @@ class ExtensionpopupController {
 
         this.profileRepository.setProfile(this.settingsProfile);
 
-        if(addressChanged) {
-            // Make sure to remove all trust data from profiles as it needs to reload
-            this.pageProfiles.forEach(item => item.resetValues());
-            this.profileListView.forEach(item => item.resetValues());
-            this.queryProfileListView(); // Reload the trust values
+        if(this.pageProfiles.length == 0) {
+            await this.loadProfilesFromContentPage();
+        } else {
+            if(addressChanged) {
+                // Make sure to remove all trust data from profiles as it needs to reload
+                this.pageProfiles.forEach(item => item.resetValues());
+                this.pageProfilesView.forEach(item => item.resetValues());
+                await this.queryProfiles(this.pageProfilesView);
+            }
         }
+
 
         return true;
     }
@@ -279,7 +273,6 @@ class ExtensionpopupController {
         this.showCommentForm(null, profileView, () => {
             this.submitBinaryTrust(profileView, "true", 0).then(() => {
                 this.setInputForm(profileView);
-                this.$scope.$apply();
             });
         });
 
@@ -290,7 +283,6 @@ class ExtensionpopupController {
         this.showCommentForm(null, profileView, () => {
             this.submitBinaryTrust(profileView, "false", 0).then(() => {
                 this.setInputForm(profileView);
-                this.$scope.$apply();
             });
         });
 
@@ -303,13 +295,15 @@ class ExtensionpopupController {
     }
     
 
-    queryProfiles(profileViews: Array<ProfileModal>) : Promise<boolean> {
+    async queryProfiles(profileViews: Array<ProfileModal>) : Promise<Array<ProfileModal>> {
         let scope = "url";
         let profiles = profileViews.filter(p=>!p.trustResult).map(p=>p.profile);
 
-        return this.dtpService.Query(profiles, scope).then((response,body:any) => {
+        try {
+            let body = <any>await this.dtpService.Query(profiles, scope);
+
             if(body == null)
-                return false;
+                return profileViews;
 
             let trustResults = this.trustStrategy.createTrustResults(body) || {};
             profileViews.forEach((pv) => {
@@ -317,10 +311,12 @@ class ExtensionpopupController {
                  pv.trustResult = trustResults[pv.profile.id] || new BinaryTrustResult();
                  pv.setup();
             });
-            return true;
-        }).fail((xhr, exception) => {
-            this.showFatalError(AjaxErrorParser.formatErrorMessage(xhr, exception));
-        });
+
+        } catch(xhr) {
+            this.showFatalError(AjaxErrorParser.formatErrorMessage(xhr, ""));
+        }
+
+        return profileViews;
     }
 
     showFatalError(msg : any ): void {
@@ -329,12 +325,7 @@ class ExtensionpopupController {
             this.errorMessage = msg;
         else
             this.errorMessage = msg.message;
-
-        this.$scope.$apply();
     }
-
-
-
    
     modelChange(state?: string) {
         if (state === 'identicon') {
@@ -355,20 +346,16 @@ class ExtensionpopupController {
         });
     }
 
-
-
-
-
     public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
         // Get the profile from the list of visible profiles
-        let profile = this.profileListView.filter(pv=>pv.profile.id === params.profileId).pop();
+        let profile = this.pageProfilesView.filter(pv=>pv.profile.id === params.profileId).pop();
 
 
         let dialogData = {
             scope: "url",
             currentUserId: this.settings.address,
             subjectProfileId: params.profileId,
-            profiles: this.profileListView.map(pv => pv.profile),
+            profiles: this.pageProfilesView.map(pv => pv.profile),
             queryResult: profile.queryResult,
         } as IGraphData;
 
@@ -413,8 +400,8 @@ class ExtensionpopupController {
         pv.score = +((<any>$event).rating); // Convert to number no matter what format
         this.showCommentForm($event, pv, () => {
             this.submitRatingTrust(pv, 0).then(() => {
-                this.setInputForm(pv);
-                this.$scope.$apply();
+                
+                this.$scope.$apply(() => this.setInputForm(pv));
             })
         });
     }
@@ -423,7 +410,7 @@ class ExtensionpopupController {
     commentSubmit($event: JQueryEventObject, pv: ProfileModal) : void {
 
         if(pv.commentSubmitCallback) {
-            pv.commentSubmitCallback();
+            angular.bind(this, pv.commentSubmitCallback)();
         } else {
             this.setInputForm(pv);
         }
@@ -440,7 +427,7 @@ class ExtensionpopupController {
     submitBinaryTrust (profileView: ProfileModal, value: string, expire: number): JQueryPromise<ProfileModal> {
         profileView.processing = true;
 
-        let trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateBinaryClaim(profileView.profile, value, undefined, ExtensionpopupController.SCOPE, expire));
+        let trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateBinaryClaim(profileView, value, undefined, ExtensionpopupController.SCOPE, expire));
         this.subjectService.addAliasClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
 
         this.packageBuilder.SignPackage(trustPackage);
@@ -502,11 +489,48 @@ class ExtensionpopupController {
     }
 
     getStringFromBuffer(data: any) : string {
-        if(typeof data === 'string')
-            return Buffer.from(data, 'base64').toString("utf-8");
+        if(!data)
+            return "";
+            
+        let source = (data.data) ? data.data : data;
 
-        return typeof data;
+        if(typeof source === 'string')
+            return Buffer.from(data, 'base64').toString("utf-8");
+        else
+            return Buffer.from(data).toString("utf-8");
+
+        //return typeof data;
     }
+
+    async commentsModalOpen(pv : ProfileModal) : Promise<void> {
+        this.selectedProfileView = pv;
+        this.commentClaims = await this.loadCommentsClaims(pv);
+    }
+    
+    async loadCommentsClaims(pv : ProfileModal): Promise<Array<Claim>> {
+        let claims = await Promise.all(pv.trustResult.claims.map(async claim=> {
+            if(claim.issuer.meta)
+                return claim;
+            
+            let r = <Claim>await this.dtpService.getClaimInline(claim);
+            if(!r)
+                r = claim;
+            if(!r.issuer.meta)
+                r.issuer.meta = <IProfile>{};
+            
+            if(!r.issuer.meta.title)
+                r.issuer.meta.title = "(No Title)";
+
+            return r;
+        }));
+        pv.trustResult.claims = claims;
+        return claims;
+    }
+
+    toDate(unixDate: number): string {
+        return (new Date(unixDate*1000)).toLocaleDateString();
+    }
+
 
 }
 
@@ -518,14 +542,14 @@ const app = angular.module("myApp", ['star-rating', tabs, tooltip]);
 //     };
 // }]);
 //app.run($q => { window.Promise = $q; });
-// app.run(["$q",
-//     function ($q: ng.IQService) {
-//         // Use Angular's Q object as Promise. This is needed to make async/await work properly with the UI.
-//         // See http://stackoverflow.com/a/41825004/536
-//         window["Promise"] = $q;
-//     }]);
+app.run(["$q",
+    function ($q: ng.IQService) {
+        // Use Angular's Q object as Promise. This is needed to make async/await work properly with the UI.
+        // See http://stackoverflow.com/a/41825004/536
+        window["Promise"] = $q;
+    }]);
 
-app.controller('ExtensionpopupController', ["$scope", "$window", ExtensionpopupController]);
+app.controller('ExtensionpopupController', ["$scope", "$window", "$document", ExtensionpopupController]);
 
 
 app.config( [

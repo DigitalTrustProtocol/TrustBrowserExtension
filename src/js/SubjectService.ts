@@ -41,8 +41,8 @@ export default class SubjectService  {
                 profileView.note);
 
             claim.subject.meta = <IProfile>{
-                data: profileView.profile.data,
-                title: profileView.profile.title
+                data: (profile.data.data) ? profile.data.data : profile.data,
+                title: profile.title
             };
         }
 
@@ -50,8 +50,9 @@ export default class SubjectService  {
     }
 
 
-    CreateBinaryClaim (profile: IProfile, value: string, note: string, scope: string, expire: number) : ModelPackage {
+    CreateBinaryClaim (profileView: ProfileModal, value: string, note: string, scope: string, expire: number) : ModelPackage {
         let claim: Claim = null;
+        let profile = profileView.profile;
         if(profile.id) {
             claim = this.packageBuilder.CreateClaim(
             this.settings.address,
@@ -64,6 +65,15 @@ export default class SubjectService  {
             0,
             expire,
             note);
+
+
+            // For now a Binary Claim can only be a entity, the Title of an entity is expressed in a Alias claim
+            
+            // claim.subject.meta = <IProfile>{
+            //     data: (profile.data.data) ? profile.data.data : profile.data,
+            //     title: profile.title
+            // };
+
         }
         return claim;
     }

@@ -4,6 +4,7 @@ import IProfile from './IProfile';
 import ISettings from './Interfaces/Settings.interface';
 import * as $ from 'jquery';
 import PackageBuilder from "./PackageBuilder";
+import { Claim } from '../../dist/lib/dtpapi/model/Claim';
 
 
 export default class DTPService  {
@@ -72,6 +73,24 @@ export default class DTPService  {
         return result;
     }
 
+    async getClaimInline(claim: Claim) : Promise<any> {
+
+        //curl -X GET "https://trust.dance/api/Claim?issuerId=1QEw3JUFNzKEW1N4MnsBzS1PHuaMksW7MX&subjectId=DLNPqTz41x1EYUfFyPwNKEiD11H8g5x1QQ&scope=url&type=rating" -H "accept: application/json"
+        let url = this.settings.infoserver+`/api/Claim/inline?issuerId=${claim.issuer.id}&subjectId=${claim.subject.id}&scope=${claim.scope}&type=${claim.type}`;
+        
+        let result = await $.ajax({
+            type: "GET",
+            url: url,
+            contentType: 'application/json; charset=utf-8',
+        });
+        // .then(function (msg, textStatus, jqXHR) {
+        //     result = msg;
+        // }).fail(function (jqXHR, textStatus, errorThrown) {
+        //     // this.TrustServerErrorAlert(jqXHR, textStatus, errorThrown, this.settings.infoserver);
+        //     deferred.fail(jqXHR);
+        // });
+        return result;
+    }
 
     // QuerySingle (target: string, scope: any) : JQueryPromise<any> {
     //     let query = this.BuildQuerySingle(target, scope);
