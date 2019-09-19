@@ -43,6 +43,7 @@ import { Claim } from '../../lib/dtpapi/model/Claim';
 import AjaxErrorParser from "../Shared/AjaxErrorParser";
 import Identicon from "../Shared/Identicon";
 import copy from "copy-to-clipboard";
+import { LatestClaims } from './components/latest';
 
 
 class ExtensionpopupController {
@@ -72,6 +73,10 @@ class ExtensionpopupController {
     settingsProfile : IProfile = null;
     selectedProfileView: ProfileModal = null;
     commentClaims: Array<Claim> = [];
+    latestClaims: Array<Claim> = [];
+    historyClaims: Array<Claim> = [];
+    selectedProfile: IProfile;
+    tabIndex: number = 0;
 
     constructor(private $scope: ng.IScope, private $window: ng.IWindowService, private $document: ng.IDocumentService) {
         $document.ready(() => angular.bind(this, this.init)());
@@ -118,7 +123,11 @@ class ExtensionpopupController {
                 if(!data || data.length == 0 || !data.profiles)
                     return;
 
-                data.profiles.forEach(item=> this.pageProfiles.push(new ProfileModal(item))); // Recreate the ProfileView object!
+                data.profiles.forEach((item:IProfile) => {
+                     if(item.data && item.data.data)
+                        item.data = item.data.data;
+                     this.pageProfiles.push(new ProfileModal(item));
+                    }); // Recreate the ProfileView object!
                 this.pageProfilesView = await this.queryProfiles(this.pageProfiles);
             })
         });
@@ -387,8 +396,7 @@ class ExtensionpopupController {
     }
     
     showCommentForm(eventObject: JQueryEventObject, pv: ProfileModal, callback?: any) : void {
-        pv.ratingStarsContainerVisible = false;
-        pv.trustButtonContainerVisible = false;
+        pv.inputFormContainerVisible = false;
         pv.commentContainerVisible = true;
         pv.commentSubmitCallback = callback;
     }
@@ -480,12 +488,7 @@ class ExtensionpopupController {
 
     setInputForm(pv : ProfileModal) : void {
         pv.commentContainerVisible = false; // Default hide the comment container
-        pv.ratingStarsContainerVisible = false;
-        pv.trustButtonContainerVisible = false;
-        switch(pv.inputForm) {
-            case "identity" : pv.trustButtonContainerVisible = true; break;
-            case "thing" : pv.ratingStarsContainerVisible = true; break;
-        }
+        pv.inputFormContainerVisible = true;
     }
 
     getStringFromBuffer(data: any) : string {
@@ -532,10 +535,50 @@ class ExtensionpopupController {
     }
 
 
+    async lastestClick() : Promise<boolean> {
+         let arr = await this.dtpService.getLastest(0, 10);
+         arr.forEach(p => {
+            if(!p.issuer.meta) p.issuer.meta = {};
+            if(!p.subject.meta) p.subject.meta = {};
+         });
+            
+         this.latestClaims = arr;
+        return false;
+    }
+
+    async historyClick() : Promise<boolean> {
+        let arr = await this.dtpService.getHistory(this.settings.address, 0, 10);
+        arr.forEach(p => {
+           if(!p.issuer.meta) p.issuer.meta = {};
+           if(!p.subject.meta) p.subject.meta = {};
+        });
+           
+        this.historyClaims = arr;
+       return false;
+   }
+
+    
+    openUrl() : void {
+        chrome.tabs.update({
+            url: this.getStringFromBuffer(this.selectedProfile.data)
+       });
+       window.close();
+    }
+
+    showPageTab(id?: string) : void {
+        if(id)
+            this.selectProfileID(id);
+        this.tabIndex = 0;
+    }
+    
+
 }
 
 
 const app = angular.module("myApp", ['star-rating', tabs, tooltip]);
+
+// app.component("latestClaims", LatestClaims)
+
 //     .filter('to_html', ['$sce', function($sce){
 //     return function(text) {
 //         return $sce.trustAsHtml(text);

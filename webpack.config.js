@@ -87,11 +87,23 @@ module.exports = {
         useShortDoctype                : true
       }
     }),
+    new HtmlWebpackPlugin({  
+      filename: './templates/trustgraph.html',
+      template: './src/public/trustgraph.html',
+      chunks: ['trustgraph'],
+      minify: {
+        removeComments: true,
+        collapseWhitespace: true,
+        conservativeCollapse: true
+      }
+    }),
+
     new CopyWebpackPlugin([
       {from:'src/css',to:'./css'},
       {from:'src/img',to:'./img'},
       {from:'src/fonts',to:'./fonts'},
       {from:'src/lib',to:'./lib'},
+      {from:'src/templates',to:'./templates'},
       //{from:'js/background.js',to:'./js/'},
       {from:'src/js/common.js',to:'./js/'},
       {from:'src/typings',to:'./typings'},

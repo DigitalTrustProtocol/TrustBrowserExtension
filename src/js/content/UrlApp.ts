@@ -89,7 +89,8 @@ export default class UrlApp {
             let profile = <IProfile>{
                 id: Crypto.toDTPAddress(Crypto.Hash160(docTitle+url)),
                 title: docTitle,
-                data:  Buffer.from(url, 'UTF8')
+                data:  Buffer.from(url, 'UTF8'),
+                type: 'url'
             };
             this.profiles.push(profile);
             this.config.profileRepository.setProfile(profile);
@@ -98,7 +99,8 @@ export default class UrlApp {
         let hostnameProfile = <IProfile>{
             id: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
             title: '',
-            data: Buffer.from(hostname, 'UTF8')
+            data: Buffer.from(hostname, 'UTF8'),
+            type: 'url'
         };
         this.profiles.push(hostnameProfile);
         this.config.profileRepository.setProfile(hostnameProfile);
@@ -113,6 +115,7 @@ export default class UrlApp {
         let profiles = {};
         $("[itemtype='http://digitaltrustprotocol.org/entity']").each((i, element) => {
             let profile = <IProfile>{};
+            profile.type = "alias";
             profile.title = $(element).find("[itemprop='alias']").text();
             profile.id = $(element).find("[itemprop='id']").text();
             let proof = $(element).find("[itemprop='aliasProof']").attr('itemvalue');

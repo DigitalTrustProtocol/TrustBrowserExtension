@@ -36,8 +36,7 @@ export class ProfileModal
     public visible: boolean = true;
 
     public inputForm: string = "thing";
-    public trustButtonContainerVisible: boolean = false;
-    public ratingStarsContainerVisible : boolean = false;
+    public inputFormContainerVisible: boolean = true;
     public commentContainerVisible: boolean = false;
     public commentSubmitCallback: any;
     public note: string = "";
@@ -64,7 +63,6 @@ export class ProfileModal
             $.extend(this, profileView);
 
         this.inputForm = (this.profile.id.indexOf("1") == 0) ? "identity" : "thing";
-        this.setInputForm();
 
         this.EnsureAvatarImage();
         
@@ -92,13 +90,6 @@ export class ProfileModal
         if(!this.profile.icon) {
             let icon = Identicon.createIcon(this.profile.id); // Need min 15 chars
             this.profile.icon =icon; // 'data:image/svg+xml;base64,'+ icon.toString();
-        }
-    }
-
-    public setInputForm(): void {
-        switch(this.inputForm) {
-            case "identity" : this.trustButtonContainerVisible = true; break;
-            case "thing" : this.ratingStarsContainerVisible = true; break;
         }
     }
 

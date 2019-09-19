@@ -1,0 +1,18 @@
+<div>Hello from tempate: {{ $ctrl.name }}</div>
+<div class="table-responsive">
+    <table class="table table-striped table-sm">
+        <tbody>
+            <tr ng-repeat="(key, claim) in lastestClaims">
+                <td>
+                    <div><span class="font-weight-bold">{{ claim.issuer.meta.title }}</span>
+                        (<small><i class="fas fa-id-badge pr-1"></i>
+                            {{ claim.issuer.id }}</small>)</div>
+                    <div><small>Rating: {{ claim.value }}</small></div>
+                    <div class="breakContent">
+                        <small>{{ (claim.note) ? claim.note : "(No comment)" }}</small></div>
+                    <div class="float-right"><small>{{ ct.toDate(claim.created) }}</small></div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

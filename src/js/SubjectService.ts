@@ -40,10 +40,12 @@ export default class SubjectService  {
                 expire,
                 profileView.note);
 
-            claim.subject.meta = <IProfile>{
-                data: (profile.data.data) ? profile.data.data : profile.data,
-                title: profile.title
-            };
+            claim.subject.meta = profile;
+            //  <IProfile>{
+            //     data: (profile.data.data) ? profile.data.data : profile.data,
+            //     title: profile.title,
+            //     type:  profile.type
+            // };
         }
 
         return claim;
