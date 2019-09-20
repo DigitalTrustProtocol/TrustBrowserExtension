@@ -5,4 +5,5 @@ import IProfile from "../IProfile";
 export default interface ITrustStrategy {
     //calculateBinaryTrustResult(queryContext:DtpGraphCoreModelQueryContext,trustResult: BinaryTrustResult): void;
     ProcessClaims(claims : Array<Claim>) : object;
+    createTrustResults(queryContext : any) : Object;
 }

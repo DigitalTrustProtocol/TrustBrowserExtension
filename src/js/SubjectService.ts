@@ -35,17 +35,12 @@ export default class SubjectService  {
                 PackageBuilder.THING,
                 PackageBuilder.RATING_TRUST_DTP1,
                 scope,
-                profileView.score.toString(), 
+                (profileView.score) ? profileView.score+'' : '', 
                 0,
                 expire,
                 profileView.note);
 
             claim.subject.meta = profile;
-            //  <IProfile>{
-            //     data: (profile.data.data) ? profile.data.data : profile.data,
-            //     title: profile.title,
-            //     type:  profile.type
-            // };
         }
 
         return claim;

@@ -3,6 +3,8 @@ import Identicon from "../Shared/Identicon";
 import { DtpGraphCoreModelQueryContext } from "../../lib/typescript-jquery-client/model/models";
 import BinaryTrustResult from "./BinaryTrustResult";
 import * as $ from 'jquery';
+import { QueryContext, ModelPackage } from "../../lib/dtpapi/model/models";
+import ITrustStrategy from '../Interfaces/ITrustStrategy';
 
 
 export class TrustGraphStatusModel {
@@ -57,6 +59,20 @@ export class ProfileModal
 
         Object.defineProperty(this, 'commentSubmitCallback', { enumerable: false, writable: true, value: null }); // No serialize to json!
     }    
+
+    public processPackage(trustPackage: ModelPackage, trustStrategy: ITrustStrategy) : void  {
+        this.queryResult = <QueryContext>{
+            issuerCount: 1,
+            subjectCount: 1,
+            results: trustPackage,
+            errors: []
+        } 
+
+        let results = trustStrategy.createTrustResults(this.queryResult);
+        this.trustResult = results[this.profile.id];
+        this.setup();
+        this.processing = false;
+    }
 
     public setup(profileView? : ProfileModal) : ProfileModal {
         if(profileView)

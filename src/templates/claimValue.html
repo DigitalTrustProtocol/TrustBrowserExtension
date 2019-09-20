@@ -1,0 +1,15 @@
+<div ng-switch="$ctrl.claim.type">
+    <span ng-switch-when="rating">
+        <span class="float-left pr-1">Rating</span>
+        <span class="float-left  pl-2">
+            <star-rating-comp rating="$ctrl.claim.value+''" num-of-stars="5"
+                star-type="'icon'" size="'normal'"
+                show-half-stars="'true'" label-position="'right'"
+                label-text="" read-only="true">
+            </star-rating-comp>
+        </span>
+        <span class="float-left pr-3">{{ $ctrl.claim.value }}</span>
+    </span>
+    <span ng-switch-when="alias">Alias: {{ $ctrl.claim.value }}</span>
+    <span ng-switch-when="binarytrust">Trust: {{ $ctrl.claim.value }}</span>
+</div>

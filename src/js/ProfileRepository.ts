@@ -11,7 +11,7 @@ export default class ProfileRepository {
     storage: IStorage;
     dtpService: DTPService;
 
-    public static scope : string = "DTP";
+    public static prefix : string = "P-";
 
     constructor(storage: IStorage, dtpService: DTPService) {
         this.storage = storage;
@@ -35,7 +35,7 @@ export default class ProfileRepository {
     }
 
     getCacheKey(id: string): string {
-        return ProfileRepository.scope + id;
+        return ProfileRepository.prefix + id;
     }
 
     async getProfile(id: string, defaultProfile?: IProfile): Promise<IProfile> {

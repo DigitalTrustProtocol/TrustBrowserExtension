@@ -1,7 +1,8 @@
 export default interface IProfile {
     id?: string;
     type?: string;
-   data?: any;
+    data?: any;
     title?: string;
     icon?: string;
+    created?: number;
 }
