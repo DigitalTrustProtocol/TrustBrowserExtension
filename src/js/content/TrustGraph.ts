@@ -42,6 +42,7 @@ class TrustGraphController {
     profileRepository: ProfileRepository;
     currentUser: IProfile;
     selectedProfile: IProfile;
+    currentProfile: IProfile;
     trustStrategy: TrustStrategy;
 
     modalData: ProfileModal;
@@ -120,12 +121,10 @@ class TrustGraphController {
 
         this.profileIndex = {};
         this.selectedProfile = source.profiles.filter(p=>p.id == source.subjectProfileId).pop();
-        let subjectView = this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile);
+        this.currentUser = await this.profileRepository.getProfile(source.currentUserId,{id: source.currentUserId, title: "(You)" }); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
+        let subjectView = this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile, this.currentUser);
 
-        let currentUserProfile = await this.profileRepository.getProfile(source.currentUserId,{id: source.currentUserId, title: "(You)" }); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
-
-        let cu = this.profileIndex[source.currentUserId] = new ProfileModal(currentUserProfile);
-        cu.currentUser = currentUserProfile;
+        let cu = this.profileIndex[source.currentUserId] = new ProfileModal(this.currentUser, this.currentUser);
         cu.subjectProfile = subjectView.profile;
 
         for(let key in this.trustResults) {
@@ -134,7 +133,7 @@ class TrustGraphController {
                 profile = await this.profileRepository.getProfile(key);
             }
 
-            let pv = this.profileIndex[key] = new ProfileModal(profile);
+            let pv = this.profileIndex[key] = new ProfileModal(profile, this.currentUser);
             pv.trustResult = this.trustResults[key];
             pv.subjectProfile = subjectView.profile;
         }

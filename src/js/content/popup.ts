@@ -71,7 +71,7 @@ class ExtensionpopupController {
     pageProfilesView: Array<ProfileModal> = [];
     tempProfileView: object = {};
     settingsProfile : IProfile = null;
-    //selectedProfileView: ProfileModal = null;
+    selectedProfileView: ProfileModal = null;
     commentClaims: Array<Claim> = [];
     latestClaims: Array<Claim> = [];
     historyClaims: Array<Claim> = [];
@@ -126,7 +126,7 @@ class ExtensionpopupController {
                 data.profiles.forEach((item:IProfile) => {
                      if(item.data && item.data.data)
                         item.data = item.data.data;
-                     this.pageProfiles.push(new ProfileModal(item));
+                     this.pageProfiles.push(new ProfileModal(item, this.settingsProfile));
                     }); // Recreate the ProfileView object!
                 this.pageProfilesView = await this.queryProfiles(this.pageProfiles);
             })
@@ -216,7 +216,7 @@ class ExtensionpopupController {
             return;
         }
 
-        let pm = new ProfileModal(profile, undefined, undefined);
+        let pm = new ProfileModal(profile, this.settingsProfile, undefined, undefined);
         this.selectProfileView(pm);
     }
 
@@ -392,6 +392,7 @@ class ExtensionpopupController {
 
     updateContentHandler(params, sender) : void {
         let pv = new ProfileModal().setup(params.profileView);
+        pv.currentUser = this.settingsProfile;
         this.selectProfileView(pv);
     }
 
@@ -457,7 +458,7 @@ class ExtensionpopupController {
 
         try {
 
-            trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateBinaryClaim(profileView, value, undefined, ExtensionpopupController.SCOPE, expire));
+            trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateBinaryClaim(profileView, value, ExtensionpopupController.SCOPE, expire));
             this.subjectService.addAliasClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
 
             this.packageBuilder.SignPackage(trustPackage);
@@ -567,6 +568,19 @@ class ExtensionpopupController {
             url: this.getStringFromBuffer(this.selectedProfile.data)
        });
        window.close();
+    }
+
+    getProfileTitle(profile: IProfile, defaultTitle: string = '(Unknown)') : string {
+        if(!profile)
+            return defaultTitle;
+
+        if(profile.title)
+            return profile.title;
+            
+        if(profile.data) 
+            return this.getStringFromBuffer(profile.data);
+        
+        return defaultTitle;
     }
 
     showPageTab(id: string, profile?: IProfile) : void {

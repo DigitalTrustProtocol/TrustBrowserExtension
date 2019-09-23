@@ -42,8 +42,8 @@
         }
 
         .trustIcon {
-            font-size: 11pt;
-            padding: 5pt;
+            /* font-size: 11pt;
+            padding-top: 5pt; */
         }
 
         .trust {
@@ -84,6 +84,14 @@
         form.tab-form-demo .tab-pane {
             margin: 20px 20px;
         }
+
+        .nav-link {color: #000000;}
+        .nav-link:hover {color: #333333;}
+
+        .profileTitle {color: #000000;}
+        .profileTitle:hover {color: #333333;}
+        
+
     </style>
 </head>
 
@@ -127,7 +135,7 @@
                         </div>
                         <div>
                             <a href="#" uib-tooltip="Refresh search on trust " tooltip-popup-delay="400"
-                                tooltip-animation="true" class="badge badge-light float-right"><i
+                                tooltip-animation="true" class="badge badge-light float-right" ng-hide="true"><i
                                     class="fas fa-sync pr-1"></i>Refresh</a>
                         </div>
 
@@ -141,45 +149,32 @@
                                                 ng-click="ct.openGraphClick($event, pv)">
                                         </td>
                                         <td>
-                                            <div class="breakContent" style="font-weight: bold">
-                                                {{ pv.profile.title || ct.getStringFromBuffer(pv.profile.data) }}
-                                            </div>
-                                            <div ng-switch="pv.profile.type">
-                                                <span ng-switch-when="url" class="float-left pr-1">
-                                                    <i class="fas fa-link pr-1"></i><a data-toggle="modal"
-                                                        data-target="#openUrlModal"
-                                                        ng-href="ct.getStringFromBuffer(pv.profile.data)"
-                                                        ng-click="ct.selectedProfile = pv.profile">Link</a>
-                                                </span>
-                                            </div>
-                                            <div><small>
-                                                    <i class="fas fa-fingerprint pr-1"></i>{{ pv.profile.id }}
-                                                </small>
-                                            </div>
-
                                             <div ng-switch="pv.inputForm">
                                                 <div ng-switch-when="identity">
                                                     <!-- Identity =====================================================  -->
-                                                    <div class="clearfix">
-                                                        <div ng-show="pv.status.show">
-                                                            <div class="float-left">Status:</div>
-                                                            <div class="{{ pv.status.iconClass }} float-left"
-                                                                ng-click="ct.openGraphClick($event, pv)"></div>
-                                                            <div class="{{ pv.status.cssClass}} float-left pr-3"
-                                                                ng-bind="pv.status.text"></div>
-                                                        </div>
-                                                        <div ng-show="pv.show_score">
-                                                            <div ng-show="pv.show_score && pv.trustResult.trust > 0">
-                                                                Possitive claims: <span class="trusted"
-                                                                    ng-bind="pv.trustResult.trust"></span>
-                                                            </div>
-                                                            <div ng-show="pv.show_score && pv.trustResult.distrust > 0">
-                                                                Negative claims: <span class="distrusted"
-                                                                    ng-bind="pv.trustResult.distrust"></span>
-                                                            </div>
+                                                    <div class="breakContent font-weight-bold">
+                                                        <i class="fas fa-user"></i>
+                                                        {{ ct.getProfileTitle(pv.profile) }}
+                                                    </div>
+
+                                                    <div>
+                                                        <small class="text-nowrap">
+                                                                <i class="fas fa-fingerprint pr-1"></i>{{ pv.profile.id }}
+                                                        </small>
+                                                    </div>
+                    
+                                                    <div class="clearfix" ng-show="pv.status.show">
+                                                            <span class="{{ pv.status.iconClass }} float-left pt-1 pr-1"></span>
+                                                            <span class="{{ pv.status.cssClass}} float-left pr-2" ng-bind="pv.status.text"></span>
+                                                    </div>
+                                                    <div class="clearfix" ng-show="pv.show_score">
+                                                        <div ng-show="pv.show_score && pv.trustResult.trust > 0">
+                                                            <i class="fas fa-poll pr-1"></i>
+                                                            Score {{ pv.score > 0 ? '+' : '' }}{{ pv.score }} (<span class="trusted" ng-bind="pv.trustResult.trust"></span>/
+                                                            <span class="distrusted" ng-bind="pv.trustResult.distrust"></span>)
                                                         </div>
                                                     </div>
-                                                    <div>
+                                                    <div ng-show="pv.button.show">
                                                         <button type="button" ng-class="pv.button.trust.cssClass"
                                                             ng-click="ct.trustClick($event, pv, true)"
                                                             ng-attr-title="{{pv.button.trust.title}}"
@@ -203,6 +198,23 @@
                                                 </div>
                                                 <div ng-switch-when="thing">
                                                     <!-- Thing =====================================================  -->
+                                                    <div ng-switch="pv.profile.type">
+                                                        <span ng-switch-when="url">
+                                                            <i class="fas fa-link pr-1"></i>
+                                                                <a data-toggle="modal" class="font-weight-bold profileTitle"
+                                                                    data-target="#openUrlModal"
+                                                                    ng-href="ct.getStringFromBuffer(pv.profile.data)"
+                                                                    ng-click="ct.selectedProfile = pv.profile">{{ ct.getProfileTitle(pv.profile) }}</a>
+                                                        </span>
+                                                        <span ng-switch-default class="breakContent font-weight-bold">
+                                                            {{ ct.getProfileTitle(pv.profile) }}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <small class="text-nowrap">
+                                                            <i class="fas fa-fingerprint pr-1"></i>{{ pv.profile.id }}
+                                                        </small>
+                                                    </div>
                                                     <div class="clearfix">
                                                         <div class="float-left pr-3">Rating</div>
                                                         <div class="float-left pr-3">
@@ -219,7 +231,7 @@
                                                     </div>
                                                     <div class="clearfix">
                                                         <small>
-                                                            Distrusted by your network
+                                                            {{ pv.status.text }}
                                                         </small>
                                                     </div>
                                                 </div>
@@ -234,17 +246,22 @@
                                                         ng-click="ct.commentsModalOpen(pv)"
                                                         ng-disabled="true"
                                                         data-toggle="modal"
-                                                        data-target="#profileCommentsModal">
+                                                        data-target="#profileCommentsModal"
+                                                        ng-show="pv.status.trustGiven">
                                                         <i class="far fa-comment pr-1"></i>Comments</a>
                                                     <a href="#" ng-click="ct.openGraphClick($event, pv)"
                                                         uib-tooltip="View the trust graph on subject"
                                                         tooltip-popup-delay="400" tooltip-animation="true"
-                                                        class="badge badge-light">
+                                                        class="badge badge-light"
+                                                        ng-hide="pv.trustResult.direct || !pv.status.trustGiven">
                                                         <i class="fas fa-project-diagram pr-1"></i>Graph</a>
+                                                        
                                                     <a href="#" ng-show="pv.trustResult.direct"
-                                                        ng-click="ct.untrustClick($event, pv)"
+                                                        ng-click="ct.selectedProfileView = pv"
                                                         uib-tooltip="Undo your trust on subject"
                                                         tooltip-popup-delay="400" tooltip-animation="true"
+                                                        data-toggle="modal"
+                                                        data-target="#undoTrustModal"
                                                         class="badge badge-light">
                                                         <i class="fas fa-undo pr-1"></i>Undo trust</a>
                                                 </div>
@@ -253,14 +270,14 @@
                                             <div id="commentContainer" ng-show="pv.commentContainerVisible">
                                                 <div class="float-left"><small>Comment</small></div>
                                                 <textarea class="form-control" id="commentArea" rows="3"
-                                                    placeholder="Notes about the subject (Optional)" ng-model="pv.note"
+                                                    placeholder="(Optional)" ng-model="pv.note"
                                                     ng-trim="true" maxlength="500"></textarea>
                                                 <div class="mb-4">
                                                     <small class="float-right">Max 500 characters</small>
                                                 </div>
 
                                                 <div>
-                                                    <button class="btn btn-danger btn-sm float-left"
+                                                    <button class="btn btn-secondary btn-sm float-left"
                                                         ng-click="ct.commentCancel($event, pv)">
                                                         <i class="fas fa-backward"></i> Back
                                                     </button>
@@ -294,25 +311,43 @@
                                 <table class="table table-striped table-sm">
                                     <tbody>
                                         <tr ng-repeat="(key, claim) in ct.historyClaims">
-                                            <td>
-                                                <div class="clearfix"><span
-                                                        class="font-weight-bold">{{ claim.subject.meta.title || ct.getStringFromBuffer(claim.subject.meta.data) }}</span>
-                                                        <div ng-switch="claim.subject.meta.type">
-                                                            <span ng-switch-when="url" class="float-left pr-1">
-                                                                <i class="fas fa-link pr-1"></i><a data-toggle="modal"
+                                            <td ng-switch="claim.subject.type">
+
+                                                <div ng-switch-when="thing" class="clearfix">
+
+                                                    <div ng-switch="claim.subject.meta.type">
+                                                        <span ng-switch-when="url" class="float-left pr-1">
+                                                            <i class="fas fa-link pr-1"></i>
+                                                                <a data-toggle="modal" class="font-weight-bold profileTitle"
                                                                     data-target="#openUrlModal"
                                                                     ng-href="ct.getStringFromBuffer(claim.subject.meta.data)"
-                                                                    ng-click="ct.selectedProfile = claim.subject.meta">Link</a>
-                                                            </span>
-                                                        </div>
-                                                        (<a href="#" class="badge badge-light" ng-click="ct.showPageTab(claim.subject.id, claim.subject.meta)">
-                                                            <i class="fas fa-fingerprint pr-1"></i>{{ claim.subject.id }}
-                                                        </a>)
-                                                        </div>
+                                                                    ng-click="ct.selectedProfile = claim.subject.meta">{{ ct.getProfileTitle(claim.subject.meta) }}</a>
+                                                        </span>
+                                                        <span ng-switch-default class="breakContent font-weight-bold">
+                                                            <i class="fas fa-user"></i>
+                                                            {{ ct.getProfileTitle(claim.subject.meta) }}
+                                                        </span>
+                                                    </div>
+                                                    (<a href="#" class="badge badge-light" ng-click="ct.showPageTab(claim.subject.id, claim.subject.meta)">
+                                                        <i class="fas fa-fingerprint pr-1"></i>{{ claim.subject.id }}
+                                                    </a>)
+
+                                                </div>
+
+                                                <div ng-switch-default class="clearfix">
+                                                    <div class="breakContent font-weight-bold">
+                                                        <i class="fas fa-user"></i>
+                                                        {{ ct.getProfileTitle(claim.subject.meta) }}
+                                                    </div>
+                                                    <div>
+                                                        <small class="text-nowrap">
+                                                                <i class="fas fa-fingerprint pr-1"></i>{{ claim.subject.id }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+    
                                                 <div class="clearfix">
                                                     <div><claim-value claim="claim"></claim-value></div>
-    
-    
                                                 </div>
     
                                                 <div class="float-left"><small>Claim type: {{ claim.type }}</small></div>
@@ -331,27 +366,47 @@
                             <table class="table table-striped table-sm">
                                 <tbody>
                                     <tr ng-repeat="(key, claim) in ct.latestClaims">
-                                        <td>
-                                            <div class="clearfix"><span
-                                                    class="font-weight-bold">{{ claim.subject.meta.title || ct.getStringFromBuffer(claim.subject.meta.data) }}</span>
-                                                    <div ng-switch="claim.subject.meta.type">
-                                                        <span ng-switch-when="url" class="float-left pr-1">
-                                                            <i class="fas fa-link pr-1"></i><a data-toggle="modal"
+                                        <td ng-switch="claim.subject.type">
+
+                                            <div ng-switch-when="thing" class="clearfix">
+
+                                                <div ng-switch="claim.subject.meta.type">
+                                                    <span ng-switch-when="url" class="float-left pr-1">
+                                                        <i class="fas fa-link pr-1"></i>
+                                                            <a data-toggle="modal" class="font-weight-bold profileTitle"
                                                                 data-target="#openUrlModal"
                                                                 ng-href="ct.getStringFromBuffer(claim.subject.meta.data)"
-                                                                ng-click="ct.selectedProfile = claim.subject.meta">Link</a>
-                                                        </span>
-                                                    </div>
-                                                    (<a href="#" class="badge badge-light" ng-click="ct.showPageTab(claim.subject.id, claim.subject.meta)">
-                                                        <i class="fas fa-fingerprint pr-1"></i>{{ claim.subject.id }}
-                                                    </a>)
-                                                    </div>
+                                                                ng-click="ct.selectedProfile = claim.subject.meta">{{ ct.getProfileTitle(claim.subject.meta) }}</a>
+                                                    </span>
+                                                    <span ng-switch-default class="breakContent font-weight-bold">
+                                                        <i class="fas fa-user"></i>
+                                                        {{ ct.getProfileTitle(claim.subject.meta) }}
+                                                    </span>
+                                                </div>
+                                                (<a href="#" class="badge badge-light" ng-click="ct.showPageTab(claim.subject.id, claim.subject.meta)">
+                                                    <i class="fas fa-fingerprint pr-1"></i>{{ claim.subject.id }}
+                                                </a>)
+
+                                            </div>
+
+                                            <div ng-switch-default class="clearfix">
+                                                <div class="breakContent font-weight-bold">
+                                                    <i class="fas fa-user"></i>
+                                                    {{ ct.getProfileTitle(claim.subject.meta) }}
+                                                </div>
+                                                <div>
+                                                    <small class="text-nowrap">
+                                                            <i class="fas fa-fingerprint pr-1"></i>{{ claim.subject.id }}
+                                                    </small>
+                                                </div>
+                                            </div>
+    
                                             <div class="clearfix">
                                                 <div><claim-value claim="claim"></claim-value></div>
                                             </div>
 
                                             <div class="clearfix">By:
-                                                <span>{{ claim.issuer.meta.title || '(Unknown)' }}</span>
+                                                <span>{{ ct.getProfileTitle(claim.issuer.meta) }}</span>
                                                 (<a href="#" class="badge badge-light" ng-click="ct.showPageTab(claim.issuer.id, claim.issuer.meta)">
                                                         <i class="fas fa-fingerprint pr-1"></i>{{ claim.issuer.id }}
                                                     </a>)
@@ -624,7 +679,7 @@
                             <tbody>
                                 <tr ng-repeat="(key, claim) in ct.commentClaims">
                                     <td>
-                                        <div><span class="font-weight-bold">{{ claim.issuer.meta.title }}</span>
+                                        <div><span class="font-weight-bold">{{ ct.getProfileTitle(claim.issuer.meta) }}</span>
                                             (<small><i class="fas fa-fingerprint pr-1"></i> {{ claim.issuer.id }}</small>)
                                         </div>
                                         <div class="clearfix"><claim-value claim="claim"></claim-value></div>
@@ -662,6 +717,29 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" data-dismiss="modal"
                         ng-click="ct.openUrl()">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Undo trust Modal =============================================================================== -->
+    <div class="modal fade" id="undoTrustModal" tabindex="-1" role="dialog" aria-labelledby="undoTrustModalLabel"
+    aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">Undo trust</h6>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body float-left">
+                    <p>Are you sure that you will undo your trust in:</p>
+                    <p>{{ ct.getProfileTitle(ct.selectedProfileView.profile) }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Back</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal"
+                        ng-click="ct.untrustClick($event, ct.selectedProfileView)">Undo trust</button>
                 </div>
             </div>
         </div>

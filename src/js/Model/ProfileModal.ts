@@ -1,10 +1,11 @@
-import IProfile from "../IProfile";
+import IProfile from '../IProfile';
 import Identicon from "../Shared/Identicon";
 import { DtpGraphCoreModelQueryContext } from "../../lib/typescript-jquery-client/model/models";
 import BinaryTrustResult from "./BinaryTrustResult";
 import * as $ from 'jquery';
 import { QueryContext, ModelPackage } from "../../lib/dtpapi/model/models";
 import ITrustStrategy from '../Interfaces/ITrustStrategy';
+import Settings from '../Shared/Settings';
 
 
 export class TrustGraphStatusModel {
@@ -12,6 +13,8 @@ export class TrustGraphStatusModel {
     public text: string;
     public show: boolean;
     public iconClass: string;
+    public trustGiven: boolean;
+    
 }
 
 export class TrustGraphButtonModel {
@@ -52,8 +55,9 @@ export class ProfileModal
     /**
      *
      */
-    constructor(selectedProfile?: IProfile, trustResult?: BinaryTrustResult, queryResult?: DtpGraphCoreModelQueryContext) {
+    constructor(selectedProfile?: IProfile, currentProfile?: IProfile, trustResult?: BinaryTrustResult, queryResult?: DtpGraphCoreModelQueryContext) {
         this.profile = selectedProfile;
+        this.currentUser = currentProfile;
         this.queryResult = queryResult;
         this.trustResult = trustResult;
 
@@ -122,7 +126,9 @@ export class ProfileModal
     }
 
     private setupCurrentUser() : void {
-        this.status = { cssClass: "", text: "Current user", show: true, iconClass:"fas fa-question-circle trustIcon none" };
+        this.status = { cssClass: "", text: "You are looking at yourself", show: true, iconClass:"", trustGiven: false };
+        this.show_score = false;
+        this.button.show = false;
         this.isCurrentUser = true;
     }
 
@@ -135,33 +141,34 @@ export class ProfileModal
         let trustGiven = false;
         let postText = "";
         if(this.trustResult) {
-            postText = this.trustResult.direct ? " directly" : " by the network";
+            postText = this.trustResult.direct ? " directly by you" : " by your the network";
         }
 
         if(this.trustResult.ratings > 0) {
+            trustGiven = true;
             this.score = this.trustResult.value;
-            this.status = { cssClass: "", text: "Rated" + postText, show: true, iconClass:""};
+            this.status = { cssClass: "", text: "Rated" + postText, show: true, iconClass:"", trustGiven: trustGiven};
             return;
         }
 
         if(this.trustResult) {
 
-            let postText = this.trustResult.direct ? " directly" : " by the network";
+            let postText = this.trustResult.direct ? " directly by you" : " by the network";
 
             trustGiven = this.trustResult.trust > 0 || this.trustResult.distrust > 0;
             this.score = this.trustResult.trust - this.trustResult.distrust;
             if(this.score < 0)
-                this.status = { cssClass: "distrusted", text: "Distrusted" + postText, show: true, iconClass:"fas fa-stop-circle trustIcon distrust"};
+                this.status = { cssClass: "distrusted", text: "Distrusted" + postText, show: true, iconClass:"fas fa-heart-broken trustIcon distrust", trustGiven: trustGiven};
 
             if(this.score > 0)
-                this.status = { cssClass: "trusted", text: "Trusted" + postText, show: true, iconClass:"fas fa-check-circle trustIcon trust"};
+                this.status = { cssClass: "trusted", text: "Trusted" + postText, show: true, iconClass:"fas fa-heart trustIcon trust", trustGiven: trustGiven};
         }
 
         if(this.score == 0 && trustGiven)
-            this.status = { cssClass: "", text: "Evenly trusted", show: true, iconClass:"fas fa-exclamation-circle trustIcon neutral"};
+            this.status = { cssClass: "", text: "Evenly trusted", show: true, iconClass:"fas fa-exclamation-circle trustIcon neutral", trustGiven: trustGiven};
         else
             if(this.score == 0 && !trustGiven)
-            this.status = { cssClass: "", text: "Not trusted yet", show: true, iconClass:"fas fa-question-circle trustIcon none"};
+            this.status = { cssClass: "", text: "Not trusted yet", show: true, iconClass:"fas fa-question-circle trustIcon none", trustGiven: trustGiven};
 
     }
     
@@ -191,29 +198,29 @@ export class ProfileModal
         if(claimValue > 0) {
             this.button.trust.title = `${this.profile.title} is trusted`;
             this.button.trust.disabled = true;
-            this.button.trust.cssClass = "btn btn-success btn-sm active";
+            this.button.trust.cssClass = "badge badge-success"; // "btn btn-success btn-sm active";
         }
         else {
             this.button.trust.title = `Trust ${this.profile.title}`;
-            this.button.trust.cssClass = "btn btn-outline-success btn-sm";
+            this.button.trust.cssClass = "badge badge-light"; //"btn btn-outline-success btn-sm";
         }
         
         if(claimValue < 0) {
             this.button.distrust.title = `${this.profile.title} is distrusted`;
             this.button.distrust.disabled = true;
-            this.button.distrust.cssClass = "btn btn-danger btn-sm active";
+            this.button.distrust.cssClass = "badge badge-danger"; // "btn btn-danger btn-sm active";
         } else {
             this.button.distrust.title = `Distrust ${this.profile.title}`;
-            this.button.distrust.cssClass = "btn btn-outline-danger btn-sm";
+            this.button.distrust.cssClass = "badge badge-light"; // "btn btn-outline-danger btn-sm";
         }
 
         if(claimValue == 0) {
             this.button.untrust.title = `No trust given to ${this.profile.title}`;
             this.button.untrust.disabled = true;
-            this.button.untrust.cssClass = "btn btn-secondary btn-sm active";
+            this.button.untrust.cssClass = "badge badge-light"; // "btn btn-secondary btn-sm active";
         } else {
             this.button.untrust.title = `Cancel your previous trust`;
-            this.button.untrust.cssClass = "btn btn-outline-secondary btn-sm";
+            this.button.untrust.cssClass = "badge badge-light"; // "btn btn-outline-secondary btn-sm";
         }
     }
 
@@ -221,14 +228,14 @@ export class ProfileModal
         // Do nothing! Show everything!
         this.button.trust.title = `Trust ${this.profile.title}`;
         this.button.trust.disabled = false;
-        this.button.trust.cssClass = "btn btn-outline-success btn-sm";
+        this.button.trust.cssClass = "badge badge-light"; // "btn btn-outline-success btn-sm";
 
         this.button.distrust.title = `Distrust ${this.profile.title}`;
         this.button.distrust.disabled = false;
-        this.button.distrust.cssClass = "btn btn-outline-danger btn-sm";
+        this.button.distrust.cssClass = "badge badge-light"; // "btn btn-outline-danger btn-sm";
 
         this.button.untrust.title = `No trust to cancel`;
         this.button.untrust.disabled = true;
-        this.button.untrust.cssClass = "btn btn-outline-secondary btn-sm";
+        this.button.untrust.cssClass = "badge badge-light"; // "btn btn-outline-secondary btn-sm";
     }
 }

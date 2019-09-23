@@ -11,5 +11,8 @@
         <span class="float-left pr-3">{{ $ctrl.claim.value }}</span>
     </span>
     <span ng-switch-when="alias">Alias: {{ $ctrl.claim.value }}</span>
-    <span ng-switch-when="binarytrust">Trust: {{ $ctrl.claim.value }}</span>
+    <span ng-switch-when="binarytrust">
+        <span ng-if="$ctrl.claim.value == 'true'" class="trust"><i class="fas fa-heart pt-1 pr-1"></i>Trusted</span>
+        <span ng-if="$ctrl.claim.value == 'false'" class="distrust"><i class="fas fa-heart-broken pt-1 pr-1"></i>Distrusted</span>
+    </span>
 </div>
