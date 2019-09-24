@@ -165,9 +165,17 @@ class ExtensionpopupController {
                         return deferred.promise();
                     }
 
-                    var $request = $.ajax(params);
-                    $request.then(success);
+                    let $request = $.ajax(params);
+                    $request.then((data: any, status:string, jqXHR: JQueryXHR) => {
+                        if(params.data.term && data.length == 0) {
+                            let regex = /^[13nmD][a-km-zA-HJ-NP-Z0-9]{26,33}$/;
+                            if(regex.test(params.data.term))
+                                data.push(params.data.term);
+                        }
+                        success(data);
+                    });
                     $request.fail(failure);
+                    $request.then(success);
                 
                     return $request;
                   }
@@ -177,6 +185,7 @@ class ExtensionpopupController {
             templateResult: this.formatSubjectSelect,
             templateSelection: this.formatSubjectSelection
         });
+
 
         profileSelect.on('select2:select', e => {
             this.selectProfileID(e.params.data.id);
