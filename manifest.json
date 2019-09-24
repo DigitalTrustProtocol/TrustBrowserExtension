@@ -34,7 +34,6 @@
       "css": [
       ],
       "js": [
-        "js/common.js",
         "main.js"
       ],
       "run_at": "document_idle"
