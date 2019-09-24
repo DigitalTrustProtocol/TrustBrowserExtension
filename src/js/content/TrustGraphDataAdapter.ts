@@ -9,6 +9,7 @@ import BinaryTrustResult from "../Model/BinaryTrustResult";
 import TrustStrategy from "../TrustStrategy";
 import IGraphData from './IGraphData';
 import { ProfileModal } from "../Model/ProfileModal";
+import { Buffer } from 'buffer';
 
 
 export default class TrustGraphDataAdapter {
@@ -90,25 +91,43 @@ export default class TrustGraphDataAdapter {
 
 
     private createNode(profile: IProfile) : any {
-        //let hasUserId = !(profile.userId == "?");
-        //let hasAlias = (profile.alias) ? profile.userId : profile.owner.ID;
-
         if(!profile.icon) {
-            //let hash = Crypto.toDTPAddress(Crypto.Hash160(userId));
             profile.icon = Identicon.createIcon(profile.id, {margin:0.1, size:64, format: 'svg'}); // Need min 15 chars
-            //profile.avatarImage = 'data:image/svg+xml;base64,'+ icon.toString();
         }
+
+        let label = this.lineBreakText(profile.title, 20);
+        if(label.length == 0) 
+            label = this.lineBreakText(this.getStringFromBuffer(profile.data), 20);
+        
+        if(label.length == 0) 
+            label = this.lineBreakText(profile.id, 20);
+
 
         let node = {
             id: profile.id,
             image: profile.icon,
-            label: this.lineBreakText(profile.id, 20) + ((profile.title) ? '\n_'+ this.lineBreakText(profile.title, 20)+'_' : ''),
+            label: label
         }
         return node;
     }
 
+    private getStringFromBuffer(data: any) : string {
+        if(!data)
+            return "";
+            
+        let source = (data.data) ? data.data : data;
+
+        if(typeof source === 'string')
+            return Buffer.from(data, 'base64').toString("utf-8");
+        else
+            return Buffer.from(data).toString("utf-8");
+    }
+
 
     private lineBreakText(text : string, width: number) : string {
+        if(!text)
+            return "";
+
         let r = [];
         let count = 0;
         let index = 0;

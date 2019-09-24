@@ -10,16 +10,15 @@ export class TrustGraphPopupClient {
     private methods: { [s: string]: any } = {};
 
 
-    public showSubjectHandler = (params, sender) => { return; };
-    public requestSubjectHandler = (params, sender): Promise<IGraphData> => { return null; };
-    public updateContentHandler = (params, sender) => { return; };
+
+    public requestGraphDataHandler = (params, sender): Promise<IGraphData> => { return null; };
+    public selectProfileHandler = (params, sender) => { return; };
     
     constructor(messageHandler : MessageHandler) {
         this.messageHandler = messageHandler;
 
-        this.methods["showSubject"] = (params, sender) => { this.showSubjectHandler(params, sender) };
-        this.methods["requestSubject"] = (params, sender) => { return this.requestSubjectHandler(params, sender) };
-        this.methods["updateContent"] = (params, sender) => { this.updateContentHandler(params, sender) };
+        this.methods["requestGraphData"] = (params, sender) => { return this.requestGraphDataHandler(params, sender) };
+        this.methods["selectProfile"] = (params, sender) => { this.selectProfileHandler(params, sender) };
 
         this.messageHandler.receive(TrustGraphPopupServer.handlerName, (params: any, sender: any) => {
             let method = this.methods[params.action];
@@ -29,36 +28,10 @@ export class TrustGraphPopupClient {
 
     }
 
-
-    // public getGraphData(tabId: number, handlerName: string, userId: string, callback?: (err: any, value: any) => void): Promise<any> {
-    //     let param = {
-    //         action: "getGraphData",
-    //         userId: userId
-    //     };
-    //     return this.messageHandler.sendTab(tabId, handlerName, param, result => {
-    //         if(callback)
-    //             callback(null, result);
-    //     });     
-    // }
-
-
    
-    public showSubject(tabId: number, data: IGraphData, callback?: (err: any, value: any) => void): Promise<any> {
+    public requestGraphData(profileId: any): Promise<any> {
         let message = {
-            action: "showSubject",
-            data
-        };
-        
-        return this.messageHandler.sendTab(tabId, TrustGraphPopupServer.handlerName, message, result => {
-            if(callback)
-                callback(null, result);
-        });     
-    }
-
-    
-    public requestSubject(profileId: any): Promise<any> {
-        let message = {
-            action: "requestSubject",
+            action: "requestGraphData",
             profileId: profileId
         };
         return this.messageHandler.send(TrustGraphPopupServer.handlerName, message);     
@@ -66,11 +39,11 @@ export class TrustGraphPopupClient {
 
     
 
-    public updateContent(profileView: ProfileModal, callback?: (err: any, value: any) => void) : Promise<any>
+    public selectProfile(profile: IProfile, callback?: (err: any, value: any) => void) : Promise<any>
     {
         let message = { 
-                action: "updateContent",
-                profileView
+                action: "selectProfile",
+                profile
         };
         return this.messageHandler.send(TrustGraphPopupServer.handlerName, message, result => {
             if(callback)
@@ -78,21 +51,6 @@ export class TrustGraphPopupClient {
         });     
     }
     
-
-    public getProfileDTP(tabId: number, handlerName: string, profile: IProfile): Promise<IProfile> {
-        let param = {
-            action: "getProfileDTP",
-            profile: profile
-        };
-        return this.messageHandler.sendTab(tabId, handlerName, param);     
-    }
-
-
-    // public requestContentTabId() : Promise<any> {
-    //     return this.messageHandler.send(TrustGraphPopupServer.handlerName, TrustGraphPopupServer.action("requestContentTabId"), result => {
-    //         return result;
-    //     });
-    // }
 
     public openPopup(source: any) : Promise<any> {
         let opt = TrustGraphPopupServer.action("openDialog");

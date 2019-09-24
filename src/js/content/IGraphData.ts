@@ -6,6 +6,6 @@ export default interface IGraphData {
     scope?: string;
     currentUserId?: string;
     subjectProfileId?: string;
-    profiles?: Array<IProfile>;
+    //profiles?: Array<IProfile>;
     queryResult?: QueryContext;
 }

@@ -7,7 +7,7 @@ module.exports = {
   entry: {
     main: './src/js/content/main.ts',
     popup: './src/js/content/popup.ts',
-    trustgraph: ['./src/js/content/TrustGraph.ts','./src/lib/Notify/notify.min.js', './src/lib/bootstrap/dist/js/bootstrap.min.js'],
+    trustgraph: ['./src/js/content/TrustGraph.ts'], // ,'./src/lib/Notify/notify.min.js'
     background: './src/js/background/background.ts',
   },
   mode: 'development',

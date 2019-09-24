@@ -1,5 +1,8 @@
+import $ = require('jquery');
 import * as angular from 'angular';
-import '../common.js';
+import 'bootstrap'
+import 'notifyjs-browser';
+
 import PackageBuilder from "../PackageBuilder";
 import DTPService from "../DTPService";
 import TrustStrategy from "../TrustStrategy";
@@ -22,14 +25,10 @@ import { StorageClient } from '../Shared/StorageClient';
 import SettingsClient from "../Shared/SettingsClient";
 import ISettings from "../Interfaces/Settings.interface";
 import IGraphData from './IGraphData';
-import * as $ from 'jquery';
 import Url from "url-parse";
 import IOpenDialogParameters from '../Model/OpenDialogParameters.interface.js';
 import { Runtime } from "webextension-polyfill-ts";
 
-
-declare var window: any;
-window.jQuery = $;
 
 class TrustGraphController {
     settingsClient: SettingsClient;
@@ -46,7 +45,7 @@ class TrustGraphController {
     trustStrategy: TrustStrategy;
 
     modalData: ProfileModal;
-    source: IGraphData;
+    //source: IGraphData;
     profileIndex: object;
     trustResults: object;
 
@@ -73,45 +72,39 @@ class TrustGraphController {
             this.subjectService = new SubjectService(settings, this.packageBuilder);
             this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
 
-            this.trustGraphPopupClient.showSubjectHandler = (params: any, sender: Runtime.MessageSender) => { 
-                this.loadOnData(params.data);
-            };
-
             let url = new Url(location.href, true);
-            this.trustGraphPopupClient.requestSubject(url.query.profileId).then(data => {
+            this.trustGraphPopupClient.requestGraphData(url.query.profileId).then(data => {
                 this.loadOnData(data);
             });
         });
     }
 
-    private loadOnData(source: IGraphData) : void {
-        this.network = this.buildNetwork(source);
+    private async loadOnData(source: IGraphData) : Promise<void> {
+        this.network = await this.buildNetwork(source);
     }
 
-    private buildNetwork(source: IGraphData) : any {
+    private async buildNetwork(source: IGraphData) : Promise<any> {
 
-        this.source = source;
+        //this.source = source;
+        await this.buildProfiles(source);
 
-        this.buildProfiles(source).then(() => {
+        this.dataAdapter = new TrustGraphDataAdapter(source, this.profileIndex);
+        this.dataAdapter.load();
 
-            this.dataAdapter = new TrustGraphDataAdapter(source, this.profileIndex);
-            this.dataAdapter.load();
+        let options = this.networkOptions();
+        let container = document.getElementById('networkContainer');
 
-            let options = this.networkOptions();
-            let container = document.getElementById('networkContainer');
+        let nw = new vis2.Network(container, this.dataAdapter.getGraph(), options);
 
-            let nw = new vis2.Network(container, this.dataAdapter.getGraph(), options);
-
-            nw.on("select", (params) => {
-                if(params.nodes.length > 0) {
-                    let profileId = params.nodes[0];
-                    let pv = this.profileIndex[profileId];
-                    this.trustGraphPopupClient.updateContent(pv);
-                }
-            });
-
-            return nw;
+        nw.on("select", (params) => {
+            if(params.nodes.length > 0) {
+                let profileId = params.nodes[0];
+                let pv = this.profileIndex[profileId];
+                this.trustGraphPopupClient.selectProfile(pv.profile);
+            }
         });
+
+        return nw;
 
     }
 
@@ -120,22 +113,16 @@ class TrustGraphController {
         this.trustResults = this.trustStrategy.ProcessClaims(source.queryResult.results.claims);
 
         this.profileIndex = {};
-        this.selectedProfile = source.profiles.filter(p=>p.id == source.subjectProfileId).pop();
-        this.currentUser = await this.profileRepository.getProfile(source.currentUserId,{id: source.currentUserId, title: "(You)" }); // source.profiles.filter(p=>p.userId === source.currentUserId).pop();
-        let subjectView = this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile, this.currentUser);
-
-        let cu = this.profileIndex[source.currentUserId] = new ProfileModal(this.currentUser, this.currentUser);
-        cu.subjectProfile = subjectView.profile;
+        this.selectedProfile = await this.profileRepository.getProfile(source.subjectProfileId); // source.profiles.filter(p=>p.id == source.subjectProfileId).pop();
+        this.currentUser = await this.profileRepository.getProfile(source.currentUserId,{id: source.currentUserId, title: "(You)" });
+        
+        this.profileIndex[source.currentUserId] = new ProfileModal(this.currentUser, this.currentUser);
+        this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile, this.currentUser);
 
         for(let key in this.trustResults) {
-            let profile = source.profiles.filter(p=>p.id === key).pop();
-            if(!profile) {
-                profile = await this.profileRepository.getProfile(key);
-            }
+             let profile = await this.profileRepository.getProfile(key);
 
-            let pv = this.profileIndex[key] = new ProfileModal(profile, this.currentUser);
-            pv.trustResult = this.trustResults[key];
-            pv.subjectProfile = subjectView.profile;
+            this.profileIndex[key] = new ProfileModal(profile, this.currentUser, this.trustResults[key]);
         }
     }
 

@@ -26,7 +26,7 @@ export class TrustGraphButtonModel {
 export class ProfileModal
 {
     public profile: IProfile;
-    public subjectProfile: IProfile;
+    //public subjectProfile: IProfile;
     public currentUser: IProfile;
     
     public queryResult: DtpGraphCoreModelQueryContext;

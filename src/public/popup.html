@@ -91,7 +91,11 @@
         .profileTitle {color: #000000;}
         .profileTitle:hover {color: #333333;}
         
-
+        /* Styles go here */
+        div.scrollcontainer {
+            max-height: 350px;
+            overflow-y: scroll;
+        }
     </style>
 </head>
 
@@ -130,7 +134,7 @@
                 <uib-tabset active="ct.tabIndex" class="">
                     <uib-tab index="0" heading="Page">
                         <div class="">
-                            <select class="userSelectContainer js-states form-control" name="state"
+                            <select id="profileSelect" class="userSelectContainer js-states form-control" name="state"
                                 style="width: 100%;"></select>
                         </div>
                         <div>
@@ -140,7 +144,7 @@
                         </div>
 
                         <!-- List ================================================== -->
-                        <div class="table-responsive">
+                        <div class="table-responsive scrollcontainer">
                             <table class="table table-striped table-sm">
                                 <tbody>
                                     <tr ng-repeat="(key, pv) in ct.pageProfilesView" ng-show="!ct.showError">
@@ -307,10 +311,10 @@
                             </div>
                         </div> -->
                         Showing the history of the claims from the user
-                        <div class="table-responsive">
+                        <div class="table-responsive scrollcontainer" in-view-container>
                                 <table class="table table-striped table-sm">
                                     <tbody>
-                                        <tr ng-repeat="(key, claim) in ct.historyClaims">
+                                        <tr ng-repeat="(key, claim) in ct.historyClaims" in-view="ct.historyInView($index, $inview, $inviewpart)">
                                             <td ng-switch="claim.subject.type">
 
                                                 <div ng-switch-when="thing" class="clearfix">
@@ -362,10 +366,10 @@
 
                     <uib-tab index="2" heading="Lastest" ng-click="ct.lastestClick()">
                         Showing the latest claims added to the server
-                        <div class="table-responsive">
+                        <div class="table-responsive scrollcontainer" in-view-container>
                             <table class="table table-striped table-sm">
                                 <tbody>
-                                    <tr ng-repeat="(key, claim) in ct.latestClaims">
+                                    <tr ng-repeat="(key, claim) in ct.latestClaims" in-view="ct.latestInView($index, $inview, $inviewpart)">
                                         <td ng-switch="claim.subject.type">
 
                                             <div ng-switch-when="thing" class="clearfix">

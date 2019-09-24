@@ -91,35 +91,4 @@ export class TrustGraphPopupServer {
             } as IOpenDialogResult;
         });
     }
-
-    // private requestContentTabId(params: any, sender: Runtime.MessageSender) : any {
-    //     browser.windows.update(this.popupWindow.id, {focused:true });
-    //     return $.Deferred().resolve({ 
-    //                 userId: this.userId,
-    //                 contentHandler: this.contentHandler,
-    //                 contentTabId: this.contentTabId 
-    //             }).promise();
-    //     // return new Promise((resolve, reject) => {
-    //     //     return resolve({ 
-    //     //         userId: this.userId,
-    //     //         contentHandler: this.contentHandler,
-    //     //         contentTabId: this.contentTabId 
-    //     //     });
-    //     // } );
-    // }
-
-    // private sendMessageToDialog(action: string, data: any, contentTabId: any, cb: any) : void
-    // {
-    //     let message = { 
-    //         handler: TrustGraphPopupServer.handlerName,
-    //         params: {
-    //             action: action, 
-    //             data: data, 
-    //             contentTabId: contentTabId 
-    //         }
-    //     };
-    //     browser.tabs.sendMessage(this.popupTab.id, message, cb);
-    // }
-
-
 }

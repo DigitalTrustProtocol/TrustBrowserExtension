@@ -23,7 +23,6 @@ export default class UrlApp {
     }
 
     bindEvents(): void {
-        DTP.trace("Bind events");
         // var pushState = window.history.pushState;
         // window.history.pushState = function(state) {
         //     DTP.trace("Push fire: "+window.location.href);
@@ -181,7 +180,6 @@ export default class UrlApp {
         //this.queryProfiles();
         
         return $(doc).ready($=> {
-            DTP.trace("Document ready");
             this.bindEvents();
         }).promise(null);
     }

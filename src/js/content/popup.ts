@@ -10,7 +10,6 @@ import 'angular-inview'
 // import 'bootstrap/js/dist/modal'
 
 
-import '../common.js';
 import 'notifyjs-browser';
 import 'angular1-star-rating';
 
@@ -78,6 +77,10 @@ class ExtensionpopupController {
     selectedProfile: IProfile;
     tabIndex: number = 0;
 
+    pageSize: number = 10;
+    latestRowIndex: number = 0;
+    historyRowIndex: number = 0;
+
     constructor(private $scope: ng.IScope, private $window: ng.IWindowService, private $document: ng.IDocumentService) {
         $document.ready(() => angular.bind(this, this.init)());
     }
@@ -99,10 +102,11 @@ class ExtensionpopupController {
             this.subjectService = new SubjectService(this.settings, this.packageBuilder);
             this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
             this.showIcon = (this.settings.identicon || this.settings.identicon.length > 0) ? true : false;
+
             this.trustGraphPopupClient = new TrustGraphPopupClient(this.messageHandler);
             // Bind events
-            this.trustGraphPopupClient.updateContentHandler = (params, sender) => { this.updateContentHandler(params, sender); };
-            this.trustGraphPopupClient.requestSubjectHandler = (params, sender) => { return this.requestSubjectHandler(params, sender); };
+            this.trustGraphPopupClient.selectProfileHandler = (params, sender) => {  this.selectProfile(params.profile); };
+            this.trustGraphPopupClient.requestGraphDataHandler = (params, sender) => { return this.requestGraphDataHandler(params, sender); };
 
             this.initSubjectSelect();
 
@@ -136,7 +140,7 @@ class ExtensionpopupController {
     initSubjectSelect() : void {
         let self = this;
 
-        $('.userSelectContainer').select2({
+        let profileSelect = $('#profileSelect').select2({
             ajax: {
                 url: this.settings.infoserver+'/api/Identity/search/id',
                 dataType: 'json',
@@ -174,7 +178,10 @@ class ExtensionpopupController {
             templateSelection: this.formatSubjectSelection
         });
 
-        $('.userSelectContainer').on('select2:select', e => this.selectProfileID(e.params.data.id));
+        profileSelect.on('select2:select', e => {
+            this.selectProfileID(e.params.data.id);
+            $(e.target).empty(); // Clear the selection of the select box
+        });
     }
 
     formatSubjectSelect(item) {
@@ -374,28 +381,21 @@ class ExtensionpopupController {
         });
     }
 
-    public async requestSubjectHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
+    public async requestGraphDataHandler(params: any, sender: Runtime.MessageSender) : Promise<IGraphData> {
         // Get the profile from the list of visible profiles
-        let profile = this.pageProfilesView.filter(pv=>pv.profile.id === params.profileId).pop();
+        let profileView = this.pageProfilesView.filter(pv=>pv.profile.id === params.profileId).pop();
 
 
         let dialogData = {
             scope: "url",
             currentUserId: this.settings.address,
             subjectProfileId: params.profileId,
-            profiles: this.pageProfilesView.map(pv => pv.profile),
-            queryResult: profile.queryResult,
+            //profiles: this.pageProfilesView.map(pv => pv.profile),
+            queryResult: profileView.queryResult,
         } as IGraphData;
 
         return dialogData;
     }
-
-    updateContentHandler(params, sender) : void {
-        let pv = new ProfileModal().setup(params.profileView);
-        pv.currentUser = this.settingsProfile;
-        this.selectProfileView(pv);
-    }
-
     
     getPageProfiles(tabId: any) : Promise<Array<IProfile>> {
         let command = {
@@ -540,27 +540,7 @@ class ExtensionpopupController {
     }
 
 
-    async lastestClick() : Promise<boolean> {
-         let arr = await this.dtpService.getLastest(0, 10);
-         arr.forEach(p => {
-            if(!p.issuer.meta) p.issuer.meta = {};
-            if(!p.subject.meta) p.subject.meta = {};
-         });
-            
-         this.latestClaims = arr;
-        return false;
-    }
 
-    async historyClick() : Promise<boolean> {
-        let arr = await this.dtpService.getHistory(this.settings.address, 0, 10);
-        arr.forEach(p => {
-           if(!p.issuer.meta) p.issuer.meta = {};
-           if(!p.subject.meta) p.subject.meta = {};
-        });
-        
-        this.historyClaims = arr;
-       return false;
-   }
 
     
     openUrl() : void {
@@ -595,10 +575,46 @@ class ExtensionpopupController {
     }
     
 
+
+
+    latestInView(index: number, inview: boolean, inviewpart) {
+        if(inview && index == this.latestRowIndex-1)
+            this.lastestClick();
+    }
+
+    async lastestClick() : Promise<boolean> {
+        let arr = await this.dtpService.getLastest(this.latestRowIndex, this.pageSize);
+        arr.forEach(p => {
+           if(!p.issuer.meta) p.issuer.meta = {};
+           if(!p.subject.meta) p.subject.meta = {};
+           this.latestClaims.push(p);
+        });
+        this.latestRowIndex += this.pageSize;
+           
+       return false;
+   }
+
+
+   historyInView(index: number, inview: boolean, inviewpart) {
+    if(inview && index == this.historyRowIndex-1)
+        this.historyClick();
+    }
+
+   async historyClick() : Promise<boolean> {
+       let arr = await this.dtpService.getHistory(this.settings.address, this.historyRowIndex, this.pageSize);
+       arr.forEach(p => {
+          if(!p.issuer.meta) p.issuer.meta = {};
+          if(!p.subject.meta) p.subject.meta = {};
+          this.historyClaims.push(p);
+       });
+       
+       this.historyRowIndex += this.pageSize;
+      return false;
+  }
 }
 
 
-const app = angular.module("myApp", ['star-rating', tabs, tooltip]);
+const app = angular.module("myApp", ['angular-inview','star-rating', tabs, tooltip]);
 
 app.component("claimValue", ClaimValue)
 
