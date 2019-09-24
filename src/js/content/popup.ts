@@ -588,10 +588,17 @@ class ExtensionpopupController {
 
     latestInView(index: number, inview: boolean, inviewpart) {
         if(inview && index == this.latestRowIndex-1)
-            this.lastestClick();
+            this.lastestLoadBatch();
     }
 
-    async lastestClick() : Promise<boolean> {
+    lastestClick() : boolean {
+        if(this.latestClaims.length == 0) 
+            this.lastestLoadBatch();
+
+        return false;
+    }
+
+    async lastestLoadBatch() : Promise<void> {
         let arr = await this.dtpService.getLastest(this.latestRowIndex, this.pageSize);
         arr.forEach(p => {
            if(!p.issuer.meta) p.issuer.meta = {};
@@ -599,17 +606,22 @@ class ExtensionpopupController {
            this.latestClaims.push(p);
         });
         this.latestRowIndex += this.pageSize;
-           
-       return false;
    }
 
 
    historyInView(index: number, inview: boolean, inviewpart) {
     if(inview && index == this.historyRowIndex-1)
-        this.historyClick();
+        this.historyLoadBatch();
     }
 
-   async historyClick() : Promise<boolean> {
+    historyClick() : boolean {
+        if(this.historyClaims.length == 0)
+            this.historyLoadBatch();
+
+        return false;
+    }
+
+    async historyLoadBatch() : Promise<void> {
        let arr = await this.dtpService.getHistory(this.settings.address, this.historyRowIndex, this.pageSize);
        arr.forEach(p => {
           if(!p.issuer.meta) p.issuer.meta = {};
@@ -618,7 +630,6 @@ class ExtensionpopupController {
        });
        
        this.historyRowIndex += this.pageSize;
-      return false;
   }
 }
 
@@ -627,18 +638,9 @@ const app = angular.module("myApp", ['angular-inview','star-rating', tabs, toolt
 
 app.component("claimValue", ClaimValue)
 
-//     .filter('to_html', ['$sce', function($sce){
-//     return function(text) {
-//         return $sce.trustAsHtml(text);
-//     };
-// }]);
-//app.run($q => { window.Promise = $q; });
-app.run(["$q",
-    function ($q: ng.IQService) {
-        // Use Angular's Q object as Promise. This is needed to make async/await work properly with the UI.
-        // See http://stackoverflow.com/a/41825004/536
-        window["Promise"] = $q;
-    }]);
+// Use Angular's Q object as Promise. This is needed to make async/await work properly with the UI.
+// See http://stackoverflow.com/a/41825004/536
+app.run($q => { window.Promise = $q; });
 
 app.controller('ExtensionpopupController', ["$scope", "$window", "$document", ExtensionpopupController]);
 

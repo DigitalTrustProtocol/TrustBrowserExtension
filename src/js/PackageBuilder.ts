@@ -112,7 +112,7 @@ export default class PackageBuilder {
 
         function addUInt8(value: number) {
             let buf = Buffer.allocUnsafe(1);
-            buf.writeUInt8(value, 0, true);
+            buf.writeUInt8(value, 0);
             buffers.push(buf);
         }
 
@@ -122,7 +122,7 @@ export default class PackageBuilder {
                 return;
             }
 
-            var buf = Buffer.from(text, "UTF8");
+            var buf = Buffer.from(text, "utf8");
             Write7BitEncodedInt(buf.byteLength); // Add the length 
             buffers.push(buf);
         }

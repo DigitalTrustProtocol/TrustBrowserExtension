@@ -20,20 +20,20 @@ export default class Crypto {
    
     static Hash160(data: any) : any {
         if(typeof data === 'string')
-            data = new Buffer(data, 'UTF8');
+            data = Buffer.from(data, "utf8");
         return bitcoin.crypto.hash160(data);
     }
 
     static Hash256(data: any) : any {
         if(typeof data === 'string')
-            data = new Buffer(data, 'UTF8');
+            data = Buffer.from(data, "utf8");
 
         return Crypto.Sha256(Crypto.Sha256(data));
     }
 
     static Sha256(data: any) : any {
         if(typeof data === 'string')
-            data = new Buffer(data, 'UTF8');
+            data = Buffer.from(data, "utf8");
         return bitcoin.crypto.sha256(data);
     }
 

@@ -105,7 +105,6 @@ module.exports = {
       {from:'src/lib',to:'./lib'},
       {from:'src/templates',to:'./templates'},
       //{from:'js/background.js',to:'./js/'},
-      {from:'src/js/common.js',to:'./js/'},
       {from:'src/typings',to:'./typings'},
       {from:'manifest.json',to:'./manifest.json'}
   ]),
