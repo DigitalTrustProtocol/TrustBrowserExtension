@@ -88,7 +88,8 @@ export default class UrlApp {
             let profile = <IProfile>{
                 id: Crypto.toDTPAddress(Crypto.Hash160(docTitle+url)),
                 title: docTitle,
-                data:  Buffer.from(url, "utf8"),
+                //data:  Buffer.from(url, "utf8"),
+                data: url,
                 type: 'url'
             };
             this.profiles.push(profile);
@@ -98,7 +99,8 @@ export default class UrlApp {
         let hostnameProfile = <IProfile>{
             id: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
             title: '',
-            data: Buffer.from(hostname, "utf8"),
+            //data: Buffer.from(hostname, "utf8"),
+            data: hostname,
             type: 'url'
         };
         this.profiles.push(hostnameProfile);

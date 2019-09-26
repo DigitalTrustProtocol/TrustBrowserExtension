@@ -128,8 +128,8 @@ class ExtensionpopupController {
                     return;
 
                 data.profiles.forEach((item:IProfile) => {
-                     if(item.data && item.data.data)
-                        item.data = item.data.data;
+                    //  if(item.data && item.data.data)
+                    //     item.data = item.data.data;
                      this.pageProfiles.push(new ProfileModal(item, this.settingsProfile));
                     }); // Recreate the ProfileView object!
                 this.pageProfilesView = await this.queryProfiles(this.pageProfiles);
@@ -508,13 +508,13 @@ class ExtensionpopupController {
     getStringFromBuffer(data: any) : string {
         if(!data)
             return "";
-            
-        let source = (data.data) ? data.data : data;
+        return data;
+        // let source = (data.data) ? data.data : data;
 
-        if(typeof source === 'string')
-            return Buffer.from(data, 'base64').toString("utf-8");
-        else
-            return Buffer.from(data).toString("utf-8");
+        // if(typeof source === 'string')
+        //     return Buffer.from(data, 'base64').toString("utf-8");
+        // else
+        //     return Buffer.from(data).toString("utf-8");
 
         //return typeof data;
     }

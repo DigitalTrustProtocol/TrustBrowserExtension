@@ -97,7 +97,7 @@ export default class TrustGraphDataAdapter {
 
         let label = this.lineBreakText(profile.title, 20);
         if(label.length == 0) 
-            label = this.lineBreakText(this.getStringFromBuffer(profile.data), 20);
+            label = this.lineBreakText(this.getData(profile), 20);
         
         if(label.length == 0) 
             label = this.lineBreakText(profile.id, 20);
@@ -111,16 +111,20 @@ export default class TrustGraphDataAdapter {
         return node;
     }
 
-    private getStringFromBuffer(data: any) : string {
-        if(!data)
+    private getData(profile: IProfile) : string {
+        if(!profile || !profile.data)
             return "";
-            
-        let source = (data.data) ? data.data : data;
+        
+        //if(profile.type == "url")
 
-        if(typeof source === 'string')
-            return Buffer.from(data, 'base64').toString("utf-8");
-        else
-            return Buffer.from(data).toString("utf-8");
+        return profile.data;
+        //let source = (data.data) ? data.data : data;
+
+
+        // if(typeof source === 'string')
+        //     return Buffer.from(data, 'base64').toString("utf-8");
+        // else
+        //     return Buffer.from(data).toString("utf-8");
     }
 
 

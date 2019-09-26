@@ -79,8 +79,9 @@ export default class PackageBuilder {
     Sign(data: any): any[] {
         let message = (typeof data === 'string') ? data : data.toString('base64');
         let buf = Crypto.Sign(this.settings.keyPair, message);
-        let sig = [...buf];
-        return sig;
+        //let sig = [...buf];
+        //return sig;
+        return buf.toString('base64');
     }
 
     CalculateClaimId(claim: Claim): any {
