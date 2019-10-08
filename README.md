@@ -1,3 +1,5 @@
+[![Gitter](https://badges.gitter.im/DigitalTrustProtocol/FakeNewsApp.svg)](https://gitter.im/DigitalTrustProtocol/FakeNewsApp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 # Trust Browser Extension
 
 #Development
