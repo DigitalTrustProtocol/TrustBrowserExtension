@@ -15,62 +15,20 @@ export default class UrlApp {
 
     public config: IConfig = null;
     public profiles: Array<IProfile> = [];
-    //public selectedProfileView: ProfileModal;
-
 
     constructor(config:IConfig) {
         this.config = config;
     }
 
     bindEvents(): void {
-        // var pushState = window.history.pushState;
-        // window.history.pushState = function(state) {
-        //     DTP.trace("Push fire: "+window.location.href);
-        //     let result= pushState.apply(window.history, arguments);
-        //     return result;
-        // };
-
-        // window.onpopstate = function(e){
-        //     if(e.state){
-        //         DTP.trace("Pop fire: "+window.location.href);
-        //     }
-        // };
-
-        // document.addEventListener("visibilitychange", () => {
-        //     if (document.visibilityState === 'visible') {
-        //         this.updateIcon(this.selectedProfileView.trustResult);
-        //     }
-        // });
-
         browser.runtime.onMessage.addListener(async (request, sender) => {
             if(request.handler === "profileHandler") {
                 if(request.action === "getProfiles") {
 
                     return {
-                        //selectedUserId : this.selectedProfileView.profile.id,
                         profiles: this.profiles
                     };
                 }
-                
-                // if(request.params.action === "updateProfile") {
-
-                //     let pv = this.sessionProfiles.filter(p => p.profile.id === request.params.data.profile.userId).pop();
-                //     if(!pv) 
-                //         this.sessionProfiles.push(pv = new ProfileModal());
-                    
-                //     pv.setup(request.params.data);
-                //     //this.selectedProfileView = pv;
-                    
-                //     return true;
-                // }
-                
-                // if(request.params.action === "resetProfiles") {
-
-                //     this.sessionProfiles = [];
-                //     this.buildProfiles();
-                    
-                //     return true;
-                // }
             }
 
         });
@@ -83,8 +41,9 @@ export default class UrlApp {
 
         let docTitle = window.document.title;
         let hostname = window.location.origin;
+        
 
-        if(hostname != url) {
+        //if(hostname != url) {
             let profile = <IProfile>{
                 id: Crypto.toDTPAddress(Crypto.Hash160(docTitle+url)),
                 title: docTitle,
@@ -94,21 +53,19 @@ export default class UrlApp {
             };
             this.profiles.push(profile);
             this.config.profileRepository.setProfile(profile);
-        }
+        //}
 
-        let hostnameProfile = <IProfile>{
-            id: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
-            title: '',
-            //data: Buffer.from(hostname, "utf8"),
-            data: hostname,
-            type: 'url'
-        };
-        this.profiles.push(hostnameProfile);
-        this.config.profileRepository.setProfile(hostnameProfile);
+        // let hostnameProfile = <IProfile>{
+        //     id: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
+        //     title: '',
+        //     //data: Buffer.from(hostname, "utf8"),
+        //     data: hostname,
+        //     type: 'url'
+        // };
+        // this.profiles.push(hostnameProfile);
+        // this.config.profileRepository.setProfile(hostnameProfile);
 
         this.buildHtmlEntities();
-
-        //this.selectedProfileView = this.sessionProfiles[0];
     }
 
 
@@ -119,7 +76,7 @@ export default class UrlApp {
             profile.type = "alias";
             profile.title = $(element).find("[itemprop='alias']").text();
             profile.id = $(element).find("[itemprop='id']").text();
-            let proof = $(element).find("[itemprop='aliasProof']").attr('itemvalue');
+            let proof = $(element).find("[itemprop='proof']").attr('itemvalue');
 
             if(profile.title && profile.id && proof) {
                 let valid = Crypto.Verify(profile.title, profile.id, proof);
@@ -138,36 +95,6 @@ export default class UrlApp {
         })
     }
 
-    // updateIcon(result: BinaryTrustResult) : void {
-    //     let state = (result) ? result.state : undefined;
-
-    //     chrome.runtime.sendMessage({
-    //         handler: 'extensionHandler',
-    //         action: 'updateIcon',
-    //         value: state
-    //     });
-    // }
-
-    // queryProfiles() : JQueryPromise<void> {
-    //     DTP.trace("Query profiles");
-    //     let scope = "url";
-    //     let profiles = this.sessionProfiles.map(p=>p.profile);
-    //     return this.config.dtpService.Query(profiles, scope).then((queryResult) => {
-    //         // Process the result
-    //         DTP.trace("Query result: "+JSON.stringify(queryResult.body, null, 2));
-            
-    //         let trustResults = this.config.trustStrategy.createTrustResults(queryResult.body) || {};
-    //         this.sessionProfiles.forEach((pv) => {
-    //             pv.queryResult = queryResult.body;
-    //             pv.trustResult = trustResults[pv.profile.id] || new BinaryTrustResult();
-    //         })
-    //         //this.updateIcon(this.sessionProfiles[0].trustResult);
-    //     }).fail((xhr, errorMessage) => {
-    //         console.log(AjaxErrorParser.formatErrorMessage(xhr, errorMessage));
-    //     })
-    // }
-
-
     getSanitizedUrl() : string {
         let url = window.location.href;
         while(url.length > 0 && url[url.length-1] === '/') 
@@ -178,8 +105,6 @@ export default class UrlApp {
     ready(doc: Document): JQueryPromise<void> {
         
         this.buildProfiles();
-
-        //this.queryProfiles();
         
         return $(doc).ready($=> {
             this.bindEvents();

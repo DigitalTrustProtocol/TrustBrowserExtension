@@ -6,13 +6,9 @@ import tabs from 'ui-bootstrap4/src/tabs';
 import tooltip from 'ui-bootstrap4/src/tooltip';
 import 'bootstrap'
 import 'angular-inview'
-// import 'bootstrap/js/dist/button'
-// import 'bootstrap/js/dist/modal'
-
 
 import 'notifyjs-browser';
 import 'angular1-star-rating';
-
 import PackageBuilder from "../PackageBuilder";
 import DTPService from "../DTPService";
 import TrustStrategy from "../TrustStrategy";
@@ -42,7 +38,6 @@ import { Claim } from '../../lib/dtpapi/model/Claim';
 import AjaxErrorParser from "../Shared/AjaxErrorParser";
 import Identicon from "../Shared/Identicon";
 import copy from "copy-to-clipboard";
-//import { LatestClaims } from './components/latest';
 import { ClaimValue } from './components/claimValue';
 
 
@@ -81,9 +76,21 @@ class ExtensionpopupController {
     latestRowIndex: number = 0;
     historyRowIndex: number = 0;
 
+    STATE_START:number =1;
+    STATE_ACQUIRING_AUTHTOKEN:number =2;
+    STATE_AUTHTOKEN_ACQUIRED:number =3;
+  
+    state : number = 1;
+    
+    signin_button: boolean =true;
+    xhr_button: boolean = true;
+    revoke_button: boolean =true;
+
     constructor(private $scope: ng.IScope, private $window: ng.IWindowService, private $document: ng.IDocumentService) {
         $document.ready(() => angular.bind(this, this.init)());
     }
+
+  
 
     init(jqueryAlias: any) : void {
         this.messageHandler = new MessageHandler();
@@ -180,7 +187,7 @@ class ExtensionpopupController {
                     return $request;
                   }
             },
-            placeholder: 'Search for a subject',
+            placeholder: 'Search for a subject by ID',
             minimumInputLength: 0,
             templateResult: this.formatSubjectSelect,
             templateSelection: this.formatSubjectSelection
@@ -383,7 +390,7 @@ class ExtensionpopupController {
     copyToClipboard(controlId: string) : void {
 
         let ctrl = document.getElementById(controlId);
-        copy(ctrl.innerHTML);
+        copy(ctrl.innerText);
         $["notify"]("Copied to clipboard", {
             autoHideDelay: 1000,
             className: 'info'

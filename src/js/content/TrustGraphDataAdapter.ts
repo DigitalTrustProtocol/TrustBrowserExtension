@@ -10,6 +10,7 @@ import TrustStrategy from "../TrustStrategy";
 import IGraphData from './IGraphData';
 import { ProfileModal } from "../Model/ProfileModal";
 import { Buffer } from 'buffer';
+import PackageBuilder from '../PackageBuilder';
 
 
 export default class TrustGraphDataAdapter {
@@ -22,11 +23,11 @@ export default class TrustGraphDataAdapter {
     private subjectProfileID: string;
 
     private source: IGraphData;
-    private profileIndex: object;
+    private profileViews: object;
 
-    constructor(data: IGraphData, profileIndex: object) {
+    constructor(data: IGraphData, profileViews: object) {
         this.source = data;
-        this.profileIndex = profileIndex;
+        this.profileViews = profileViews;
     }
 
 
@@ -34,7 +35,7 @@ export default class TrustGraphDataAdapter {
         this.graph.nodes.clear();
         this.graph.edges.clear();
 
-        let subjectProfileView = this.profileIndex[this.source.subjectProfileId] as ProfileModal;
+        let subjectProfileView = this.profileViews[this.source.subjectProfileId] as ProfileModal;
 
         //let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
         this.loadNodes(subjectProfileView);
@@ -56,9 +57,9 @@ export default class TrustGraphDataAdapter {
         for(let key in pv.trustResult.claims) {
             let claim = pv.trustResult.claims[key];
 
-            let parentView = this.profileIndex[claim.issuer.id] as ProfileModal;
+            let parentView = this.profileViews[claim.issuer.id] as ProfileModal;
 
-            this.addEdge(parentView.profile, pv.profile, claim.value);
+            this.addEdge(parentView.profile, pv.profile, claim);
 
             this.loadNodes(parentView);
         }
@@ -70,8 +71,8 @@ export default class TrustGraphDataAdapter {
     }
 
     public updateWithClaim(claim : Claim) : void {
-        let from = this.profileIndex[claim.issuer.id] || this.profileIndex[this.source.currentUserId];
-        let to = this.profileIndex[claim.subject.id];
+        let from = this.profileViews[claim.issuer.id] || this.profileViews[this.source.currentUserId];
+        let to = this.profileViews[claim.subject.id];
         
         to.trustResult.claims[claim.issuer.id] = claim;
 
@@ -154,8 +155,8 @@ export default class TrustGraphDataAdapter {
     }
 
 
-    public addEdge(from: IProfile, to:IProfile, value: any) : void {
-        this.graph.edges.add(this.createEdge(from, to, value));
+    public addEdge(from: IProfile, to:IProfile, claim: Claim) : void {
+        this.graph.edges.add(this.createEdge(from, to, claim));
     }
 
     public removeEdge(from: IProfile, to:IProfile) : void {
@@ -168,9 +169,12 @@ export default class TrustGraphDataAdapter {
         this.graph.edges.update(this.createEdge(from, to, value)); // Auto create if node do not exist
     }
 
-    private createEdge(from: IProfile, to:IProfile, value: any) : any {
-        let color = (value === "true" || value === "1") ? 'green' : (value == undefined || value == "") ? 'gray': 'red';
-
+    private createEdge(from: IProfile, to:IProfile, claim: Claim) : any {
+        let color = 'gray';
+        switch(claim.type) {
+            case PackageBuilder.RATING_TRUST_DTP1: color = this.getRatingColor(claim.value); break;
+            case PackageBuilder.BINARY_TRUST_DTP1: color = this.getBinaryTrustColor(claim.value); break;
+        }
         let node = { 
             id: from.id+to.id,
             from: from.id, 
@@ -181,6 +185,20 @@ export default class TrustGraphDataAdapter {
             } 
         };
         return node;
+    }
+
+    private getBinaryTrustColor(value: string) : string {
+        if(value == "true" || value == "1") return 'green';
+        if(value == "false" || value == "0") return 'red';
+        return 'gray';
+    }
+
+    private getRatingColor(value: string) : string {
+        let num = +(value);
+        if(num == NaN || num == 0) return 'gray';
+        if(num < 2) return 'red';
+        if(num > 4) return 'green';
+        return 'GoldenRod';
     }
     
 

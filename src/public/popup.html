@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Trust Chrome Extension for handling trust">
+    <meta name="description" content="Anti Fake News Chrome Extension for handling trust">
     <meta name="author" content="Carsten Keutmann">
     <title>Trust Chrome Extension</title>
 
@@ -125,7 +125,6 @@
             </div>
         </nav>
     </header>
-
     <div class="container-fluid">
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10">
 
@@ -565,14 +564,15 @@
                             <pre><code id="userProofCode">&lt;div itemscope itemtype=&quot;http://digitaltrustprotocol.org/entity&quot;&gt; 
 &lt;div itemprop=&quot;alias&quot;&gt;<span ng-bind="ct.tempSettings.alias"></span>&lt;/div&gt;
 &lt;div itemprop=&quot;id&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
-&lt;span itemprop=&quot;aliasProof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
+&lt;span itemprop=&quot;proof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
 &lt;/div&gt;</code></pre>
                             <button class="btn btn-secondary btn-sm" ng-click="ct.copyToClipboard('userProofCode')">
                                 <i class="fas fa-clipboard"></i> Copy to clipboard
                             </button>
                         </div>
                     </div>
-                    <h6>Content proof</h6>
+                    
+                    <!-- <h6>Content proof</h6>
                     <div>Insert content proof html into a page. This will enable trusting the content directly.</div>
                     <button class="btn btn-primary" type="button" data-toggle="collapse"
                         data-target="#contentProofContainer" aria-expanded="false"
@@ -603,7 +603,7 @@
                             </button>
 
                         </div>
-                    </div>
+                    </div> -->
 
                 </div><!-- /Modal body end -->
                 <div class="modal-footer">
@@ -619,7 +619,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">About DTP <small>Ver 0.3.20190830 - Alpha</small></h5>
+                    <h5 class="modal-title" id="userModalLabel">About DTP <small>Ver 0.3.20190930 - Alpha</small></h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -638,14 +638,33 @@
                             data mining.</small>
                     </p>
                     <p>
+                        <h6>Social</h6>
+                        <small>
+                            <div>
+                                <a href="https://gitter.im/DigitalTrustProtocol/FakeNewsApp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge" target="_blank">
+                                    <img src="https://badges.gitter.im/DigitalTrustProtocol/FakeNewsApp.svg">
+                                </a>
+                            </div>
+                            <div>
+                                <a href="https://medium.com/@carstenkeutmann_96497/digital-trust-protocol-c37e17eeca20?source=friends_link&sk=96e0b7d22b78054a566a4b3e729c35ae" 
+                                target="_blank">Medium - Digital Trust Protocol</a>
+                            </div>                            
+                            <div>
+                                <a href="https://twitter.com/TrustProtocol" target="_blank">
+                                    @Twitter
+                                </a>
+                            </div>
+                        </small>
+                    </p>
+                    <p>
                         <h6>Resources</h6>
                         <small>
                             <div><a href="https://github.com/DigitalTrustProtocol/Whitepaper"
-                                    target="_blank">Whitepaper</a></div>
+                                    target="_blank">Github - Whitepaper</a></div>
                             <div><a href="https://github.com/DigitalTrustProtocol/TrustBrowserExtension"
-                                    target="_blank">DTP Browser Extension</a></div>
-                            <div><a href="https://github.com/DigitalTrustProtocol/DtpSolution" target="_blank">DTP
-                                    Server</a></div>
+                                    target="_blank">Github - DTP Browser Extension</a></div>
+                            <div><a href="https://github.com/DigitalTrustProtocol/DtpSolution" 
+                                    target="_blank">Github - DTP Server</a></div>
                         </small>
                     </p>
 

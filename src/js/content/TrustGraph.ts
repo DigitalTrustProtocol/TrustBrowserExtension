@@ -46,7 +46,7 @@ class TrustGraphController {
 
     modalData: ProfileModal;
     //source: IGraphData;
-    profileIndex: object;
+    profileViews: object;
     trustResults: object;
 
 
@@ -88,7 +88,7 @@ class TrustGraphController {
         //this.source = source;
         await this.buildProfiles(source);
 
-        this.dataAdapter = new TrustGraphDataAdapter(source, this.profileIndex);
+        this.dataAdapter = new TrustGraphDataAdapter(source, this.profileViews);
         this.dataAdapter.load();
 
         let options = this.networkOptions();
@@ -99,7 +99,7 @@ class TrustGraphController {
         nw.on("select", (params) => {
             if(params.nodes.length > 0) {
                 let profileId = params.nodes[0];
-                let pv = this.profileIndex[profileId];
+                let pv = this.profileViews[profileId];
                 this.trustGraphPopupClient.selectProfile(pv.profile);
             }
         });
@@ -112,17 +112,17 @@ class TrustGraphController {
 
         this.trustResults = this.trustStrategy.ProcessClaims(source.queryResult.results.claims);
 
-        this.profileIndex = {};
+        this.profileViews = {};
         this.selectedProfile = await this.profileRepository.getProfile(source.subjectProfileId); // source.profiles.filter(p=>p.id == source.subjectProfileId).pop();
         this.currentUser = await this.profileRepository.getProfile(source.currentUserId,{id: source.currentUserId, title: "(You)" });
         
-        this.profileIndex[source.currentUserId] = new ProfileModal(this.currentUser, this.currentUser);
-        this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile, this.currentUser);
+        this.profileViews[source.currentUserId] = new ProfileModal(this.currentUser, this.currentUser);
+        //this.profileIndex[source.subjectProfileId] = new ProfileModal(this.selectedProfile, this.currentUser); // Is handle by the for loop
 
         for(let key in this.trustResults) {
              let profile = await this.profileRepository.getProfile(key);
 
-            this.profileIndex[key] = new ProfileModal(profile, this.currentUser, this.trustResults[key]);
+            this.profileViews[key] = new ProfileModal(profile, this.currentUser, this.trustResults[key]);
         }
     }
 

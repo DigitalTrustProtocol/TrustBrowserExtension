@@ -51,10 +51,16 @@ export default class ProfileRepository {
             profile = <IProfile>await this.dtpService.getIdentityMetadata(id);
             if(profile) 
                 this.setProfile(profile);
-            else 
-                if(defaultProfile)
-                    profile = defaultProfile;
         }
+
+        if(!profile && defaultProfile)
+            profile = defaultProfile;
+
+        if(!profile)            
+            profile = <IProfile>{ 
+                id: id,
+                title: id
+            };
 
         return profile;
     }
