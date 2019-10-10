@@ -33,8 +33,10 @@ chrome.runtime.onInstalled.addListener(function listener(details) {
           chrome.windows.getAll({ populate: true }, function (windows) {
                windows.forEach((window) => {
                     window.tabs.forEach((tab) => {
-                         if(!tab.url.match(/(chrome):\/\//gi) )
+                         if(!tab.url.match(/(http(s)?:\/\/)?(chrome)(:|\.google\.com)/gi)) {
+                              console.log("inject : "+tab.url)
                               injectIntoTab(tab);
+                         }
                     })
                })
           });
@@ -42,5 +44,3 @@ chrome.runtime.onInstalled.addListener(function listener(details) {
        chrome.runtime.onInstalled.removeListener(listener);
      }
    });
-
-

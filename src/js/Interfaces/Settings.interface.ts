@@ -8,8 +8,6 @@ export default interface ISettings  {
     seed: string;
     rememberme: boolean;
     infoserver: string;
-    twitterdistrust: string;
-    twittertrust: string;
     keyPair?: any;
     address?: string;
     hash:any;

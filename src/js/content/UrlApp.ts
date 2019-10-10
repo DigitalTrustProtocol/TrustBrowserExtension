@@ -14,7 +14,7 @@ import { Buffer } from 'buffer';
 export default class UrlApp {
 
     public config: IConfig = null;
-    public profiles: Array<IProfile> = [];
+    //public profiles: Array<IProfile> = [];
 
     constructor(config:IConfig) {
         this.config = config;
@@ -26,7 +26,7 @@ export default class UrlApp {
                 if(request.action === "getProfiles") {
 
                     return {
-                        profiles: this.profiles
+                        profiles: this.buildProfiles()
                     };
                 }
             }
@@ -36,24 +36,21 @@ export default class UrlApp {
     }
 
 
-    buildProfiles() : void {
+    buildProfiles() : Array<IProfile> {
         let url = this.getSanitizedUrl();
-
+        let profiles: Array<IProfile> = [];
         let docTitle = window.document.title;
         let hostname = window.location.origin;
-        
 
-        //if(hostname != url) {
-            let profile = <IProfile>{
-                id: Crypto.toDTPAddress(Crypto.Hash160(docTitle+url)),
-                title: docTitle,
-                //data:  Buffer.from(url, "utf8"),
-                data: url,
-                type: 'url'
-            };
-            this.profiles.push(profile);
-            this.config.profileRepository.setProfile(profile);
-        //}
+        let profile = <IProfile>{
+            id: Crypto.toDTPAddress(Crypto.Hash160(docTitle+url)),
+            title: docTitle,
+            //data:  Buffer.from(url, "utf8"),
+            data: url,
+            type: 'url'
+        };
+        profiles.push(profile);
+        this.config.profileRepository.setProfile(profile);
 
         // let hostnameProfile = <IProfile>{
         //     id: Crypto.toDTPAddress(Crypto.Hash160(hostname)),
@@ -65,12 +62,12 @@ export default class UrlApp {
         // this.profiles.push(hostnameProfile);
         // this.config.profileRepository.setProfile(hostnameProfile);
 
-        this.buildHtmlEntities();
+        return this.buildHtmlEntities(profiles);
     }
 
 
-    buildHtmlEntities() : any {
-        let profiles = {};
+    buildHtmlEntities(profiles : Array<IProfile>) : Array<IProfile> {
+        let temp : Array<IProfile> = [];
         $("[itemtype='http://digitaltrustprotocol.org/entity']").each((i, element) => {
             let profile = <IProfile>{};
             profile.type = "alias";
@@ -86,13 +83,14 @@ export default class UrlApp {
                 }
             }
             if(profile.id)
-                profiles[profile.id] = profile;
+                temp[profile.id] = profile;
         });
 
-        $.each(profiles, (name, profile) => {
-            this.profiles.push(profile);
+        $.each(temp, (name, profile) => {
+            profiles.push(profile);
             this.config.profileRepository.setProfile(profile);
         })
+        return profiles;
     }
 
     getSanitizedUrl() : string {
@@ -103,9 +101,6 @@ export default class UrlApp {
     }
 
     ready(doc: Document): JQueryPromise<void> {
-        
-        this.buildProfiles();
-        
         return $(doc).ready($=> {
             this.bindEvents();
         }).promise(null);

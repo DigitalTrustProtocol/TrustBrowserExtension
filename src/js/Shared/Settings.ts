@@ -8,13 +8,11 @@ export default class Settings implements ISettings {
     seed: string = "";
     rememberme: boolean = true;
     infoserver: string = "https://trust.dance";
-    twitterdistrust: string = 'hidecontent';
-    twittertrust: string = 'noaction';
     identicon : string = "";
     time: number = 0;
     keyPair?: any;
     hash:any;
-
+    
     constructor() {
         Object.defineProperty(this, 'hash', { enumerable: false, writable: true, value: null }); // No serialize to json!
         Object.defineProperty(this, 'keyPair', { enumerable: false, writable: true, value: null }); // No serialize to json!
@@ -24,15 +22,15 @@ export default class Settings implements ISettings {
         let target = new Settings();
         target.alias = source.alias;
         target.aliasProof = source.aliasProof;
+        target.aliasChanged = source.aliasChanged;
         target.password = source.password;
         target.seed = source.seed;
         target.rememberme = source.rememberme;
         target.infoserver = source.infoserver;
-        target.twitterdistrust = source.twitterdistrust;
-        target.twittertrust = source.twittertrust;
         target.identicon = source.identicon;
         target.time = source.time;
 
         return target;
     }
 }
+

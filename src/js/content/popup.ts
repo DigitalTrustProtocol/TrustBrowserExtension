@@ -129,7 +129,11 @@ class ExtensionpopupController {
 
     loadProfilesFromContentPage() : void {
         chrome.tabs.query({active: true, currentWindow: true}, tabs => {
-            this.contentTabId = tabs[0].id;
+            let tab = tabs[0];
+            this.contentTabId = tab.id;
+            if(tab.url.match(/(http(s)?:\/\/)?(chrome)(:|\.google\.com)/gi))
+                return;
+
             this.getPageProfiles(this.contentTabId).then(async (data: any) => {
                 if(!data || data.length == 0 || !data.profiles)
                     return;
