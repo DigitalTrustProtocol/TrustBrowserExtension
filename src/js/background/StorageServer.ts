@@ -46,12 +46,10 @@ export class StorageServer {
     }
 
     public getItem(params: any, sender: Runtime.MessageSender) : Promise<any> {
-        console.log(params)
         return localforage.getItem(params.key);
     }
 
     public setItem(params: any, sender: Runtime.MessageSender) : void {
-        console.log(params);
         localforage.setItem(params.key, params.value);
     }
 

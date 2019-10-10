@@ -13,39 +13,34 @@ storageServer.ready().then(() => {
      settingsServer.init();
 });
 
-// function updateIcon(val: number) : void {
-//     let icon = "";
 
-//     if(val == 0)
-//         icon = "";
-
-//     if (val > 0)
-//         icon = "trust";
-    
-//     if(val < 0) 
-//         icon = "distrust";
-
-//     chrome.browserAction.setIcon({
-//         path : {
-//           "16": `img/DTP${icon}16a.png`,
-//           "24": `img/DTP${icon}24a.png`,
-//           "32": `img/DTP${icon}32a.png`
-//         }
-//       });
-// }
+var manifest = chrome.runtime.getManifest();
+var injectIntoTab = function (tab) {
+     // You could iterate through the content scripts here
+     var scripts = manifest.content_scripts[0].js;
+     scripts.forEach(script => {
+          chrome.tabs.executeScript(tab.id, {
+               file: script
+          });
+     });
+}
 
 
-// chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
-//     if(msg.handler ===  "extensionHandler")
-//         if (msg.action === "updateIcon") {
-//             updateIcon(msg.value);
-//         }
-// });
+chrome.runtime.onInstalled.addListener(function listener(details) {
+     if (details.reason === "install" || details.reason === "update") {
+
+          // Get all windows
+          chrome.windows.getAll({ populate: true }, function (windows) {
+               windows.forEach((window) => {
+                    window.tabs.forEach((tab) => {
+                         if(!tab.url.match(/(chrome):\/\//gi) )
+                              injectIntoTab(tab);
+                    })
+               })
+          });
+  
+       chrome.runtime.onInstalled.removeListener(listener);
+     }
+   });
 
 
-// chrome.tabs.onActivated.addListener(function(activeInfo: chrome.tabs.TabActiveInfo) {
-//     updateIcon(undefined);
-// });
-
-
-// https://stackoverflow.com/questions/10994324/chrome-extension-content-script-re-injection-after-upgrade-or-install/11598753#11598753

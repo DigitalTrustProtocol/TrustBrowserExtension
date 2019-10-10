@@ -40,7 +40,7 @@ $(document).ready( () =>{
 
         let urlapp = new UrlApp(config);
         urlapp.ready(document).then(() => {
-            
+            console.log("Anti Fake News Extension has been loaded on content page.")
         });
 
     });

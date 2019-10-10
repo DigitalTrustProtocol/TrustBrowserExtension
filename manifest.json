@@ -1,7 +1,7 @@
 {
   "name": "Anti Fake News",
-  "description": "Fight fake news online by rating and trusting information on any webpage.",
-  "version": "0.2.19.1007",
+  "description": "Fight fake news online by rate and trusting information on any webpage.",
+  "version": "0.2.19.1010",
   "manifest_version": 2,
   "minimum_chrome_version": "29",
   "author": "DTP protocol developers",
@@ -28,8 +28,8 @@
     "identity",
     "tabs",
     "storage",
-    "http://trust.dance/",
-    "https://trust.dance/"
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "scripts": ["background.js"]
