@@ -39,6 +39,7 @@ import AjaxErrorParser from "../Shared/AjaxErrorParser";
 import Identicon from "../Shared/Identicon";
 import copy from "copy-to-clipboard";
 import { ClaimValue } from './components/claimValue';
+import { LoginPopupClient } from '../Shared/LoginPopupClient';
 
 
 class ExtensionpopupController {
@@ -59,6 +60,7 @@ class ExtensionpopupController {
     storageClient: StorageClient;
     trustStrategy: TrustStrategy;
     trustGraphPopupClient: TrustGraphPopupClient;
+    loginPopupClient: LoginPopupClient;
     showError: boolean;
     errorMessage: string;
     pageProfiles: Array<ProfileModal> = [];
@@ -85,6 +87,16 @@ class ExtensionpopupController {
     signin_button: boolean =true;
     xhr_button: boolean = true;
     revoke_button: boolean =true;
+
+
+    contentTitle: string = "";
+    contentArea: string = "";
+    contentProof: string = "";
+    contentId: string = "";
+    contentIncludeEntity: boolean = true;
+    contentIncludeUrl: boolean = false;
+    contentHtml: string = "";
+
 
     constructor(private $scope: ng.IScope, private $window: ng.IWindowService, private $document: ng.IDocumentService) {
         $document.ready(() => angular.bind(this, this.init)());
@@ -115,6 +127,9 @@ class ExtensionpopupController {
             this.trustGraphPopupClient.selectProfileHandler = (params, sender) => {  this.selectProfile(params.profile); };
             this.trustGraphPopupClient.requestGraphDataHandler = (params, sender) => { return this.requestGraphDataHandler(params, sender); };
 
+            this.loginPopupClient = new LoginPopupClient(this.messageHandler);
+            this.loginPopupClient.userAuthenticatedHandler = (params, sender) => {  this.userAuthenticatedHandler(params.user); };
+
             this.initSubjectSelect();
 
             let key = this.settings.password + this.settings.seed;
@@ -124,6 +139,8 @@ class ExtensionpopupController {
             } else {
                 this.loadProfilesFromContentPage();
             }
+
+            this.changeState(this.STATE_START);
         });
     }
 
@@ -264,10 +281,12 @@ class ExtensionpopupController {
 
        
         this.tempSettings.aliasChanged = this.settings.alias != this.tempSettings.alias;
+        this.tempSettings.iconChanged = this.settings.icon != this.tempSettings.icon;
 
         if(!this.tempSettings.password) this.tempSettings.password = "";
         if(!this.tempSettings.seed) this.tempSettings.seed = "";
         if(!this.tempSettings.alias) this.tempSettings.alias = "";
+        if(!this.tempSettings.icon) this.tempSettings.icon = "";
 
         this.settingsClient.buildKey(this.tempSettings);
         let addressChanged = this.settings.address != this.tempSettings.address;
@@ -384,12 +403,49 @@ class ExtensionpopupController {
    
     modelChange(state?: string) {
         if (state === 'identicon') {
+            // if(this.tempSettings.icon || this.tempSettings.icon.length > 0) 
+            //     return; // Just use the icon url
+
+            // Generate the identicon even that a icon url exist
             this.settingsClient.buildKey(this.tempSettings);
 
               this.tempSettings.identicon = Identicon.createIcon(this.tempSettings.address);
               this.showIcon = true
         }
     }
+
+    async loadIconClick($event: JQueryEventObject, url:string) : Promise<void> {
+        let valid = await this.testImageUrl(url);
+        if(valid) {
+            this.tempSettings.identicon = url;
+        }
+    }
+
+    testImageUrl(url:string, timeoutT?: number) : Promise<boolean> {
+        return new Promise<boolean>((resolve, reject) => {
+            var timeout = timeoutT || 5000;
+            var timer, img = new Image();
+            img.onerror = img.onabort = (error) => {
+                clearTimeout(timer);
+                reject(false);
+            };
+            img.onload = () => {
+                clearTimeout(timer);
+                resolve(true);
+            };
+            timer = setTimeout(function () {
+                // reset .src to invalid URL so it stops previous
+                // loading, but doesn't trigger new load
+                img.src = "//!!!!/test.jpg";
+                reject(false);
+            }, timeout);
+            img.src = url;
+        });
+    }
+
+    // checkIconURL(url: string): boolean {
+    //     return(url.match(/\.(jpeg|jpg|gif|png)$/) != null);
+    // }
 
     copyToClipboard(controlId: string) : void {
 
@@ -642,6 +698,278 @@ class ExtensionpopupController {
        
        this.historyRowIndex += this.pageSize;
   }
+
+
+  // ................................................................................................
+  userInfo: string = "";
+  apidata: string = "";
+
+  popupSignIn() {
+
+    localStorage.setItem("user", ""); 
+
+    let userData = localStorage.getItem("user");
+    if(userData && userData.length > 0) {
+        console.log("Already signed in from localStorage!");
+        return;
+    }
+
+    this.loginPopupClient.getUser().then(result => {
+        if(!result || result.length == 0) {
+            console.log("Calling popup");
+            this.loginPopupClient.openPopup(null);
+        } else {
+            console.log("User from background: "+ result);
+        }
+    });
+    
+  }
+
+  userAuthenticatedHandler(user: any) : void {
+      console.log("User Authenticated:\r\n"+ JSON.stringify(user, null, 2));
+      
+  }
+
+  interactiveSignIn() {
+    this.changeState(this.STATE_ACQUIRING_AUTHTOKEN);
+
+    // @corecode_begin getAuthToken
+    // @description This is the normal flow for authentication/authorization
+    // on Google properties. You need to add the oauth2 client_id and scopes
+    // to the app manifest. The interactive param indicates if a new window
+    // will be opened when the user is not yet authenticated or not.
+    // @see http://developer.chrome.com/apps/app_identity.html
+    // @see http://developer.chrome.com/apps/identity.html#method-getAuthToken
+    chrome.identity.getAuthToken({ 'interactive': true }, async (token) => {
+      if (chrome.runtime.lastError) {
+        console.log(chrome.runtime.lastError);
+        this.changeState(this.STATE_START);
+      } else {
+        console.log('Token acquired:'+token+
+          '. See chrome://identity-internals for details.');
+
+          if(await this.apiSignin(token)) {
+            this.changeState(this.STATE_AUTHTOKEN_ACQUIRED);
+          }
+      }
+    });
+    // @corecode_end getAuthToken
+  }
+
+  accessToken :string = null;
+
+  apiSignin(token: string) : JQueryPromise<boolean> {
+    let d = {
+        type: "POST",
+        url: "http://localhost:5000/api/Auth/signin",
+        data: JSON.stringify({ Scheme: "google", Token: token }),
+        contentType: "application/json; charset=utf-8",
+        dataType: 'json'
+        };
+
+    return $.ajax(d).then((data: any, status:string, jqXHR: JQueryXHR) => {
+            this.accessToken = data.accessToken;
+             console.log("Signin API success");
+            return true;
+           },
+             (xhr: JQueryXHR, textStatus: string, errorThrown: string) => {
+                 console.log(errorThrown);
+                 return false;
+             });
+  }
+
+  apiTestCall() : JQueryPromise<void> {
+      this.apidata = "Loading...";
+      let call = {
+        type: "GET",
+        url: "http://localhost:5010/api/Test",
+        headers: {'Authorization':'Bearer '+this.accessToken},
+        };
+      return $.ajax(call).then((data: any, status:string, jqXHR: JQueryXHR) => {
+          this.apidata = data;
+      });
+  }
+
+  revokeToken() {
+    //let user_info_div.innerHTML="";
+    chrome.identity.getAuthToken({ 'interactive': false },
+      function(current_token) {
+        if(!current_token) {
+            this.changeState(this.STATE_START);
+            return;
+        }
+
+        if (!chrome.runtime.lastError) {
+
+          // @corecode_begin removeAndRevokeAuthToken
+          // @corecode_begin removeCachedAuthToken
+          // Remove the local cached token
+          chrome.identity.removeCachedAuthToken({ token: current_token },
+            function() {});
+          // @corecode_end removeCachedAuthToken
+
+          // Make a request to revoke token in the server
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'https://accounts.google.com/o/oauth2/revoke?token=' +
+                   current_token);
+          xhr.send();
+
+
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', 'https://localhost:44359/api/Auth/logout');
+          xhr.send();
+          // @corecode_end removeAndRevokeAuthToken
+
+          // Update the user interface accordingly
+          this.changeState(this.STATE_START);
+          console.log('Token revoked and removed from cache. '+
+            'Check chrome://identity-internals to confirm.');
+        }
+    });
+  }
+
+
+  getUserInfoClick() : void {
+    this.getUserInfo(true, (error, status, response) => {
+            if (!error && status == 200) {
+            //let user_info = JSON.parse(response, null, 2);
+            console.log(response);
+            this.userInfo = JSON.stringify(response, null, 2);
+            
+            } else {
+                console.log("Error message: "+error);
+                console.log("Status code: "+status)
+            }
+        });
+    }
+
+    getUserInfo(interactive, onUserInfoFetched): void {
+        this.xhrWithAuth('GET',
+                    'https://www.googleapis.com/oauth2/v1/userinfo',
+                    interactive,
+                    onUserInfoFetched);
+    
+    }    
+
+    xhrWithAuth(method, url, interactive, callback): void {
+        let access_token;
+    
+        let retry = true;
+    
+        getToken();
+    
+        function getToken() {
+        chrome.identity.getAuthToken({ interactive: interactive }, function(token) {
+            if (chrome.runtime.lastError) {
+            callback(chrome.runtime.lastError);
+            return;
+            }
+    
+            console.log("Token:"+token);
+            access_token = token;
+            requestStart();
+        });
+        }
+    
+        function requestStart() {
+            var xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            xhr.setRequestHeader('Authorization', 'Bearer ' + access_token);
+            xhr.onload = requestComplete;
+            xhr.send();
+        }
+    
+        function requestComplete() {
+            if (this.status == 401 && retry) {
+                retry = false;
+                chrome.identity.removeCachedAuthToken({ token: access_token },
+                                                    getToken);
+            } else {
+                callback(null, this.status, this.response);
+            }
+        }
+    }
+
+    
+    changeState(newState: number) : void {
+        this.state = newState;
+        
+        switch (this.state) {
+        case this.STATE_START:
+            this.signin_button = true;
+            this.xhr_button = false;
+            this.revoke_button = false;
+            break;
+        case this.STATE_ACQUIRING_AUTHTOKEN:
+            console.log('Acquiring token...');
+            this.signin_button = false;
+            this.xhr_button = false;
+            this.revoke_button = false;
+            break;
+        case this.STATE_AUTHTOKEN_ACQUIRED:
+            this.signin_button = false;
+            this.xhr_button = true;
+            this.revoke_button = true;
+
+            break;
+        }
+    }
+
+
+    contentProofChange() : void {
+        let newLine = "\r\n";
+        //let content = this.contentIncludeUrl ? Window.
+        let content = (this.contentIncludeEntity) ? this.settings.address : "";
+        content += this.contentTitle + this.contentArea;
+        this.contentId = Crypto.toDTPAddress(Crypto.Hash160(content));
+        this.contentProof = Crypto.Sign(this.settings.keyPair, this.contentId).toString('base64');
+
+        let texts = [];
+        texts.push(`<div itemscope itemtype="http://digitaltrustprotocol.org/content">`+newLine);
+        texts.push(`<span itemprop="id" itemvalue="${this.contentId}"></span>`+newLine);
+        texts.push(`<div itemprop="title">${this.contentTitle}</div>`+newLine);
+        texts.push(`<div itemprop="content">${ this.contentArea}</div>`+newLine);
+
+        if(this.contentIncludeEntity) {
+            texts.push(`<span itemprop="entityId" itemvalue="${this.tempSettings.address}"></span>`+newLine);
+            texts.push(`<span itemprop="proof" itemvalue="${this.contentProof}"></span>`+newLine);
+        }
+        
+        if(this.contentIncludeUrl)
+            texts.push(`<span itemprop="includeUrl" itemvalue="true"></span>`+newLine);
+
+        texts.push(`</div>`+newLine);
+
+        this.contentHtml = texts.join("");
+    }
+
+
+    // The "callback" argument is called with either true or false
+// depending on whether the image at "url" exists or not.
+    // imageExists(url): Promise<{}> {
+    //     //let deferred = new Promise();
+        
+    //     var img = new Image();
+    //     img.onload = () =>{ 
+
+    //         // Check size
+    //         return { error: false };
+    //     };
+    //     img.onerror = (event: string | Event, source?: string, lineno?: number, colno?: number, error? : Error) => { 
+            
+    //         return { error: true };
+
+    //      };
+    //     img.src = url;
+    //     return null;
+    // }
+  
+  // Sample usage
+  //var imageUrl = 'http://www.google.com/images/srpr/nav_logo14.png';
+//   imageExists(imageUrl, function(exists) : boolean {
+//     console.log('RESULT: url=' + imageUrl + ', exists=' + exists);
+//   });
+
 }
 
 

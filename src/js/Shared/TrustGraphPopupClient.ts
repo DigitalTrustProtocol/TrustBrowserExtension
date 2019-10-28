@@ -34,10 +34,8 @@ export class TrustGraphPopupClient {
             action: "requestGraphData",
             profileId: profileId
         };
-        return this.messageHandler.send(TrustGraphPopupServer.handlerName, message);     
+        return this.messageHandler.send(TrustGraphPopupServer.handlerName, message);
     }
-
-    
 
     public selectProfile(profile: IProfile, callback?: (err: any, value: any) => void) : Promise<any>
     {

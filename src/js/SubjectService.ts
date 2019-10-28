@@ -94,6 +94,26 @@ export default class SubjectService  {
         return claim;
     }
 
+    CreateIconClaim (profileView: ProfileModal, scope: string, expire: number) : Claim {
+        let claim: Claim = null;
+        let profile = profileView.profile;
+        if(profile.id) {
+            claim = this.packageBuilder.CreateClaim(
+            this.settings.address,
+            PackageBuilder.IDENTITY,
+            this.settings.address,
+            PackageBuilder.THING,
+            PackageBuilder.ALIAS,
+            scope,
+            this.settings.icon,
+            0,
+            expire,
+            "");
+        }
+
+        return claim;
+    }
+
     public addSourceClaim(profileView: ProfileModal, scope: string, expire: number, trustPackage: ModelPackage) : void {
         let profile = profileView.profile;
         

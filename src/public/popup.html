@@ -96,6 +96,11 @@
             max-height: 350px;
             overflow-y: scroll;
         }
+
+        .profileIcon {
+            width: 60px;
+            height: 60px;
+        }
     </style>
 </head>
 
@@ -128,6 +133,15 @@
     <div class="container-fluid">
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10">
 
+            <!-- <button ng-disabled="!ct.signin_button" ng-click="ct.interactiveSignIn()">Signin</button>
+            <button ng-disabled="!ct.signin_button" ng-click="ct.popupSignIn()">Signin</button>
+            <button ng-disabled="!ct.xhr_button" ng-click="ct.getUserInfoClick()">UserInfo</button>
+            <button ng-click="ct.apiTestCall()">API Call</button>
+            <button ng-disabled="!ct.xhr_button" ng-click="ct.revokeToken()">Signout</button>
+
+            <div><pre ng-bind="ct.userInfo">UserInfo</pre></div>
+            <div ng-bind="ct.apidata">ApiData</div> -->
+
             <!-- Container ================================================== -->
             <div>
                 <uib-tabset active="ct.tabIndex" class="">
@@ -149,7 +163,8 @@
                                     <tr ng-repeat="(key, pv) in ct.pageProfilesView" ng-show="!ct.showError">
                                         <td>
                                             <img ng-src="{{ pv.profile.icon }}"
-                                                ng-click="ct.openGraphClick($event, pv)">
+                                                ng-click="ct.openGraphClick($event, pv)"
+                                                class="profileIcon">
                                         </td>
                                         <td>
                                             <div ng-switch="pv.inputForm">
@@ -157,7 +172,9 @@
                                                     <!-- Identity =====================================================  -->
                                                     <div class="breakContent font-weight-bold">
                                                         <i class="fas fa-user"></i>
-                                                        {{ ct.getProfileTitle(pv.profile) }}
+                                                        <a data-toggle="modal" class="font-weight-bold profileTitle"
+                                                        data-target="#profileDetailsModal"
+                                                        ng-href="#" ng-click="ct.selectedProfile = pv.profile">{{ ct.getProfileTitle(pv.profile) }}</a>
                                                     </div>
 
                                                     <div>
@@ -202,15 +219,19 @@
                                                 <div ng-switch-when="thing">
                                                     <!-- Thing =====================================================  -->
                                                     <div ng-switch="pv.profile.type">
-                                                        <span ng-switch-when="url">
-                                                            <i class="fas fa-link pr-1"></i>
+                                                        <span ng-switch-when="url|origin" ng-switch-when-separator="|">
+                                                            <i class="far fa-file " ng-if="pv.profile.type == 'url'"></i>
+                                                            <i class="fas fa-home " ng-if="pv.profile.type == 'origin'"></i>
                                                                 <a data-toggle="modal" class="font-weight-bold profileTitle"
                                                                     data-target="#openUrlModal"
                                                                     ng-href="ct.getStringFromBuffer(pv.profile.data)"
                                                                     ng-click="ct.selectedProfile = pv.profile">{{ ct.getProfileTitle(pv.profile) }}</a>
                                                         </span>
                                                         <span ng-switch-default class="breakContent font-weight-bold">
-                                                            {{ ct.getProfileTitle(pv.profile) }}
+                                                            <i class="fas fa-align-justify " ng-if="pv.profile.type == 'content'"></i>
+                                                            <a data-toggle="modal" class="font-weight-bold profileTitle"
+                                                                data-target="#profileDetailsModal"
+                                                                ng-href="#" ng-click="ct.selectedProfile = pv.profile">{{ ct.getProfileTitle(pv.profile) }}</a>
                                                         </span>
                                                     </div>
                                                     <div>
@@ -457,6 +478,16 @@
                         </div>
                         <div class="input-group mb-3 input-group-sm">
                             <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-portrait" title="Icon"></i></span>
+                            </div>
+                            <input id="inputIcon" type="text" class="form-control" name="inputIcon"
+                                placeholder="Url (Optional)" autofocus
+                                ng-model="ct.tempSettings.icon" ng-trim="true">
+                                <button type="button" id="btnIconLoad" class="btn btn-secondary" ng-click="ct.loadIconClick($event, ct.tempSettings.icon)">Load</button>
+                        </div>
+
+                        <div class="input-group mb-3 input-group-sm">
+                            <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fas fa-lock" title="Password"></i></span>
                             </div>
                             <input id="inputPassword" type="password" class="form-control" name="inputPassword"
@@ -519,8 +550,7 @@
                 <div class="modal-body">
                     <form>
 
-                        <p>Specify a url to a Trust server.
-                        </p>
+                        <p>Specify a url to a Trust server.</p>
                         <div class="input-group mb-3 input-group-sm">
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fas fa-server"></i></span>
@@ -572,8 +602,8 @@
                         </div>
                     </div>
                     
-                    <!-- <h6>Content proof</h6>
-                    <div>Insert content proof html into a page. This will enable trusting the content directly.</div>
+                    <h6>Content proof</h6>
+                    <div>Insert content proof html into a page. This enables trusting the content directly.</div>
                     <button class="btn btn-primary" type="button" data-toggle="collapse"
                         data-target="#contentProofContainer" aria-expanded="false"
                         aria-controls="contentProofContainer">
@@ -581,29 +611,53 @@
                     </button>
                     </p>
                     <div class="collapse" id="contentProofContainer">
-                        <form class="container" novalidate="" action="/echo" method="POST" id="contentProofForm">
-                            <label for="inputContentProof">Content</label>
+                            <div class="input-group mb-3 input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-heading"></i></span>
+                                </div>
+                                <input type="text" id="contentTitle" class="form-control" placeholder="Title of the content"
+                                    ng-model="ct.contentTitle" ng-change="ct.contentProofChange()" required autofocus>
+                            </div>
+    
+                            <!-- <label for="inputContentArea">Content</label> -->
                             <div class="input-group mb-3 input-group-sm">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fab fa-html5" title="Html"></i></span>
                                 </div>
-                                <textarea class="form-control" id="inputContentProof" rows="3"
-                                    placeholder="Content text or html" ng-model="ct.contentProof"
-                                    ng-trim="false"></textarea>
+                                <textarea class="form-control" id="inputContentArea" rows="3"
+                                    placeholder="Content text or html" ng-model="ct.contentArea"
+                                    ng-trim="false" ng-change="ct.contentProofChange()"></textarea>
                             </div>
-                        </form>
+
+                            <div class="input-group mb-3 input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-user-check"></i></span>
+                                </div>
+                                <input type="checkbox" id="contentIncludeEntity" class="form-control" placeholder="Include user ID"
+                                    ng-model="ct.contentIncludeEntity" ng-change="ct.contentProofChange()">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">Include user ID</span>
+                                </div>
+                            </div>
+                            
+                            <!-- <div class="input-group mb-3 input-group-sm">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-link"></i></span>
+                                </div>
+                                <input type="checkbox" id="contentIncludeUrl" class="form-control" placeholder="Include url lock down"
+                                    ng-model="ct.contentIncludeUrl" ng-change="ct.contentProofChange()">
+                                <div class="input-group-append">
+                                    <span class="input-group-text">Include url lock down</span>
+                                </div>
+                            </div> -->
                         <div class="card card-body">
-                            <pre><code id="contentProofCode">&lt;div itemscope itemtype=&quot;http://digitaltrustprotocol.org/entity&quot;&gt; 
-&lt;div itemprop=&quot;entityId&quot;&gt;<span ng-bind="ct.tempSettings.address"></span>&lt;/div&gt;
-&lt;div itemprop=&quot;alias&quot;&gt;<span ng-bind="ct.tempSettings.alias"></span>&lt;/div&gt;
-&lt;span itemprop=&quot;aliasProof&quot; itemvalue=&quot;<span ng-bind="ct.tempSettings.aliasProof"></span>&quot;&gt;&lt;/span&gt;
-&lt;/div&gt;</code></pre>
+                            <pre><code id="contentProofCode">{{ct.contentHtml}}</code></pre>
                             <button class="btn btn-secondary btn-sm" ng-click="ct.copyToClipboard('contentProofCode')">
                                 <i class="fas fa-clipboard"></i> Copy to clipboard
                             </button>
 
                         </div>
-                    </div> -->
+                    </div>
 
                 </div><!-- /Modal body end -->
                 <div class="modal-footer">
@@ -764,6 +818,33 @@
             </div>
         </div>
     </div>
+
+    <!-- ProfileDetails Modal =============================================================================== -->
+    <div class="modal fade" id="profileDetailsModal" tabindex="-1" role="dialog" aria-labelledby="profileDetailsModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="contentHtmlModalLabel">Profile Details</small></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                        <div>Type: {{ct.selectedProfile.type}}</div>
+                        <div>ID: {{ct.selectedProfile.id}}</div>
+                        <div ng-if="ct.selectedProfile.entityId">Entity ID: {{ct.selectedProfile.entityId}}</div>
+                        <div class="breakContent">Title: {{ct.selectedProfile.title}}</div>
+                        <div ng-if="ct.selectedProfile.data"><code>{{ct.selectedProfile.data}}</code></div>
+                        <div ng-if="ct.selectedProfile.proof" class="breakContent"><small>Proof: {{ct.selectedProfile.proof}}</small></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

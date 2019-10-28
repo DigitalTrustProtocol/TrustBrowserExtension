@@ -30,6 +30,7 @@
         "localforage": "^1.7.3",
         "lodash": "^4.17.15",
         "notifyjs-browser": "^0.4.2",
+        "oidc-client": "^1.9.1",
         "popper.js": "^1.15.0",
         "select2": "^4.0.10",
         "ui-bootstrap4": "^3.0.6",

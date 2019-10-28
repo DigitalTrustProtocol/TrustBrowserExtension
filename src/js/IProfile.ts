@@ -5,4 +5,6 @@ export default interface IProfile {
     title?: string;
     icon?: string;
     created?: number;
+    proof?: string;
+    entityId?: string;
 }

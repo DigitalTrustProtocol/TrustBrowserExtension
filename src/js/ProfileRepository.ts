@@ -2,7 +2,6 @@ declare var DTP: any;
 /// TS_IGNORE
 import IProfile from './IProfile';
 import IStorage from './Interfaces/IStorage';
-import * as $ from 'jquery';
 import DTPService from "./DTPService";
 
 export default class ProfileRepository {

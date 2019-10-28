@@ -8,6 +8,8 @@ module.exports = {
     main: './src/js/content/main.ts',
     popup: './src/js/content/popup.ts',
     trustgraph: ['./src/js/content/TrustGraph.ts'], // ,'./src/lib/Notify/notify.min.js'
+    loginpopup: ['./src/js/content/LoginPopup.ts'], 
+    loginpopupcallback: ['./src/js/content/LoginPopupCallback.ts'], 
     background: './src/js/background/background.ts',
   },
   mode: 'development',
@@ -59,16 +61,6 @@ module.exports = {
     new CleanWebpackPlugin(['dist']),
 
     new HtmlWebpackPlugin({  
-      filename: './trustgraph.html',
-      template: './src/public/trustgraph.html',
-      chunks: ['trustgraph'],
-      minify: {
-        removeComments: true,
-        collapseWhitespace: true,
-        conservativeCollapse: true
-      }
-    }),
-    new HtmlWebpackPlugin({  
       filename: './popup.html',
       template: './src/public/popup.html',
       chunks: ['popup'],
@@ -88,9 +80,29 @@ module.exports = {
       }
     }),
     new HtmlWebpackPlugin({  
-      filename: './templates/trustgraph.html',
+      filename: './trustgraph.html',
       template: './src/public/trustgraph.html',
       chunks: ['trustgraph'],
+      minify: {
+        removeComments: true,
+        collapseWhitespace: true,
+        conservativeCollapse: true
+      }
+    }),
+    new HtmlWebpackPlugin({  
+      filename: './loginpopup.html',
+      template: './src/public/loginpopup.html',
+      chunks: ['loginpopup'],
+      minify: {
+        removeComments: true,
+        collapseWhitespace: true,
+        conservativeCollapse: true
+      }
+    }),
+    new HtmlWebpackPlugin({  
+      filename: './loginpopupcallback.html',
+      template: './src/public/loginpopupcallback.html',
+      chunks: ['loginpopupcallback'],
       minify: {
         removeComments: true,
         collapseWhitespace: true,

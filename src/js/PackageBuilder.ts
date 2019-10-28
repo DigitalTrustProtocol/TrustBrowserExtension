@@ -15,6 +15,7 @@ export default class PackageBuilder {
     static IDENTITY: string = "entity";
     static THING: string = "thing";
     static ALIAS: string = "alias";
+    static ICON_IDENTITY_DTP1: string = "icon";
     static ID_IDENTITY_DTP1: string = "id.identity.dtp1";
     static IDENTITY_TYPE_NAME = "name";
     static IDENTITY_TYPE_DTPAddress = "address.dtp1";

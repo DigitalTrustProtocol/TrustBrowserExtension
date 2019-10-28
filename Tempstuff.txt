@@ -8,14 +8,9 @@ Trust -> Sofie
 Trust -> Bill
 
 Sofie Hansen
-sh
 14aAU7werm5MYXoFUW1G7b8oHrHVhNPQ65
+sh
 Trust -> Jack
-
-Jack Black
-jb
-1JtaQ9AymgJf2yafu5CVod4ryYoyfATr3C
-Rate -> Twitter
 
 Bill Benson
 bb
@@ -28,14 +23,63 @@ Hanna Lancaster
 hl
 1CfsmiZckqHwnU4EyrhzpnGDuj9hXUGsww
 Trust -> Zoe
+Trust -> Twitter
 
 Zoe Humminbird
 zd
 1382m8FXwwE1NF1xF64zq2YDJgMhLWp5YB
 Rate -> Twitter
 
+Jack Black
+jb
+1JtaQ9AymgJf2yafu5CVod4ryYoyfATr3C
+Rate -> Twitter
 
 
+    drawOnIcon(icon: favIcon) : Promise<string> {
+        //var favicon = document.getElementById('favicon');
+        if(!icon || !icon.href) return null;
+
+        var faviconSize = 60;
+      
+        var canvas = document.createElement('canvas');
+        canvas.width = faviconSize;
+        canvas.height = faviconSize;
+      
+        var context = canvas.getContext('2d');
+        // var img = document.createElement('img');
+        // img.src = icon.href;
+      
+        let data = null;
+
+        let deferred = new Promise<string>(resolve => {
+            const img = new Image();
+            img.onload = () => { 
+                context.drawImage(img, 0, 0, faviconSize, faviconSize);
+      
+                // Draw Notification Circle
+                context.beginPath();
+                context.arc( canvas.width - faviconSize / 3 , faviconSize / 3, faviconSize / 3, 0, 2*Math.PI);
+                context.fillStyle = '#FF0000';
+                context.fill();
+          
+                // Replace favicon
+                data = canvas.toDataURL('image/png');
+
+                resolve(data);
+            };
+
+            img.onerror = () => resolve(null);
+            img.src = icon.href;
+        });
+
+        // img.onload = () => {
+        //     // Draw Original Favicon as Background
+            
+        //   };
+
+          return deferred;
+      }
 
 
 
