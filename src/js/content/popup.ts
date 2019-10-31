@@ -42,6 +42,7 @@ import { ClaimValue } from './components/claimValue';
 import { LoginPopupClient } from '../Shared/LoginPopupClient';
 import { read } from 'fs';
 import { rejects } from 'assert';
+import { Claim } from '../../../dist/lib/dtpapi/model/Claim';
 
 
 class ExtensionpopupController {
@@ -236,6 +237,7 @@ class ExtensionpopupController {
         if(id === "-1") {
             
             this.pageProfilesView = this.pageProfiles.map(p=>p); // Copy list, this will help avoid this.$scope.$apply();
+            this.$scope.$apply();
             return;
         }
 
@@ -620,14 +622,6 @@ class ExtensionpopupController {
         if(!data)
             return "";
         return data;
-        // let source = (data.data) ? data.data : data;
-
-        // if(typeof source === 'string')
-        //     return Buffer.from(data, 'base64').toString("utf-8");
-        // else
-        //     return Buffer.from(data).toString("utf-8");
-
-        //return typeof data;
     }
 
     async commentsModalOpen(pv : ProfileModal) : Promise<void> {
@@ -713,13 +707,12 @@ class ExtensionpopupController {
 
     async lastestLoadBatch() : Promise<void> {
         let arr = await this.dtpService.getLastest(this.latestRowIndex, this.pageSize);
-        arr.forEach(p => {
-           if(!p.issuer.meta) p.issuer.meta = {};
-           if(!p.subject.meta) p.subject.meta = {};
-           this.latestClaims.push(p);
-        });
+        let claims =await this.ensureMetaProfiles(arr);
+        claims.forEach(p => this.latestClaims.push(p));
         this.latestRowIndex += this.pageSize;
    }
+
+
 
 
    historyInView(index: number, inview: boolean, inviewpart) {
@@ -736,16 +729,24 @@ class ExtensionpopupController {
 
     async historyLoadBatch() : Promise<void> {
        let arr = await this.dtpService.getHistory(this.settings.address, this.historyRowIndex, this.pageSize);
-       arr.forEach(p => {
-          if(!p.issuer.meta) p.issuer.meta = {};
-          if(!p.subject.meta) p.subject.meta = {};
-          this.historyClaims.push(p);
-       });
-       
+       (await this.ensureMetaProfiles(arr)).forEach(p => this.historyClaims.push(p));
        this.historyRowIndex += this.pageSize;
   }
 
-
+  async ensureMetaProfiles(claims : Array<Claim>): Promise<Array<Claim>> {
+    return await Promise.all(claims.map(async claim=> {
+        if(!claim.issuer.meta) claim.issuer.meta = {};
+        if(!claim.subject.meta) claim.subject.meta = {};
+        if(!claim.issuer.meta.title) 
+            claim.issuer.meta = await this.profileRepository.getProfile(claim.issuer.id);
+    
+         if(!claim.subject.meta.title) 
+            claim.subject.meta = await this.profileRepository.getProfile(claim.subject.id);
+    
+        return claim;
+        }));
+    }
+    
   // ................................................................................................
   userInfo: string = "";
   apidata: string = "";

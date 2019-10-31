@@ -62,7 +62,7 @@ export default class UrlApp {
         profiles.push(profile);
         this.config.profileRepository.setProfile(profile);
 
-        this.addOrigin(profiles, url, icon);
+        //this.addOrigin(profiles, url, icon);
         return this.buildHtmlEntities(profiles);
     }
     
