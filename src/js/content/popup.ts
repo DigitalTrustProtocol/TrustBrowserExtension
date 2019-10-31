@@ -1,5 +1,5 @@
 import $ = require('jquery');
-import * as angular from 'angular';
+import * as angular from 'angular'; 
 import 'select2';
 
 import tabs from 'ui-bootstrap4/src/tabs';
@@ -40,6 +40,8 @@ import Identicon from "../Shared/Identicon";
 import copy from "copy-to-clipboard";
 import { ClaimValue } from './components/claimValue';
 import { LoginPopupClient } from '../Shared/LoginPopupClient';
+import { read } from 'fs';
+import { rejects } from 'assert';
 
 
 class ExtensionpopupController {
@@ -96,10 +98,9 @@ class ExtensionpopupController {
     contentIncludeEntity: boolean = true;
     contentIncludeUrl: boolean = false;
     contentHtml: string = "";
-
-
+    
     constructor(private $scope: ng.IScope, private $window: ng.IWindowService, private $document: ng.IDocumentService) {
-        $document.ready(() => angular.bind(this, this.init)());
+        $(() => angular.bind(this, this.init)());
     }
 
   
@@ -233,8 +234,8 @@ class ExtensionpopupController {
 
     selectProfileID(id: string) : void {
         if(id === "-1") {
-            this.pageProfilesView = this.pageProfiles;
-            this.$scope.$apply();
+            
+            this.pageProfilesView = this.pageProfiles.map(p=>p); // Copy list, this will help avoid this.$scope.$apply();
             return;
         }
 
@@ -279,9 +280,11 @@ class ExtensionpopupController {
         if(!this.validateForm(formId, true))
             return false;
 
-       
-        this.tempSettings.aliasChanged = this.settings.alias != this.tempSettings.alias;
-        this.tempSettings.iconChanged = this.settings.icon != this.tempSettings.icon;
+        if(!this.tempSettings.aliasChanged)
+            this.tempSettings.aliasChanged = this.settings.alias != this.tempSettings.alias;
+        
+        if(!this.tempSettings.iconChanged) // Only update if its false
+            this.tempSettings.iconChanged = this.settings.icon != this.tempSettings.icon;
 
         if(!this.tempSettings.password) this.tempSettings.password = "";
         if(!this.tempSettings.seed) this.tempSettings.seed = "";
@@ -297,6 +300,7 @@ class ExtensionpopupController {
         
         this.settingsProfile.id = this.settings.address;
         this.settingsProfile.title = this.settings.alias;
+        this.settingsProfile.icon = this.settings.identicon;
 
         this.profileRepository.setProfile(this.settingsProfile);
 
@@ -401,36 +405,73 @@ class ExtensionpopupController {
             this.errorMessage = msg.message;
     }
    
-    modelChange(state?: string) {
+    async modelChange(state?: string) {
+        if(state == 'icon') {
+            this.tempSettings.iconIsValid = await this.checkIconUrl(this.tempSettings.icon);
+            if(this.tempSettings.iconIsValid)
+                this.tempSettings.identicon = this.tempSettings.icon;
+            else {
+                this.settingsClient.buildKey(this.tempSettings);
+                this.tempSettings.identicon = Identicon.createIcon(this.tempSettings.address);
+            }
+            this.showIcon = true
+        }
+
         if (state === 'identicon') {
-            // if(this.tempSettings.icon || this.tempSettings.icon.length > 0) 
-            //     return; // Just use the icon url
+            if(this.tempSettings.iconIsValid)
+                return; // Do not create an identicon, as the icon url is valid.
 
             // Generate the identicon even that a icon url exist
             this.settingsClient.buildKey(this.tempSettings);
-
-              this.tempSettings.identicon = Identicon.createIcon(this.tempSettings.address);
-              this.showIcon = true
+            this.tempSettings.identicon = Identicon.createIcon(this.tempSettings.address);
+            this.showIcon = true
         }
     }
 
-    async loadIconClick($event: JQueryEventObject, url:string) : Promise<void> {
-        let valid = await this.testImageUrl(url);
-        if(valid) {
-            this.tempSettings.identicon = url;
-        }
+    async checkIconUrl(url:string) : Promise<boolean> {
+        if(!this.checkImageURL(url))
+            return false;
+
+        //let valid = await this.testImageUrl(url);
+        let size = await this.getFileSize(url);
+        if(size < 0 || size == NaN) return false; // No a valid url
+        if(size < 512*512)  // = 262144k
+            return await this.testImageUrl(url);
+        
+        return false;
+    }
+
+    getFileSize(url:string) : Promise<number>{
+        return new Promise((resolve,reject) => {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState == 2) { // 2= Header ready, 4 = done
+                    resolve(parseInt(xhr.getResponseHeader("Content-Length")));
+                    xhr.abort();
+                }
+            };
+            xhr.onerror = xhr.onabort = (error) => {
+                reject(-1);
+            };
+
+            xhr.send();
+        });
     }
 
     testImageUrl(url:string, timeoutT?: number) : Promise<boolean> {
         return new Promise<boolean>((resolve, reject) => {
             var timeout = timeoutT || 5000;
-            var timer, img = new Image();
+
+            let timer = null;
+            let img = new Image();
             img.onerror = img.onabort = (error) => {
                 clearTimeout(timer);
                 reject(false);
             };
-            img.onload = () => {
+            img.onload = (e) => {
                 clearTimeout(timer);
+                let dd = img;
                 resolve(true);
             };
             timer = setTimeout(function () {
@@ -443,9 +484,10 @@ class ExtensionpopupController {
         });
     }
 
-    // checkIconURL(url: string): boolean {
-    //     return(url.match(/\.(jpeg|jpg|gif|png)$/) != null);
-    // }
+    checkImageURL(url: string): boolean {
+         //return(url.match(/\.(jpeg|jpg|gif|png)(\?)?$/) != null);
+         return true; // Hard to test right now
+    }
 
     copyToClipboard(controlId: string) : void {
 
@@ -536,6 +578,7 @@ class ExtensionpopupController {
 
             trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateBinaryClaim(profileView, value, ExtensionpopupController.SCOPE, expire));
             this.subjectService.addAliasClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
+            this.subjectService.addIconClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
 
             this.packageBuilder.SignPackage(trustPackage);
             let response = await this.dtpService.PostPackage(trustPackage);
@@ -553,6 +596,7 @@ class ExtensionpopupController {
         try {
             trustPackage = this.subjectService.CreatePackage(this.subjectService.CreateRatingClaim(profileView, ExtensionpopupController.SCOPE, expire));
             this.subjectService.addAliasClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
+            this.subjectService.addIconClaim(profileView, ExtensionpopupController.SCOPE, 0, trustPackage);
 
             this.packageBuilder.SignPackage(trustPackage);
             let response = await this.dtpService.PostPackage(trustPackage);
@@ -641,7 +685,9 @@ class ExtensionpopupController {
 
     showPageTab(id: string, profile?: IProfile) : void {
         if(profile && id == profile.id) {
-            this.profileRepository.setProfile(profile);
+            if(this.settingsProfile.id != profile.id) // Do not update the operating user profile
+                this.profileRepository.setProfile(profile);
+
             this.selectProfile(profile);
         }
         if(id) {
@@ -920,7 +966,7 @@ class ExtensionpopupController {
         let newLine = "\r\n";
         //let content = this.contentIncludeUrl ? Window.
         let content = (this.contentIncludeEntity) ? this.settings.address : "";
-        content += this.contentTitle + this.contentArea;
+        content += this.contentTitle + this.sanitizeSnippetContent(this.contentArea);
         this.contentId = Crypto.toDTPAddress(Crypto.Hash160(content));
         this.contentProof = Crypto.Sign(this.settings.keyPair, this.contentId).toString('base64');
 
@@ -943,35 +989,14 @@ class ExtensionpopupController {
         this.contentHtml = texts.join("");
     }
 
-
-    // The "callback" argument is called with either true or false
-// depending on whether the image at "url" exists or not.
-    // imageExists(url): Promise<{}> {
-    //     //let deferred = new Promise();
-        
-    //     var img = new Image();
-    //     img.onload = () =>{ 
-
-    //         // Check size
-    //         return { error: false };
-    //     };
-    //     img.onerror = (event: string | Event, source?: string, lineno?: number, colno?: number, error? : Error) => { 
-            
-    //         return { error: true };
-
-    //      };
-    //     img.src = url;
-    //     return null;
-    // }
-  
-  // Sample usage
-  //var imageUrl = 'http://www.google.com/images/srpr/nav_logo14.png';
-//   imageExists(imageUrl, function(exists) : boolean {
-//     console.log('RESULT: url=' + imageUrl + ', exists=' + exists);
-//   });
-
+    sanitizeSnippetContent(text: string) : string {
+        let element = document.createElement("div");
+        element.innerHTML = text;
+        let content = element.innerText;
+        content = content.replace(/[\r\n\t\s\f]+/g,'');
+        return content;
+    }
 }
-
 
 const app = angular.module("myApp", ['angular-inview','star-rating', tabs, tooltip]);
 
@@ -979,17 +1004,15 @@ app.component("claimValue", ClaimValue)
 
 // Use Angular's Q object as Promise. This is needed to make async/await work properly with the UI.
 // See http://stackoverflow.com/a/41825004/536
-app.run($q => { window.Promise = $q; });
+app.run(['$window', '$q', function($window, $q) {
+            $window.Promise = $q;
+        }]);
 
-app.controller('ExtensionpopupController', ["$scope", "$window", "$document", ExtensionpopupController]);
+app.controller('ExtensionpopupController', ["$scope","$window","$document", ExtensionpopupController]);
 
+app.config(['$compileProvider', function($compileProvider) {
+    //$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
+    $compileProvider.imgSrcSanitizationWhitelist(/^\s*(https?|local|data|chrome-extension):/);
 
-app.config( [
-    '$compileProvider',
-    function( $compileProvider )
-    {   
-        //$compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
-        $compileProvider.imgSrcSanitizationWhitelist(/^\s*(https?|local|data|chrome-extension):/);
-    }
-]);
+}]);
 

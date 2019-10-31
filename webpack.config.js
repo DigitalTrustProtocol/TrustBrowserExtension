@@ -84,9 +84,18 @@ module.exports = {
       template: './src/public/trustgraph.html',
       chunks: ['trustgraph'],
       minify: {
-        removeComments: true,
-        collapseWhitespace: true,
-        conservativeCollapse: true
+        html5                          : true,
+        collapseWhitespace             : true,
+        minifyCSS                      : true,
+        minifyJS                       : true,
+        minifyURLs                     : false,
+        removeAttributeQuotes          : true,
+        removeComments                 : true,
+        removeEmptyAttributes          : true,
+        removeOptionalTags             : true,
+        removeRedundantAttributes      : true,
+        removeScriptTypeAttributes     : true,
+        useShortDoctype                : true
       }
     }),
     new HtmlWebpackPlugin({  
@@ -94,9 +103,18 @@ module.exports = {
       template: './src/public/loginpopup.html',
       chunks: ['loginpopup'],
       minify: {
-        removeComments: true,
-        collapseWhitespace: true,
-        conservativeCollapse: true
+        html5                          : true,
+        collapseWhitespace             : true,
+        minifyCSS                      : true,
+        minifyJS                       : true,
+        minifyURLs                     : false,
+        removeAttributeQuotes          : true,
+        removeComments                 : true,
+        removeEmptyAttributes          : true,
+        removeOptionalTags             : true,
+        removeRedundantAttributes      : true,
+        removeScriptTypeAttributes     : true,
+        useShortDoctype                : true
       }
     }),
     new HtmlWebpackPlugin({  
@@ -104,9 +122,18 @@ module.exports = {
       template: './src/public/loginpopupcallback.html',
       chunks: ['loginpopupcallback'],
       minify: {
-        removeComments: true,
-        collapseWhitespace: true,
-        conservativeCollapse: true
+        html5                          : true,
+        collapseWhitespace             : true,
+        minifyCSS                      : true,
+        minifyJS                       : true,
+        minifyURLs                     : false,
+        removeAttributeQuotes          : true,
+        removeComments                 : true,
+        removeEmptyAttributes          : true,
+        removeOptionalTags             : true,
+        removeRedundantAttributes      : true,
+        removeScriptTypeAttributes     : true,
+        useShortDoctype                : true
       }
     }),
 
@@ -116,7 +143,6 @@ module.exports = {
       {from:'src/fonts',to:'./fonts'},
       {from:'src/lib',to:'./lib'},
       {from:'src/templates',to:'./templates'},
-      //{from:'js/background.js',to:'./js/'},
       {from:'src/typings',to:'./typings'},
       {from:'manifest.json',to:'./manifest.json'}
   ]),

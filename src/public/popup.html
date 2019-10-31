@@ -164,7 +164,7 @@
                                         <td>
                                             <img ng-src="{{ pv.profile.icon }}"
                                                 ng-click="ct.openGraphClick($event, pv)"
-                                                class="profileIcon">
+                                                class="profileIcon rounded-circle">
                                         </td>
                                         <td>
                                             <div ng-switch="pv.inputForm">
@@ -467,8 +467,8 @@
                             <small style="display: none">NB! The password is not encrypted on the client and may be very
                                 insecure. The password and seed will never be submittet to the server.</small>
                         </p>
-                        <label for="inputAlias">User alias, used for easier identification</label>
-                        <div class="input-group mb-3 input-group-sm">
+                        <label for="inputAlias">Your name, alias or avatar name.</label>
+                        <div class="input-group mb-3 input-group-sm" title="The name that others will see">
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fas fa-user" title="Alias"></i></span>
                             </div>
@@ -476,17 +476,7 @@
                                 placeholder="Alias / Name / Nickname (Optional)" autofocus
                                 ng-model="ct.tempSettings.alias" ng-trim="true">
                         </div>
-                        <div class="input-group mb-3 input-group-sm">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-portrait" title="Icon"></i></span>
-                            </div>
-                            <input id="inputIcon" type="text" class="form-control" name="inputIcon"
-                                placeholder="Url (Optional)" autofocus
-                                ng-model="ct.tempSettings.icon" ng-trim="true">
-                                <button type="button" id="btnIconLoad" class="btn btn-secondary" ng-click="ct.loadIconClick($event, ct.tempSettings.icon)">Load</button>
-                        </div>
-
-                        <div class="input-group mb-3 input-group-sm">
+                        <div class="input-group mb-3 input-group-sm" title="Password, make it strong!">
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fas fa-lock" title="Password"></i></span>
                             </div>
@@ -496,7 +486,7 @@
                             <div class="invalid-feedback">Password required!</div>
                         </div>
                         <label for="inputSeed">Additional seed - Fill in for better security.</label>
-                        <div class="input-group mb-3 input-group-sm">
+                        <div class="input-group mb-3 input-group-sm" title="Add seed to enhance password security">
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fas fa-seedling" title="Seed"></i></span>
                             </div>
@@ -504,6 +494,17 @@
                                 ng-trim="false" placeholder="E-mail / Phone / Pin or any text (Optional)"
                                 ng-change="ct.modelChange('identicon')">
                         </div>
+                        <label for="inputIcon">User icon url.</label>
+                        <div class="input-group mb-3 input-group-sm" title="Icon url of user">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-portrait" title="Icon"></i></span>
+                            </div>
+                            <input id="inputIcon" type="text" class="form-control" name="inputIcon"
+                                placeholder="Url (Optional)" autofocus
+                                ng-model="ct.tempSettings.icon" ng-change="ct.modelChange('icon')" ng-trim="true">
+                        </div>
+
+
                         <div class="input-group">
                             <div class="checkbox">
                                 <label>
@@ -516,7 +517,7 @@
                         <div class="input-group">
                             <!-- <div class="rounded-circle" ng-bind-html="ct.tempSettings.identicon | to_html"></div> -->
                             <!-- <canvas id="userIcon" width="32" height="32"></canvas>  -->
-                            <img id="identicon" style="float: left; padding: 5px;"
+                            <img id="identicon" style="float: left; padding: 5px;" width="64" height="64" class="rounded-circle"
                                 ng-src="{{ ct.tempSettings.identicon }}" ng-show="ct.showIcon">
                             <div style="float: left; padding: 5px;">
                                 <label for="address">User ID: </label><br><span id="address"
@@ -673,7 +674,7 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="userModalLabel">About DTP <small>Ver 0.3.20190930 - Alpha</small></h5>
+                    <h5 class="modal-title" id="userModalLabel">About DTP</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>

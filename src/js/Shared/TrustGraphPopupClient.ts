@@ -11,7 +11,7 @@ export class TrustGraphPopupClient {
 
 
 
-    public requestGraphDataHandler = (params, sender): Promise<IGraphData> => { return null; };
+    public requestGraphDataHandler = (params, sender) => { return null; };
     public selectProfileHandler = (params, sender) => { return; };
     
     constructor(messageHandler : MessageHandler) {

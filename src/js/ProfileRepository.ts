@@ -68,7 +68,7 @@ export default class ProfileRepository {
     setProfile(profile: IProfile): Promise<IProfile> {
         if (profile.id && typeof profile.id != 'string')
             throw new Error(`profile.userId (string) cannot be set to object of type: ${typeof profile.id}`);
-            
+
         this.profiles[profile.id] = profile;
         let data = JSON.stringify(profile);
 

@@ -33,7 +33,7 @@ export default class SettingsClient {
 
     public saveSettings(value: ISettings, callback?: (value: ISettings, err?:any) => void): Promise<ISettings> {
         const key = this.getCacheKey("Settings");
-        let param = SettingsServer.action("setItem", key, Settings.copy(value)); // Clean out no-seializeable properties.
+        let param = SettingsServer.action("setItem", key, value); // Clean out no-seializeable properties.
         
         return this.messageHandler.send(SettingsServer.handlerName, param, result => {
             if(callback)

@@ -55,6 +55,8 @@ class TrustGraphController {
     storageClient: StorageClient; 
     trustGraphPopupClient: TrustGraphPopupClient;
 
+    static $inject: string[] = ["$scope"];
+
     constructor(private $scope: ng.IScope) {
     }
 

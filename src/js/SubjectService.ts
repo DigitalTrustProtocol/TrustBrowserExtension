@@ -74,6 +74,14 @@ export default class SubjectService  {
         this.settings.aliasChanged = false;
     }
 
+    public addIconClaim(profileView: ProfileModal, scope: string, expire: number, trustPackage: ModelPackage) : void {
+        if(!this.settings.iconChanged)
+            return;
+
+        trustPackage.claims.push(this.CreateIconClaim(profileView, scope, expire));
+        this.settings.iconChanged = false;
+    }
+
     CreateAliasClaim (profileView: ProfileModal, scope: string, expire: number) : Claim {
         let claim: Claim = null;
         let profile = profileView.profile;
@@ -103,7 +111,7 @@ export default class SubjectService  {
             PackageBuilder.IDENTITY,
             this.settings.address,
             PackageBuilder.THING,
-            PackageBuilder.ALIAS,
+            PackageBuilder.ICON_IDENTITY_DTP1,
             scope,
             this.settings.icon,
             0,

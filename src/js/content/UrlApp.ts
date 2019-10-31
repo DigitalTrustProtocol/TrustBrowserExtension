@@ -120,13 +120,13 @@ export default class UrlApp {
             let profile = <IProfile>{};
             profile.type = "content";
             profile.id = element.querySelector("[itemprop='id']").getAttribute('itemvalue');
-            profile.title = element.querySelector("[itemprop='title']").innerHTML;
-            profile.data = element.querySelector("[itemprop='content']").innerHTML;
+            profile.title = element.querySelector("[itemprop='title']").innerText;
+            profile.data = element.querySelector("[itemprop='content']").innerText;
             profile.proof = element.querySelector("[itemprop='proof']").getAttribute('itemvalue');
             profile.entityId = element.querySelector("[itemprop='entityId']").getAttribute('itemvalue');
 
             if(profile.title && profile.id) {
-                let content = profile.entityId + profile.title + profile.data;
+                let content = profile.entityId + profile.title + this.sanitizeSnippetContent(profile.data);
 
                 let checkId = Crypto.toDTPAddress(Crypto.Hash160(content));
                 if(checkId != profile.id) {
@@ -156,6 +156,11 @@ export default class UrlApp {
         }
         
         return profiles;
+    }
+
+    sanitizeSnippetContent(text: string) : string {
+        let content = text.replace(/[\r\n\t\s\f]+/g,'');
+        return content;
     }
 
     getSanitizedUrl() : string {
@@ -231,10 +236,6 @@ export default class UrlApp {
                             //Also you would use the response.headers object for Node.js below.
     
                             var absoluteHref = window.location.protocol + '//' + window.location.host;
-    
-                            if(window.location.port) {
-                                absoluteHref += ':' + window.location.port;
-                            }
     
                             //We already have a forward slash
                             //On the front of the href
