@@ -107,7 +107,11 @@
 <body ng-app="myApp" ng-controller="ExtensionpopupController as ct">
     <header>
         <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
-            <a class="navbar-brand" href="#">Trust</a>
+            <div data-toggle="modal" data-target="#userModal" class="d-inline-block text-truncate">
+                <img id="identicon" style="float: left; padding: 5px;" width="48" height="48" class="rounded-circle" ng-src="{{ ct.tempSettings.identicon }}">
+                <a class="navbar-brand" href="#"  ng-bind="ct.tempSettings.alias || '(Noname)'" ng-title="{{ct.tempSettings.address}}"></a>
+            </div>
+
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
                 aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -470,7 +474,7 @@
                         <label for="inputAlias">Your name, alias or avatar name.</label>
                         <div class="input-group mb-3 input-group-sm" title="The name that others will see">
                             <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-user" title="Alias"></i></span>
+                                <span class="input-group-text"><i class="fas fa-user" title="Alias" ng-click="ct.loadUserProfileIntoDialog()"></i></span>
                             </div>
                             <input id="inputAlias" type="text" class="form-control" name="inputAlias"
                                 placeholder="Alias / Name / Nickname (Optional)" autofocus
@@ -630,7 +634,7 @@
                                     ng-trim="false" ng-change="ct.contentProofChange()"></textarea>
                             </div>
 
-                            <div class="input-group mb-3 input-group-sm">
+                            <!-- <div class="input-group mb-3 input-group-sm">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-user-check"></i></span>
                                 </div>
@@ -640,7 +644,7 @@
                                     <span class="input-group-text">Include user ID</span>
                                 </div>
                             </div>
-                            
+                             -->
                             <!-- <div class="input-group mb-3 input-group-sm">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text"><i class="fas fa-link"></i></span>
@@ -834,7 +838,6 @@
                 <div class="modal-body">
                         <div>Type: {{ct.selectedProfile.type}}</div>
                         <div>ID: {{ct.selectedProfile.id}}</div>
-                        <div ng-if="ct.selectedProfile.entityId">Entity ID: {{ct.selectedProfile.entityId}}</div>
                         <div class="breakContent">Title: {{ct.selectedProfile.title}}</div>
                         <div ng-if="ct.selectedProfile.data"><code>{{ct.selectedProfile.data}}</code></div>
                         <div ng-if="ct.selectedProfile.proof" class="breakContent"><small>Proof: {{ct.selectedProfile.proof}}</small></div>

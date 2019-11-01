@@ -58,9 +58,16 @@ export default class SettingsClient {
         const { address } = bitcoin.payments.p2pkh({ pubkey: settings.keyPair.publicKey });
         settings.address = address;
         if(settings.alias) {
-            let buf = Crypto.Sign(settings.keyPair, settings.alias);
+            let content = settings.address + this.sanitizeText(settings.alias); // No data part added
+            let contentId = Crypto.toDTPAddress(Crypto.Hash160(content));
+
+            let buf = Crypto.Sign(settings.keyPair, contentId);
             settings.aliasProof = buf.toString('base64');
         }
         return settings.keyPair;
     }   
+
+    sanitizeText(text: string) : string {
+        return text.replace(/[\r\n\t\s\f]+/g,'');
+    }
 }

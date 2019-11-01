@@ -42,7 +42,7 @@ import { ClaimValue } from './components/claimValue';
 import { LoginPopupClient } from '../Shared/LoginPopupClient';
 import { read } from 'fs';
 import { rejects } from 'assert';
-import { Claim } from '../../../dist/lib/dtpapi/model/Claim';
+import { Timestamp } from '../../../dist/lib/dtpapi/model/Timestamp';
 
 
 class ExtensionpopupController {
@@ -94,8 +94,6 @@ class ExtensionpopupController {
 
     contentTitle: string = "";
     contentArea: string = "";
-    contentProof: string = "";
-    contentId: string = "";
     contentIncludeEntity: boolean = true;
     contentIncludeUrl: boolean = false;
     contentHtml: string = "";
@@ -420,14 +418,22 @@ class ExtensionpopupController {
         }
 
         if (state === 'identicon') {
-            if(this.tempSettings.iconIsValid)
-                return; // Do not create an identicon, as the icon url is valid.
-
             // Generate the identicon even that a icon url exist
             this.settingsClient.buildKey(this.tempSettings);
-            this.tempSettings.identicon = Identicon.createIcon(this.tempSettings.address);
             this.showIcon = true
+            if(!this.tempSettings.iconIsValid) // Create an identicon
+                this.tempSettings.identicon = Identicon.createIcon(this.tempSettings.address);
         }
+    }
+
+    async loadUserProfileIntoDialog() : Promise<void> {
+        let profile = await this.profileRepository.getProfile(this.tempSettings.address);
+        if(!profile) return;
+
+        this.tempSettings.alias = profile.title;
+        this.tempSettings.icon = profile.icon;
+        this.modelChange('icon');
+        this.$scope.$apply();
     }
 
     async checkIconUrl(url:string) : Promise<boolean> {
@@ -965,25 +971,22 @@ class ExtensionpopupController {
 
     contentProofChange() : void {
         let newLine = "\r\n";
-        //let content = this.contentIncludeUrl ? Window.
-        let content = (this.contentIncludeEntity) ? this.settings.address : "";
-        content += this.contentTitle + this.sanitizeSnippetContent(this.contentArea);
-        this.contentId = Crypto.toDTPAddress(Crypto.Hash160(content));
-        this.contentProof = Crypto.Sign(this.settings.keyPair, this.contentId).toString('base64');
+        let content = this.settings.address + this.sanitizeSnippetContent(this.contentTitle) + this.sanitizeSnippetContent(this.contentArea);
+        let contentId = Crypto.toDTPAddress(Crypto.Hash160(content));
+        let contentProof = Crypto.Sign(this.settings.keyPair, contentId).toString('base64');
 
         let texts = [];
         texts.push(`<div itemscope itemtype="http://digitaltrustprotocol.org/content">`+newLine);
-        texts.push(`<span itemprop="id" itemvalue="${this.contentId}"></span>`+newLine);
         texts.push(`<div itemprop="title">${this.contentTitle}</div>`+newLine);
-        texts.push(`<div itemprop="content">${ this.contentArea}</div>`+newLine);
+        texts.push(`<div itemprop="content">${this.contentArea}</div>`+newLine);
+        texts.push(`<span itemprop="id" itemvalue="${this.tempSettings.address}"></span>`+newLine);
+        texts.push(`<span itemprop="proof" itemvalue="${contentProof}"></span>`+newLine);
 
-        if(this.contentIncludeEntity) {
-            texts.push(`<span itemprop="entityId" itemvalue="${this.tempSettings.address}"></span>`+newLine);
-            texts.push(`<span itemprop="proof" itemvalue="${this.contentProof}"></span>`+newLine);
-        }
+        // if(this.contentIncludeEntity) {
+        // }
         
-        if(this.contentIncludeUrl)
-            texts.push(`<span itemprop="includeUrl" itemvalue="true"></span>`+newLine);
+        // if(this.contentIncludeUrl)
+        //     texts.push(`<span itemprop="includeUrl" itemvalue="true"></span>`+newLine);
 
         texts.push(`</div>`+newLine);
 
@@ -997,6 +1000,7 @@ class ExtensionpopupController {
         content = content.replace(/[\r\n\t\s\f]+/g,'');
         return content;
     }
+
 }
 
 const app = angular.module("myApp", ['angular-inview','star-rating', tabs, tooltip]);

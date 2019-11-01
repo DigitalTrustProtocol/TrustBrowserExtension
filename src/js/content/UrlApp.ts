@@ -52,7 +52,7 @@ export default class UrlApp {
         let icon = this.getFavIcon(window.location.hostname);
 
         let profile = <IProfile>{
-            id: Crypto.toDTPAddress(Crypto.Hash160(docTitle + url)),
+            id: Crypto.toDTPAddress(Crypto.Hash160(this.sanitizeSnippetContent(docTitle) + url)),
             title: docTitle,
             //data:  Buffer.from(url, "utf8"),
             data: url,
@@ -100,50 +100,54 @@ export default class UrlApp {
         elements.forEach((element, key) => {
             let profile = <IProfile>{};
             profile.type = "alias";
-            profile.title = element.querySelector("[itemprop='alias']").innerHTML;
-            profile.id = element.querySelector("[itemprop='id']").innerHTML;
-            profile.proof = element.querySelector("[itemprop='proof']").attributes.getNamedItem('itemvalue').textContent;
+            profile.title = element.querySelector("[itemprop='alias']").textContent;
+            profile.entityId = element.querySelector("[itemprop='id']").textContent;
+            profile.proof = element.querySelector("[itemprop='proof']").getAttribute('itemvalue');
+            profile.data = "";
+            
 
-            if(profile.title && profile.id && profile.proof) {
-                let valid = Crypto.Verify(profile.title, profile.id, profile.proof);
+            if(profile.title && profile.entityId && profile.proof) {
+                let content = profile.entityId + this.sanitizeSnippetContent(profile.title) + this.sanitizeSnippetContent(profile.data);
+                profile.id = Crypto.toDTPAddress(Crypto.Hash160(content));
+    
+                let valid = Crypto.Verify(profile.id, profile.entityId, profile.proof);
                 if(!valid) {
-                    console.log(`Entity profile ${profile.title} (${profile.id}) do not have a valid signature ${profile.proof}`);
+                    console.log(`Entity profile ${profile.title} (${profile.id}) do not have a valid signature ${profile.proof} signed by ${profile.entityId}`);
                     return;
                 }
-            }
-            if(profile.id)
+                profile.id = profile.entityId;
+
                 temp[profile.id] = profile;
+            }
         });
 
         elements = document.querySelectorAll("[itemtype='http://digitaltrustprotocol.org/content']");
         elements.forEach((element, key) => {
             let profile = <IProfile>{};
             profile.type = "content";
-            profile.id = element.querySelector("[itemprop='id']").getAttribute('itemvalue');
-            profile.title = element.querySelector("[itemprop='title']").innerText;
-            profile.data = element.querySelector("[itemprop='content']").innerText;
+            profile.entityId = element.querySelector("[itemprop='id']").getAttribute('itemvalue');
+            profile.title = element.querySelector("[itemprop='title']").textContent;
+            profile.data = element.querySelector("[itemprop='content']").textContent;
             profile.proof = element.querySelector("[itemprop='proof']").getAttribute('itemvalue');
-            profile.entityId = element.querySelector("[itemprop='entityId']").getAttribute('itemvalue');
 
-            if(profile.title && profile.id) {
-                let content = profile.entityId + profile.title + this.sanitizeSnippetContent(profile.data);
+            if(!profile.entityId || profile.entityId.length == 0)
+                return;
 
-                let checkId = Crypto.toDTPAddress(Crypto.Hash160(content));
-                if(checkId != profile.id) {
-                    console.log(`Content ${profile.title} - ID: ${profile.id} do not match hash id of content ${checkId}`);
-                    return;
-                }
+            if(!profile.title && !profile.data)
+                return;
+            
+            if(!profile.proof || profile.proof.length == 0)
+                return;
+            
+            let content = profile.entityId + this.sanitizeSnippetContent(profile.title) + this.sanitizeSnippetContent(profile.data);
+            profile.id = Crypto.toDTPAddress(Crypto.Hash160(content));
 
-                if(profile.proof || profile.entityId) {
-                    let valid = Crypto.Verify(profile.id, profile.entityId, profile.proof);
-                    if(!valid) {
-                        console.log(`Content ${profile.title} with ID (${profile.id}) from (${profile.entityId}) do not have a valid signature ${profile.proof}`);
-                        return;
-                    }
-                }
+            let valid = Crypto.Verify(profile.id, profile.entityId, profile.proof); // Verify that the contentId has been signed with the profile.id
+            if(!valid) {
+                console.log(`Content ${profile.title} with ID (${profile.id}) from (${profile.id}) do not have a valid signature ${profile.proof} signed by ${profile.entityId}`);
+                return;
             }
-            if(profile.id)
-                temp[profile.id] = profile;
+            temp[profile.id] = profile; // Add profile to list
         });
 
         for(let key in temp) {

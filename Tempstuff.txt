@@ -4,36 +4,44 @@ Seed: bestseedever
 John D. Greenwood
 jdg
 19ZWEJYMq9jnEuvvCP7UMBD196h1nb8UR7
+https://images.pexels.com/photos/53487/james-stewart-man-person-actor-53487.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=64
 Trust -> Sofie
 Trust -> Bill
 
 Sofie Hansen
 14aAU7werm5MYXoFUW1G7b8oHrHVhNPQ65
 sh
+https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=64
 Trust -> Jack
 
 Bill Benson
 bb
 1FBLt4JCvS5oxKwWo2dwtijcengfPXtzSX
+https://images.pexels.com/photos/842980/pexels-photo-842980.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=64
+
 Trust -> Hanna
 Trust -> Zoe
 
 
 Hanna Lancaster
 hl
+https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=64
 1CfsmiZckqHwnU4EyrhzpnGDuj9hXUGsww
 Trust -> Zoe
 Trust -> Twitter
 
 Zoe Humminbird
-zd
+zh
+https://images.pexels.com/photos/1124724/pexels-photo-1124724.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=64
 1382m8FXwwE1NF1xF64zq2YDJgMhLWp5YB
 Rate -> Twitter
 
 Jack Black
 jb
+https://images.pexels.com/photos/1073097/pexels-photo-1073097.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=64
 1JtaQ9AymgJf2yafu5CVod4ryYoyfATr3C
 Rate -> Twitter
+
 
 
     drawOnIcon(icon: favIcon) : Promise<string> {
