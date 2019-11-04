@@ -17,7 +17,7 @@ import ISiteInformation from '../Model/SiteInformation.interface';
 import { QueryContext, Claim } from '../../lib/dtpapi/model/models.js';
 import { ModelPackage } from '../../lib/dtpapi/model/ModelPackage';
 import { ProfileModal } from "../Model/ProfileModal";
-import TrustGraphDataAdapter from "./TrustGraphDataAdapter";
+import PathGraphDataAdapter from "./PathGraphDataAdapter";
 import * as localforage from 'localforage';
 import { MessageHandler } from '../Shared/MessageHandler';
 import { TrustGraphPopupClient } from '../Shared/TrustGraphPopupClient';
@@ -28,6 +28,8 @@ import IGraphData from './IGraphData';
 import Url from "url-parse";
 import IOpenDialogParameters from '../Model/OpenDialogParameters.interface.js';
 import { Runtime } from "webextension-polyfill-ts";
+import SubjectGraphController from './SubjectGraphController';
+import IGraphController from './IGraphController';
 
 
 class TrustGraphController {
@@ -50,7 +52,7 @@ class TrustGraphController {
     trustResults: object;
 
 
-    dataAdapter: TrustGraphDataAdapter;
+    controller: IGraphController;
     messageHandler: MessageHandler;
     storageClient: StorageClient; 
     trustGraphPopupClient: TrustGraphPopupClient;
@@ -58,6 +60,7 @@ class TrustGraphController {
     static $inject: string[] = ["$scope"];
 
     constructor(private $scope: ng.IScope) {
+        $(() => this.init());
     }
 
     init() {
@@ -75,30 +78,42 @@ class TrustGraphController {
             this.trustStrategy = new TrustStrategy(this.settings, this.profileRepository);
 
             let url = new Url(location.href, true);
-            this.trustGraphPopupClient.requestGraphData(url.query.profileId).then(data => {
-                this.loadOnData(data);
-            });
+            
+            let container = document.getElementById('networkContainer');
+
+
+            if(url.query.mode == "path") {
+                this.trustGraphPopupClient.requestGraphData(url.query.profileId).then(data => {
+                    this.pathNetwork(data);
+                });
+            } else {
+                this.controller = new SubjectGraphController(url.query.profileId, container, this.dtpService, this.profileRepository);
+                this.controller.init().then(()=> {
+                    this.controller.onSelect = (pv) => {
+                        this.trustGraphPopupClient.selectProfile(pv.profile);
+                    };
+                });
+            }
         });
     }
 
-    private async loadOnData(source: IGraphData) : Promise<void> {
-        this.network = await this.buildNetwork(source);
+    private subjectNetwork(profileId: string) : void {
+
     }
 
-    private async buildNetwork(source: IGraphData) : Promise<any> {
-
+    private async pathNetwork(source: IGraphData) : Promise<any> {
         //this.source = source;
         await this.buildProfiles(source);
 
-        this.dataAdapter = new TrustGraphDataAdapter(source, this.profileViews);
-        this.dataAdapter.load();
+        let dataController = new PathGraphDataAdapter(source, this.profileViews);
+        dataController.load();
 
         let options = this.networkOptions();
         let container = document.getElementById('networkContainer');
 
-        let nw = new vis2.Network(container, this.dataAdapter.getGraph(), options);
+        this.network = new vis2.Network(container, dataController.getGraph(), options);
 
-        nw.on("select", (params) => {
+        this.network.on("select", (params) => {
             if(params.nodes.length > 0) {
                 let profileId = params.nodes[0];
                 let pv = this.profileViews[profileId];
@@ -106,7 +121,7 @@ class TrustGraphController {
             }
         });
 
-        return nw;
+        return this.network;
 
     }
 

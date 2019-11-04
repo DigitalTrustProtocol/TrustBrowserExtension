@@ -64,7 +64,7 @@ export class TrustGraphPopupServer {
     private createDialog(request: any, sender: Runtime.MessageSender) : Promise<IOpenDialogResult>
     {
         //let url =  browser.extension.getURL('trustgraph.html')+'?tabId='+sender.tab.id+'&profileId='+request.profileId;
-        let url =  browser.extension.getURL('trustgraph.html')+'?profileId='+request.profileId;
+        let url =  browser.extension.getURL('trustgraph.html')+`?profileId=${request.profileId}&mode=${request.mode}`;
         return browser.tabs.create({
             url: url, 
             active: false

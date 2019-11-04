@@ -42,7 +42,6 @@ import { ClaimValue } from './components/claimValue';
 import { LoginPopupClient } from '../Shared/LoginPopupClient';
 import { read } from 'fs';
 import { rejects } from 'assert';
-import { Timestamp } from '../../../dist/lib/dtpapi/model/Timestamp';
 
 
 class ExtensionpopupController {
@@ -534,8 +533,8 @@ class ExtensionpopupController {
     }
 
 
-    openGraphClick(eventObject: JQueryEventObject, pv: ProfileModal) : boolean {
-        this.trustGraphPopupClient.openPopup({profileId: pv.profile.id});
+    openGraphClick(eventObject: JQueryEventObject, profileId: string, mode:string = "path") : boolean {
+        this.trustGraphPopupClient.openPopup({profileId: profileId, mode: mode});
 
         eventObject.stopPropagation();
         return false;

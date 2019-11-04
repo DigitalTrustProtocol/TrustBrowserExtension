@@ -115,6 +115,19 @@ export default class DTPService  {
     }
 
 
+    // async getSubjectClaims(id:string, skip: number = 0, page: number = 10, meta: boolean = true) : Promise<Array<Claim>> {
+
+    //     let url = this.settings.infoserver+`/api/Claim/subject?id=${id}&page=${page}&skip=${skip}&meta=${meta}`;
+        
+    //     let result = await $.ajax({
+    //         type: "GET",
+    //         url: url,
+    //         contentType: 'application/json; charset=utf-8',
+    //     });
+    //     return result;
+    // }
+
+
     // QuerySingle (target: string, scope: any) : JQueryPromise<any> {
     //     let query = this.BuildQuerySingle(target, scope);
     //     if(query == null) {
@@ -180,23 +193,14 @@ export default class DTPService  {
         return this.packageApi.postPackage(claimPackage);
     }
     
-    // GetData (query) {
-    //     let deferred = $.Deferred();
-    //     let url = this.settings.infoserver + query;
 
-    //     $.ajax({
+
+    // Get(url:string) : Promise<any> {
+    //     return jQuery.ajax({
     //         type: "GET",
     //         url: url,
     //         contentType: 'application/json; charset=utf-8',
-    //     }).done(function (msg, textStatus, jqXHR) {
-    //        let resolve = msg;
-    //         deferred.resolve(resolve);
-    //     }).fail(function (jqXHR, textStatus, errorThrown) {
-    //         this.TrustServerErrorAlert(jqXHR, textStatus, errorThrown, this.settings.infoserver);
-    //         deferred.fail(jqXHR);
     //     });
-
-    //     return deferred.promise();
     // }
 
 

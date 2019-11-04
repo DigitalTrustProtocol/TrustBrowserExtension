@@ -8,76 +8,121 @@ import ProfileRepository from "../ProfileRepository";
 import BinaryTrustResult from "../Model/BinaryTrustResult";
 import TrustStrategy from "../TrustStrategy";
 import IGraphData from './IGraphData';
-import { ProfileModal } from "../Model/ProfileModal";
+import { ProfileModal } from '../Model/ProfileModal';
 import { Buffer } from 'buffer';
 import PackageBuilder from '../PackageBuilder';
+import IGraphController from "./IGraphController";
+import DTPService from "../DTPService";
 
 
-export default class TrustGraphDataAdapter {
+export default abstract class BaseGraphDataAdapter implements IGraphController {
 
     public graph: any = {     
         nodes: new vis2.DataSet(),
         edges: new vis2.DataSet()
     };
     
-    private subjectProfileID: string;
+    public profileRepository: ProfileRepository;
+    public profileViews: Object = {};
+    public container: HTMLElement;
+    public dtpService: DTPService;
+    public onSelect = (pv: ProfileModal) => {};
 
-    private source: IGraphData;
-    private profileViews: object;
 
-    constructor(data: IGraphData, profileViews: object) {
-        this.source = data;
-        this.profileViews = profileViews;
+    public network: vis2.Network;
+
+    abstract async init() : Promise<void>;
+
+    async build() : Promise<any> {
+        let options = this.networkOptions();
+
+        this.network = new vis2.Network(this.container, this.graph, options);
+
+        this.network.on("select", (params) => {
+            if(params.nodes.length > 0) {
+                let profileId = params.nodes[0];
+                let pv = this.profileViews[profileId];
+                this.select(pv);
+                this.onSelect(pv);
+            }
+        });
+
+        return this.network;
     }
 
+    abstract select(pv: ProfileModal) : Promise<void>;
+    abstract networkOptions() : any;
 
-    public load() : void {
-        this.graph.nodes.clear();
-        this.graph.edges.clear();
+    // constructor(data: IGraphData, profileViews: object) {
+    //     this.source = data;
+    //     this.profileViews = profileViews;
+    // }
 
-        let subjectProfileView = this.profileViews[this.source.subjectProfileId] as ProfileModal;
 
-        //let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
-        this.loadNodes(subjectProfileView);
-    }
+    // public load() : void {
+    //     this.graph.nodes.clear();
+    //     this.graph.edges.clear();
 
-    private loadNodes(pv: ProfileModal) : void {
-        if(this.graph.nodes.get(pv.profile.id))
-             return; // Do not re-process the node
+    //     let subjectProfileView = this.profileViews[this.source.subjectProfileId] as ProfileModal;
 
-        this.addNode(pv.profile);
+    //     //let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
+    //     this.loadNodes(subjectProfileView);
+    // }
 
-        if(pv.profile.id == this.source.currentUserId)
-             return; // Stop with oneself
+    // private loadNodes(pv: ProfileModal) : void {
+    //     if(this.graph.nodes.get(pv.profile.id))
+    //          return; // Do not re-process the node
 
-        if(!pv.trustResult)
-            return;
+    //     this.addNode(pv.profile);
+
+    //     if(pv.profile.id == this.source.currentUserId)
+    //          return; // Stop with oneself
+
+    //     if(!pv.trustResult)
+    //         return;
              
         
-        for(let key in pv.trustResult.claims) {
-            let claim = pv.trustResult.claims[key];
+    //     for(let key in pv.trustResult.claims) {
+    //         let claim = pv.trustResult.claims[key];
 
-            let parentView = this.profileViews[claim.issuer.id] as ProfileModal;
+    //         let parentView = this.profileViews[claim.issuer.id] as ProfileModal;
 
-            this.addEdge(parentView.profile, pv.profile, claim);
+    //         this.addEdge(parentView.profile, pv.profile, claim);
 
-            this.loadNodes(parentView);
-        }
-    }
+    //         this.loadNodes(parentView);
+    //     }
+    // }
 
 
     public getGraph() : any {
         return this.graph;
     }
 
-    public updateWithClaim(claim : Claim) : void {
-        let from = this.profileViews[claim.issuer.id] || this.profileViews[this.source.currentUserId];
-        let to = this.profileViews[claim.subject.id];
-        
-        to.trustResult.claims[claim.issuer.id] = claim;
+    public async updateWithClaim(claim : Claim) : Promise<void> {
 
-        this.updateNode(from.profile); // Make sure that "from" profile node exist in graph
+        let from = await this.getProfileView(claim.issuer.id);
+        let to = await this.getProfileView(claim.subject.id);
+        
+        //to.trustResult.claims[claim.issuer.id] = claim;
+
+        let toNode = this.graph.nodes.get(to.profile.id);
+        if(!toNode) 
+            this.updateNode(to.profile); // Make sure that "to" profile node exist in graph
+
         this.updateEdge(from.profile, to.profile, claim.value);
+    }
+
+    protected async getProfileView(profileId: string) : Promise<ProfileModal>
+    {
+        let profileView = this.profileViews[profileId];
+        if(profileView) 
+            return profileView;
+
+        let profile = await this.profileRepository.getProfile(profileId, <IProfile>{id:profileId, title: profileId });
+        
+        this.profileViews[profileId] = profileView = new ProfileModal(profile, null, null); // new BinaryTrustResult()
+
+        return profileView;
     }
 
    
