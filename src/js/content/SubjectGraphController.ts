@@ -2,16 +2,16 @@ import IProfile from '../IProfile';
 import ProfileRepository from '../ProfileRepository';
 import BinaryTrustResult from "../Model/BinaryTrustResult";
 import DTPService from '../DTPService';
-import BaseGraphDataAdapter from "./BaseGraphDataAdapter";
+import BaseGraphController from "./BaseGraphController";
 import { ProfileModal } from '../Model/ProfileModal';
 import * as vis2 from 'vis';
+import PackageBuilder from '../PackageBuilder';
+import { Claim } from '../../lib/dtpapi/model/Claim';
 
 
-export default class SubjectGraphController extends BaseGraphDataAdapter {
+export default class SubjectGraphController extends BaseGraphController {
 
     public pageSize : number = 1000;
-
-    //private history: Array<ProfileModal> = [];
 
     public subjectId: string;
 
@@ -22,7 +22,6 @@ export default class SubjectGraphController extends BaseGraphDataAdapter {
         this.container = container;
         this.dtpService = dtpService;
         this.profileRepository = profileRepository;
-
     }
 
     public async init() : Promise<void> {
@@ -43,10 +42,23 @@ export default class SubjectGraphController extends BaseGraphDataAdapter {
         await this.select(subjectView);
     }
 
-    
+    public async updateWithClaim(claim : Claim) : Promise<void> {
+        if(claim.type != PackageBuilder.RATING_TRUST_DTP1 && claim.type != PackageBuilder.BINARY_TRUST_DTP1)
+            return;
 
-    public async loadPeers(pv: ProfileModal) : Promise<void> {
+        let from = await this.getProfileView(claim.issuer.id);
+        let to = await this.getProfileView(claim.subject.id);
+        
+        //to.trustResult.claims[claim.issuer.id] = claim;
+
+        let toNode = this.graph.nodes.get(to.profile.id);
+        if(!toNode) 
+            this.addNode(to.profile); // Make sure that "to" profile node exist in graph
+
+        this.addEdge(from.profile, to.profile, claim);
     }
+
+
     
     async select(pv: ProfileModal) : Promise<void> 
     {
@@ -58,12 +70,13 @@ export default class SubjectGraphController extends BaseGraphDataAdapter {
     
     public networkOptions() : any {
         var options = {
-            // layout: {
-            //     hierarchical: {
-            //         direction: "LR",
-            //         sortMethod: "directed"
-            //     }
-            // },
+            layout: {
+                improvedLayout: true
+                // hierarchical: {
+                //     direction: "LR",
+                //     sortMethod: "directed"
+                // }
+            },
             interaction:
             { 
                  dragNodes: true,

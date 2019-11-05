@@ -15,9 +15,14 @@ import IGraphController from "./IGraphController";
 import DTPService from "../DTPService";
 
 
-export default abstract class BaseGraphDataAdapter implements IGraphController {
+interface IGraphModel {
+    nodes: vis2.DataSet;
+    edges: vis2.DataSet;
+}
 
-    public graph: any = {     
+export default abstract class BaseGraphController implements IGraphController {
+
+    public graph: IGraphModel = {     
         nodes: new vis2.DataSet(),
         edges: new vis2.DataSet()
     };
@@ -53,63 +58,8 @@ export default abstract class BaseGraphDataAdapter implements IGraphController {
     abstract select(pv: ProfileModal) : Promise<void>;
     abstract networkOptions() : any;
 
-    // constructor(data: IGraphData, profileViews: object) {
-    //     this.source = data;
-    //     this.profileViews = profileViews;
-    // }
-
-
-    // public load() : void {
-    //     this.graph.nodes.clear();
-    //     this.graph.edges.clear();
-
-    //     let subjectProfileView = this.profileViews[this.source.subjectProfileId] as ProfileModal;
-
-    //     //let result = this.source.trustResults[this.source.subjectProfileId] as BinaryTrustResult; // Start
-    //     this.loadNodes(subjectProfileView);
-    // }
-
-    // private loadNodes(pv: ProfileModal) : void {
-    //     if(this.graph.nodes.get(pv.profile.id))
-    //          return; // Do not re-process the node
-
-    //     this.addNode(pv.profile);
-
-    //     if(pv.profile.id == this.source.currentUserId)
-    //          return; // Stop with oneself
-
-    //     if(!pv.trustResult)
-    //         return;
-             
-        
-    //     for(let key in pv.trustResult.claims) {
-    //         let claim = pv.trustResult.claims[key];
-
-    //         let parentView = this.profileViews[claim.issuer.id] as ProfileModal;
-
-    //         this.addEdge(parentView.profile, pv.profile, claim);
-
-    //         this.loadNodes(parentView);
-    //     }
-    // }
-
-
-    public getGraph() : any {
+      public getGraph() : any {
         return this.graph;
-    }
-
-    public async updateWithClaim(claim : Claim) : Promise<void> {
-
-        let from = await this.getProfileView(claim.issuer.id);
-        let to = await this.getProfileView(claim.subject.id);
-        
-        //to.trustResult.claims[claim.issuer.id] = claim;
-
-        let toNode = this.graph.nodes.get(to.profile.id);
-        if(!toNode) 
-            this.updateNode(to.profile); // Make sure that "to" profile node exist in graph
-
-        this.updateEdge(from.profile, to.profile, claim.value);
     }
 
     protected async getProfileView(profileId: string) : Promise<ProfileModal>
@@ -201,7 +151,9 @@ export default abstract class BaseGraphDataAdapter implements IGraphController {
 
 
     public addEdge(from: IProfile, to:IProfile, claim: Claim) : void {
-        this.graph.edges.add(this.createEdge(from, to, claim));
+        let edge = this.createEdge(from, to, claim);
+        if(!this.graph.edges.get(edge.id))
+            this.graph.edges.add(edge);
     }
 
     public removeEdge(from: IProfile, to:IProfile) : void {
@@ -210,8 +162,8 @@ export default abstract class BaseGraphDataAdapter implements IGraphController {
         });
     }
 
-    public updateEdge(from: IProfile, to:IProfile, value: any) : void {
-        this.graph.edges.update(this.createEdge(from, to, value)); // Auto create if node do not exist
+    public updateEdge(from: IProfile, to:IProfile, claim: Claim) : void {
+        this.graph.edges.update(this.createEdge(from, to, claim)); // Auto create if node do not exist
     }
 
     private createEdge(from: IProfile, to:IProfile, claim: Claim) : any {
