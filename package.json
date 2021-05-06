@@ -34,7 +34,7 @@
         "popper.js": "^1.15.0",
         "select2": "^4.0.10",
         "ui-bootstrap4": "^3.0.6",
-        "url-parse": "^1.4.7",
+        "url-parse": "^1.5.0",
         "vis": "^4.21.0"
     },
     "devDependencies": {
